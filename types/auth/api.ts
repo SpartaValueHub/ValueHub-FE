@@ -14,3 +14,21 @@ export interface ApiSignupResponse {
   name: string;
   userId: string;
 }
+
+export interface ApiSignInRequest {
+  logInId: string;
+  password: string;
+}
+
+/**
+ * POST /api/v1/auth/sign-in 응답
+ * 백엔드 필드명이 달라도 service에서 정규화합니다.
+ */
+export interface ApiSignInResponse {
+  accessToken: string;
+  refreshToken?: string;
+  userId: string;
+  logInId: string;
+  name: string;
+  email?: string;
+}

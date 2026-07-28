@@ -2,19 +2,21 @@ import Link from "next/link";
 
 import { Section } from "@/components/atoms/Section";
 import { ChatMessageForm } from "@/components/organisms/ChatMessageForm";
-import { ChatMessageList } from "@/components/organisms/ChatMessageList";
+import { ChatMessageStream } from "@/components/organisms/ChatMessageStream";
 import type { UiChatMessage, UiChatRoom } from "@/types/chat/ui";
 
 interface ChatRoomTemplateProps {
   room: UiChatRoom;
-  messages: UiChatMessage[];
-  errorMessage?: string;
+  initialMessages?: UiChatMessage[];
+  currentUserUuid: string;
+  accessToken: string;
 }
 
 export function ChatRoomTemplate({
   room,
-  messages,
-  errorMessage,
+  initialMessages = [],
+  currentUserUuid,
+  accessToken,
 }: ChatRoomTemplateProps) {
   return (
     <Section className="flex min-h-[70vh] flex-1 flex-col gap-4">
@@ -32,14 +34,14 @@ export function ChatRoomTemplate({
       </div>
 
       <div className="flex flex-1 flex-col rounded-xl border p-4">
-        <div className="mb-4 flex-1 overflow-y-auto">
-          {errorMessage ? (
-            <p className="py-8 text-center text-sm text-destructive">
-              {errorMessage}
-            </p>
-          ) : (
-            <ChatMessageList messages={messages} />
-          )}
+        <div className="mb-4 min-h-0 flex-1 overflow-y-auto">
+          <ChatMessageStream
+            key={room.chatRoomUuid}
+            chatRoomUuid={room.chatRoomUuid}
+            initialMessages={initialMessages}
+            currentUserUuid={currentUserUuid}
+            accessToken={accessToken}
+          />
         </div>
         <ChatMessageForm chatRoomUuid={room.chatRoomUuid} />
       </div>

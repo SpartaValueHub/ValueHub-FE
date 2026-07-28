@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
 
 import { ChatRoomTemplate } from "@/components/templates/ChatRoomTemplate";
+import { logAuthSessionDetail, requireAuth } from "@/lib/session";
 import {
   getChatRoomService,
-  listChatMessagesService,
+  listLatestChatMessagesService,
 } from "@/services/chat.service";
 import type { UiChatMessage } from "@/types/chat/ui";
 
@@ -13,27 +14,32 @@ export default async function ChatRoomPage({
   params: Promise<{ chatRoomUuid: string }>;
 }) {
   const { chatRoomUuid } = await params;
-  const room = getChatRoomService(chatRoomUuid);
+  const user = await requireAuth(`/chat/${chatRoomUuid}`);
+  await logAuthSessionDetail(`chat-room:${chatRoomUuid}`);
+  const room = await getChatRoomService(chatRoomUuid, user.accessToken);
 
   if (!room) {
     notFound();
   }
 
-  let messages: UiChatMessage[] = [];
-  let errorMessage: string | undefined;
+  let initialMessages: UiChatMessage[] = [];
 
   try {
-    messages = await listChatMessagesService(chatRoomUuid);
-  } catch (e) {
-    errorMessage =
-      e instanceof Error ? e.message : "메시지를 불러오지 못했습니다.";
+    initialMessages = await listLatestChatMessagesService(
+      chatRoomUuid,
+      user.accessToken,
+      user.uuid
+    );
+  } catch {
+    initialMessages = [];
   }
 
   return (
     <ChatRoomTemplate
       room={room}
-      messages={messages}
-      errorMessage={errorMessage}
+      initialMessages={initialMessages}
+      currentUserUuid={user.uuid}
+      accessToken={user.accessToken}
     />
   );
 }

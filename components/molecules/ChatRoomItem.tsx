@@ -23,13 +23,16 @@ export function ChatRoomItem({ room }: ChatRoomItemProps) {
             {room.chatRoomUuid}
           </CardDescription>
         </CardHeader>
-        {room.lastMessage ? (
-          <CardContent>
-            <p className="truncate text-sm text-muted-foreground">
-              {room.lastMessage}
+        <CardContent>
+          <p className="truncate text-sm text-muted-foreground">
+            {room.lastMessage ?? "아직 메시지가 없습니다."}
+          </p>
+          {room.lastMessageAt ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {room.lastMessageAt}
             </p>
-          </CardContent>
-        ) : null}
+          ) : null}
+        </CardContent>
       </Card>
     </Link>
   );

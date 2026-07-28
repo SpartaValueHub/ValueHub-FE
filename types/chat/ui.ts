@@ -15,4 +15,5 @@ export interface UiChatRoom {
   chatRoomUuid: string;
   title: string;
   lastMessage?: string;
+  lastMessageAt?: string;
 }

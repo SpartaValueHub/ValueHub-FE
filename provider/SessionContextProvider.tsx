@@ -1,68 +1,76 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { SessionContext } from '../context/SessionContext';
+
+import React, { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
+
+import {
+  SessionContext,
+  type SessionUserSummary,
+} from "@/context/SessionContext";
 
 interface SessionContextProviderProps {
   children: React.ReactNode;
 }
 
-export function SessionContextProvider({ children }: SessionContextProviderProps) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+export function SessionContextProvider({
+  children,
+}: SessionContextProviderProps) {
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<SessionUserSummary | null>(null);
 
-  // 인증 상태 확인
-  const checkAuthStatus = async () => {
+  const refresh = useCallback(async () => {
     try {
-      const response = await fetch('/api/auth/status');
-      if (response.ok) {
-        const data = await response.json();
-        setIsAuthenticated(data.isAuthenticated);
+      const response = await fetch("/api/auth/status", { cache: "no-store" });
+      if (!response.ok) {
+        setIsAuthenticated(false);
+        setUser(null);
+        return;
       }
+      const data = (await response.json()) as {
+        isAuthenticated: boolean;
+        user: SessionUserSummary | null;
+      };
+      setIsAuthenticated(!!data.isAuthenticated);
+      setUser(data.user);
     } catch (error) {
-      console.error('Auth status check failed:', error);
+      console.error("Auth status check failed:", error);
       setIsAuthenticated(false);
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
+  }, []);
+
+  const login = () => {
+    router.push("/signin");
   };
 
-  // 로그인 함수
-  const login = async () => {
-    try {
-      window.location.href = '/api/auth/signin';
-    } catch (error) {
-      console.error('Login failed:', error);
-    }
-  };
-
-  // 로그아웃 함수
   const logout = async () => {
-    try {
-      const response = await fetch('/api/auth/signout', {
-        method: 'POST',
-      });
-      if (response.ok) {
-        setIsAuthenticated(false);
-        window.location.href = '/';
-      }
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
+    await signOut({ redirect: false });
+    setIsAuthenticated(false);
+    setUser(null);
+    router.push("/");
+    router.refresh();
   };
 
   useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  const value = {
-    isAuthenticated,
-    isLoading,
-    login,
-    logout,
-  };
+    void refresh();
+  }, [refresh]);
 
   return (
-    <SessionContext.Provider value={value}>
+    <SessionContext.Provider
+      value={{
+        isAuthenticated,
+        isLoading,
+        user,
+        login,
+        logout,
+        refresh,
+      }}
+    >
       {children}
     </SessionContext.Provider>
   );

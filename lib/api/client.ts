@@ -29,6 +29,18 @@ export function getApiUrl() {
   return raw.replace(/\/$/, "");
 }
 
+/** Chat reactive(SSE) / chat REST base — default localhost:8082 */
+export function getChatApiUrl() {
+  if (typeof window !== "undefined") {
+    throw new Error(
+      "외부 API는 서버(CHAT_API_URL)에서만 호출하세요. 클라이언트는 Next API/Actions를 사용합니다."
+    );
+  }
+
+  const raw = process.env.CHAT_API_URL || "http://localhost:8082";
+  return raw.replace(/\/$/, "");
+}
+
 type FetchCacheOpts = {
   tags?: string[];
   revalidate?: number | false;
@@ -69,6 +81,7 @@ export async function apiFetch<T>(
 
   if (cache?.noStore || !useTags) {
     init.cache = "no-store";
+    init.next = { revalidate: 0 };
   } else {
     init.next = {
       tags: cache!.tags,

@@ -1,12 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
+import { requireActionAuth } from "@/lib/session";
+import { sendChatMessageService } from "@/services/chat.service";
 import {
   sendChatMessageSchema,
   type SendChatMessageFieldErrors,
 } from "@/types/chat/message";
-import { sendChatMessageService } from "@/services/chat.service";
 
 export type SendChatMessageActionState = {
   ok: boolean;
@@ -18,6 +17,16 @@ export async function sendChatMessageAction(
   _prevState: SendChatMessageActionState,
   formData: FormData
 ): Promise<SendChatMessageActionState> {
+  let auth;
+  try {
+    auth = await requireActionAuth();
+  } catch {
+    return {
+      ok: false,
+      message: "로그인이 필요합니다.",
+    };
+  }
+
   const values = {
     chatRoomUuid: String(formData.get("chatRoomUuid") ?? ""),
     message: String(formData.get("message") ?? ""),
@@ -39,6 +48,8 @@ export async function sendChatMessageAction(
       chatRoomUuid: parsed.data.chatRoomUuid,
       message: parsed.data.message,
       messageType: parsed.data.messageType,
+      senderUuid: auth.uuid,
+      accessToken: auth.accessToken,
     });
   } catch (e) {
     return {
@@ -46,8 +57,6 @@ export async function sendChatMessageAction(
       message: e instanceof Error ? e.message : "메시지 전송에 실패했습니다.",
     };
   }
-
-  revalidatePath(`/chat/${parsed.data.chatRoomUuid}`);
 
   return { ok: true };
 }

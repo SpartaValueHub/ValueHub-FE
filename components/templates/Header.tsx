@@ -11,6 +11,9 @@ export function Header() {
                 <Link href="/feeds">Feeds</Link>
             </li>
             <li>
+                <Link href="/chat">Chat</Link>
+            </li>
+            <li>
                 <Link href="/signup">Signup</Link>
             </li>
             <li>

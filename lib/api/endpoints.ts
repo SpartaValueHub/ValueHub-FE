@@ -12,4 +12,9 @@ export const API_ENDPOINTS = {
     list: "/posts",
     detail: (id: number | string) => `/posts/${id}`,
   },
+  chat: {
+    messages: (chatRoomUuid: string) =>
+      `/api/v1/chat/rooms/${chatRoomUuid}/messages`,
+    send: "/api/v1/chat/messages",
+  },
 } as const;

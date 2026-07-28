@@ -35,7 +35,7 @@ export function Header() {
           ) : isAuthenticated ? (
             <>
               <span className="text-muted-foreground">
-                {user?.name || user?.logInId}
+                {user?.name || "회원"}
               </span>
               <Button type="button" variant="outline" size="sm" onClick={logout}>
                 로그아웃

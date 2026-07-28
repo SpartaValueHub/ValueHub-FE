@@ -5,13 +5,8 @@ export async function GET() {
     const user = await getAuthUser();
     return Response.json({
       isAuthenticated: !!user,
-      user: user
-        ? {
-            uuid: user.uuid,
-            logInId: user.logInId,
-            name: user.name,
-          }
-        : null,
+      // 클라이언트에는 표시용 이름만 노출 (uuid / logInId 제외)
+      user: user ? { name: user.name } : null,
     });
   } catch (error) {
     console.error("Auth status check failed:", error);

@@ -31,7 +31,7 @@ UI (client / RSC)
 8. **API paths** live only in `lib/api/endpoints.ts` (`API_ENDPOINTS`). Do not hardcode paths in `lib/api/*.ts`.
 9. **SSE/chat reactive:** Browser `EventSource` connects directly to `NEXT_PUBLIC_CHAT_API_URL` + `/api/v1/chat/reactive/{uuid}` (`lib/chat/sse.ts`). EventSource cannot set Authorization headers — token is passed as `accessToken` query if needed. Previous Next SSE proxy is archived at `lib/api/backups/chat-reactive-proxy.route.ts`.
 10. **Chat room list:** Chat BE `GET /api/v1/chat/rooms` (optional Next BFF `GET /api/chat/rooms`). Room meta + last-message preview come from the chat service. Detail uses `GET /api/v1/chat/rooms/{uuid}`.
-11. **Auth:** Credentials NextAuth v4 → `POST /api/v1/auth/sign-in` via `services/auth.service` → JWT session (`accessToken`, `uuid`). Chat routes/BFF require login (`middleware` + `requireAuth` / `requireActionAuth`). Chat `senderUuid` = session `user.uuid`. Never expose session tokens via nextauth-secure client context (only `isAuthenticated` / public user summary).
+11. **Auth:** Credentials NextAuth v4 → `POST /api/v1/auth/sign-in` via `services/auth.service` → JWT session (`accessToken`, `uuid`). Chat routes/BFF require login (`middleware` + `requireAuth` / `requireActionAuth`). Chat `senderUuid` = session `user.uuid` (server-only). Client `SessionContext` / `GET /api/auth/status` expose only `{ name }` — never `uuid`, `logInId`, or tokens.
 12. **LAN / other IP login:** Do **not** hardcode `NEXTAUTH_URL=http://localhost:3000`. Set `AUTH_TRUST_HOST=true` so NextAuth derives origin from the request Host. Run Next with `--hostname 0.0.0.0`. Browser chat SSE rewrites `localhost` chat URL host to the current page hostname (`lib/chat/sse.ts`).
 
 ### Naming

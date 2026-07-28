@@ -2,9 +2,8 @@
 
 import React, { createContext, useContext } from "react";
 
+/** 클라이언트 노출용 — 이름만 (uuid/logInId 미포함) */
 export type SessionUserSummary = {
-  uuid: string;
-  logInId: string;
   name: string;
 };
 

@@ -105,11 +105,13 @@ templates → organisms → molecules → atoms
 
 ### RSC vs 클라이언트 배치
 
+**기본은 Server Component(RSC/SSR).** `"use client"`는 브라우저 API·상호작용·React hooks가 **필요할 때만** 추가한다. 데이터 조회·초기 렌더는 RSC Page에서 `*Service`로 처리하고, 클라이언트는 이벤트·실시간(SSE) 등 상호작용 경계에 한정한다.
+
 | 계층 | 기본 | `"use client"` 조건 |
 |------|------|---------------------|
 | atoms | 서버 컴포넌트 | 거의 없음 (shadcn primitive) |
 | molecules | 서버 컴포넌트 | 이벤트 핸들러·상태 필요 시 |
-| organisms | 서버 또는 클라이언트 | hooks, `useActionState`, SSE, NextAuth `signIn` 등 |
+| organisms | **서버 우선** | hooks, `useActionState`, SSE, NextAuth `signIn` 등 |
 | templates | 서버 컴포넌트 | 하위 클라이언트 organism 포함 시 경계 자동 전파 |
 
 - **클라이언트 경계는 가능한 organism에만** — atom/molecule은 상태 없이 유지.
@@ -158,6 +160,27 @@ chat/[uuid] → ChatRoomTemplate → ChatMessageStream(클라이언트, SSE)
                               → ChatMessageForm(클라이언트, sendChatMessageAction)
   → ChatList(organism) → ChatListItem(molecule)
 ```
+
+## 렌더링 전략 (SSR 우선)
+
+- **SSR/RSC 기본:** Page·Template·대부분의 UI는 Server Component. HTML은 서버에서 생성하고, 클라이언트 JS 번들은 상호작용·실시간 영역으로 최소화한다.
+- **CSR 최소화:** `"use client"`는 다음에 한정 — 브라우저 전용 API(`window`, `EventSource`), 폼 제출·상태(`useState`, `useActionState`), SSE/채팅 스트림, NextAuth `signIn` 등. 단순 표시·정적 목록은 서버에서 props로 전달.
+- **데이터는 Page(RSC)에서 조회:** Template/Organism에 `*Service` 호출을 두지 않고, Page가 `Ui*` props로 내려준다 (아토믹 디자인 규칙과 동일).
+
+### 정적·준정적 데이터 캐싱
+
+RSC에서 `*Service` → `lib/api` → `apiFetch` 호출 시 Next.js Data Cache를 활용한다 (`lib/api/client.ts`의 `cache` 옵션).
+
+| 데이터 성격 | 권장 | `apiFetch` 예 |
+|-------------|------|---------------|
+| 변경 빈도 낮음 (목록, 메타, 공개 설정) | `tags` + `revalidate` | `cache: { tags: ["posts"], revalidate: 60 }` |
+| 거의 불변 (약관, 카테고리) | 긴 `revalidate` 또는 빌드 시 fetch | `revalidate: 3600` 이상 |
+| 실시간·개인화 (채팅, 세션 의존) | 캐시 없음 | `cache: { noStore: true }` (기본) |
+| 변경 후 무효화 | `revalidateTag` / `revalidatePath` | Action 성공 시 해당 `tags` 재검증 |
+
+- **`tags` 없이 호출하면 `no-store`** — 캐시가 필요한 GET은 `lib/api/*`에서 명시적으로 `tags`·`revalidate`를 넘긴다.
+- **Service**는 필요 시 cache 옵션을 API 함수에 전달; **Page**는 `export const revalidate` 등 세그먼트 단위 설정과 병행 가능.
+- **Mutation Action** 후 관련 태그가 있으면 `revalidateTag`로 캐시를 갱신한다.
 
 ## 도메인별 플로우
 
@@ -244,6 +267,7 @@ type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string }
 3. `lib/api/<domain>.ts` — `apiFetch` 호출
 4. `services/<domain>.service.ts` — 매핑 + 오케스트레이션
 5. `actions/<domain>.ts` — 검증, auth, `ActionResult`
-6. RSC page 또는 클라이언트 form에서 Action/Service 연결
-7. `components/` — 아토믹 디자인 계층에 맞게 atom → molecule → organism → template 순으로 추가
-8. 클라이언트에서 BE 직접 호출 필요 시 — SSE/chat 패턴처럼 예외를 문서화하고 `lib/`에 격리
+6. RSC page에서 `*Service` 조회(캐시 정책 포함) → Template에 `Ui*` props 전달; mutation은 Action
+7. `components/` — SSR 우선, `"use client"`는 organism 상호작용 경계에만; atom → molecule → organism → template 순 추가
+8. 정적·준정적 GET — `lib/api/*`에 `apiFetch` `cache.tags`·`revalidate` 지정; 실시간/개인화는 `noStore`
+9. 클라이언트에서 BE 직접 호출 필요 시 — SSE/chat 패턴처럼 예외를 문서화하고 `lib/`에 격리

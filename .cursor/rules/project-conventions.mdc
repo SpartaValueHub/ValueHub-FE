@@ -1,0 +1,12 @@
+---
+description: Git, pnpm, Husky, and team workflow for ValueHub-FO
+alwaysApply: true
+---
+
+# ValueHub-FO project conventions
+
+- **Package manager:** pnpm only (`pnpm install`, `pnpm dev`, …). Do not use npm or yarn in this repo.
+- **Git workflow:** See [CONTRIBUTING.md](../../CONTRIBUTING.md). Create a GitHub Issue first, then branch `{type}/{issue#}-slug` (e.g. `chore/1-husky-setup`). Open PRs against `develop`.
+- **Commits:** Korean messages with prefix — `feat:`, `fix:`, `docs:`, `chore:`, `refactor:` (full rules in CONTRIBUTING.md).
+- **Pre-commit:** Husky runs `lint-staged` on staged files (ESLint `--fix`, then Prettier). The commit is blocked if lint fails after auto-fix.
+- **Lint / format:** `pnpm lint`, `pnpm format`, `pnpm format:check`. Config: `eslint.config.mjs`, `.prettierrc`.

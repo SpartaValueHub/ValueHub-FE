@@ -5,6 +5,13 @@ ValueHub 프론트엔드(Next.js) 애플리케이션입니다.
 Git 컨벤션은 [CONTRIBUTING.md](./CONTRIBUTING.md)를 참고하세요.
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Git / Husky / 코드 스타일
+
+- 브랜치·커밋·PR 규칙: [CONTRIBUTING.md](./CONTRIBUTING.md)
+- 로컬 개발·스크립트·Husky pre-commit: [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md)
+- **pre-commit:** staged 파일에 ESLint(`--fix`) + Prettier 자동 적용 (`lint-staged`). 실패 시 커밋 중단.
+- 패키지 매니저는 **pnpm**만 사용합니다.
+
 ## Getting Started
 
 First, run the development server:

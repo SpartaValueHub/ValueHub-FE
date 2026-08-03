@@ -1,7 +1,9 @@
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 
 function isLoopbackHost(hostname: string) {
-  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  return (
+    hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1"
+  );
 }
 
 /**
@@ -13,7 +15,7 @@ export function getPublicChatApiUrl() {
   const raw =
     process.env.NEXT_PUBLIC_CHAT_API_URL ||
     process.env.CHAT_API_URL ||
-    "http://localhost:8082";
+    "http://localhost:8000/chat-service";
 
   try {
     const url = new URL(raw);

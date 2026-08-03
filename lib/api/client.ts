@@ -24,7 +24,7 @@ export function getApiUrl() {
   const raw =
     process.env.API_URL ||
     process.env.API_BASE_URL ||
-    "http://localhost:8081";
+    "http://localhost:8000/auth-service";
 
   return raw.replace(/\/$/, "");
 }
@@ -37,7 +37,7 @@ export function getChatApiUrl() {
     );
   }
 
-  const raw = process.env.CHAT_API_URL || "http://localhost:8082";
+  const raw = process.env.CHAT_API_URL || "http://localhost:8000/chat-service";
   return raw.replace(/\/$/, "");
 }
 
@@ -75,8 +75,7 @@ export async function apiFetch<T>(
   } = {
     method: options.method ?? "GET",
     headers,
-    body:
-      options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
   };
 
   if (cache?.noStore || !useTags) {

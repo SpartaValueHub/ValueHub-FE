@@ -1,14 +1,14 @@
 ---
-description: Next.js 16 App Router layout and folder structure
+description: Next.js 16 App Router 레이아웃 및 폴더 구조
 globs: app/**,components/**,hooks/**,context/**,provider/**
 alwaysApply: false
 ---
 
 # Next.js App Router (ValueHub-FO)
 
-- **Stack:** Next.js 16 App Router, React 19, TypeScript, Tailwind CSS v4, shadcn/ui.
-- **Top-level folders:** `app/`, `components/`, `actions/`, `services/`, `hooks/`, `context/`, `provider/`, `lib/`, `types/`.
-- **Routing:** Route segments and layouts live under `app/`. Global middleware in root `middleware.ts`.
-- **Components:** Presentational and feature UI under `components/`. Prefer Server Components; add `"use client"` only for browser APIs, interactivity, or hooks.
-- **Auth:** NextAuth v4 — session details in `lib/auth.ts`, `lib/session.ts`, `provider/`.
-- **Next.js 16:** APIs may differ from older Next versions — check `node_modules/next/dist/docs/` when unsure.
+- **스택:** Next.js 16 App Router, React 19, TypeScript, Tailwind CSS v4, shadcn/ui.
+- **최상위 폴더:** `app/`, `components/`, `actions/`, `services/`, `hooks/`, `context/`, `provider/`, `lib/`, `types/`.
+- **라우팅:** 라우트 세그먼트와 레이아웃은 `app/` 하위. 전역 미들웨어는 루트 `middleware.ts`.
+- **컴포넌트:** 표현·기능 UI는 `components/` 하위. 서버 컴포넌트 우선; 브라우저 API, 상호작용, hooks가 필요할 때만 `"use client"`.
+- **인증:** NextAuth v4 — 세션 설정은 `lib/auth.ts`, `lib/session.ts`, `provider/`.
+- **Next.js 16:** 이전 Next 버전과 API가 다를 수 있음 — 불확실하면 `node_modules/next/dist/docs/` 확인.

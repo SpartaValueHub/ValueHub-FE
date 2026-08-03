@@ -1,12 +1,12 @@
 ---
-description: Git, pnpm, Husky, and team workflow for ValueHub-FO
+description: ValueHub-FO Git, pnpm, Husky, 팀 워크플로
 alwaysApply: true
 ---
 
-# ValueHub-FO project conventions
+# ValueHub-FO 프로젝트 컨벤션
 
-- **Package manager:** pnpm only (`pnpm install`, `pnpm dev`, …). Do not use npm or yarn in this repo.
-- **Git workflow:** See [CONTRIBUTING.md](../../CONTRIBUTING.md). Create a GitHub Issue first, then branch `{type}/{issue#}-slug` (e.g. `chore/1-husky-setup`). Open PRs against `develop`.
-- **Commits:** Korean messages with prefix — `feat:`, `fix:`, `docs:`, `chore:`, `refactor:` (full rules in CONTRIBUTING.md).
-- **Pre-commit:** Husky runs `lint-staged` on staged files (ESLint `--fix`, then Prettier). The commit is blocked if lint fails after auto-fix.
-- **Lint / format:** `pnpm lint`, `pnpm format`, `pnpm format:check`. Config: `eslint.config.mjs`, `.prettierrc`.
+- **패키지 매니저:** pnpm만 사용 (`pnpm install`, `pnpm dev`, …). 이 저장소에서 npm·yarn 사용 금지.
+- **Git 워크플로:** [CONTRIBUTING.md](../../CONTRIBUTING.md) 참고. GitHub Issue를 먼저 생성한 뒤 `{type}/{issue#}-slug` 브랜치 생성 (예: `chore/1-husky-setup`). PR은 `develop` 대상.
+- **커밋:** 한국어 메시지 + 접두사 — `feat:`, `fix:`, `docs:`, `chore:`, `refactor:` (상세 규칙은 CONTRIBUTING.md).
+- **Pre-commit:** Husky가 staged 파일에 `lint-staged` 실행 (ESLint `--fix` 후 Prettier). auto-fix 후에도 lint 실패 시 커밋 차단.
+- **Lint / 포맷:** `pnpm lint`, `pnpm format`, `pnpm format:check`. 설정: `eslint.config.mjs`, `.prettierrc`.

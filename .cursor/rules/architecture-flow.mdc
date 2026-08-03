@@ -1,0 +1,249 @@
+---
+description: ValueHub-FO 전체 아키텍처, 레이어, 도메인별 플로우 (팀 컨벤션)
+alwaysApply: true
+---
+
+# ValueHub-FO 아키텍처 & 플로우
+
+Next.js 16 App Router + React 19 + TypeScript + Tailwind v4 + NextAuth v4.
+상세 API 규칙은 [AGENTS.md](../../AGENTS.md), Git/린트는 [project-conventions.mdc](./project-conventions.mdc) 참고.
+
+## 디렉터리 역할
+
+| 경로 | 역할 |
+|------|------|
+| `app/` | 라우트, 레이아웃, API Route (NextAuth, BFF) |
+| `actions/` | Server Actions — 인증·검증·`ActionResult` |
+| `services/` | 오케스트레이션, `Api*` → `Ui*` 매핑 |
+| `lib/api/` | **유일한 HTTP 레이어** (`apiFetch`) |
+| `lib/auth.ts`, `lib/session.ts` | NextAuth 설정, `requireAuth` / `requireActionAuth` |
+| `lib/chat/` | SSE URL, 메시지/방 매핑 유틸 |
+| `components/` | 아토믹 디자인 (`atoms` → `molecules` → `organisms` → `templates`) |
+| `types/<domain>/` | `api.ts`(BE DTO), `ui.ts`(UI 모델), zod 스키마 |
+| `hooks/` | 클라이언트 전용 (채팅 SSE 등) |
+| `context/`, `provider/` | 클라이언트 세션 컨텍스트 |
+| `middleware.ts` | `/chat/*`, `/api/chat/rooms` 보호 |
+
+## 3-Layer 데이터 플로우 (단방향)
+
+```
+UI (RSC / 클라이언트)
+  → actions/*Action      ("use server", zod, ActionResult)
+    → services/*Service  (오케스트레이션, Api → Ui 매핑)
+      → lib/api/*        (apiFetch만 사용)
+        → API_URL / CHAT_API_URL (게이트웨이)
+```
+
+### 레이어별 책임
+
+| 레이어 | 파일 예 | 함수 예 | 금지 |
+|--------|---------|---------|------|
+| Action | `actions/posts.ts` | `listPostsAction` | `apiFetch` 직접 호출 |
+| Service | `services/posts.service.ts` | `listPostsService`, `mapPost` | `"use server"` |
+| API | `lib/api/posts.ts` | `listPosts` | 경로 하드코딩 (→ `endpoints.ts`) |
+| Paths | `lib/api/endpoints.ts` | `API_ENDPOINTS.auth.signUp` | — |
+
+### 호출 규칙
+
+1. **`fetch(API_URL)`은 `lib/api/*`에서만.** 경로는 `API_ENDPOINTS`만 사용.
+2. **클라이언트 컴포넌트** → Server Action만. `services/`, `lib/api/` import 금지.
+3. **RSC Page** → 읽기는 `*Service` 직접 호출 가능; **변경(쓰기)은 Action** 경유.
+4. **타입 분리:** `types/<domain>/api.ts`(BE), `ui.ts`(UI). zod 스키마는 `types/<domain>/`에 함께 배치.
+
+## 라우팅 구조
+
+```
+app/
+├── layout.tsx                    # SessionContextProvider, Footer
+├── (header)/                     # Header 포함
+│   ├── page.tsx                  # /
+│   └── feeds/                    # /feeds, /feeds/[postId]
+├── (none-header)/                # Header 없음
+│   ├── signin/, signup/
+│   └── chat/, chat/[chatRoomUuid]
+└── api/
+    ├── auth/[...nextauth]/       # NextAuth
+    ├── auth/status/              # 클라이언트용 { name }만 노출
+    └── chat/rooms/               # BFF (middleware 보호)
+```
+
+## 아토믹 디자인 (컴포넌트 계층)
+
+UI는 **아토믹 디자인** 4계층으로 `components/` 하위에 배치한다. shadcn/ui + Tailwind v4 기반.
+
+```
+app/page (RSC)  →  데이터 조회 (*Service)
+       ↓
+  templates/    →  페이지 레이아웃, Ui* props 수신
+       ↓
+  organisms/    →  기능 단위 (폼, 리스트, SSE 스트림)
+       ↓
+  molecules/    →  atoms 조합 (카드, 필드, 리스트 아이템)
+       ↓
+  atoms/        →  최소 UI 단위 (button, input, label, card, Section)
+```
+
+### 계층 정의
+
+| 계층 | 역할 | 프로젝트 예 |
+|------|------|-------------|
+| **atoms** | 스타일·접근성만 담당하는 최소 단위. 도메인 로직 없음 | `button`, `input`, `label`, `card`, `Section` |
+| **molecules** | atom 2개 이상 조합. 단일 UI 패턴 | `FormField`(Label+Input+error), `PostCard`, `ChatRoomItem`, `ChatListItem` |
+| **organisms** | molecules/atoms로 기능 섹션 구성. 리스트·폼·스트림 등 | `PostList`, `SigninForm`, `SignupForm`, `ChatRoomList`, `ChatMessageStream`, `ChatMessageForm` |
+| **templates** | organisms 배치 + 페이지 골격. `Ui*` props만 받음 | `HomeTemplate`, `ChatRoomTemplate`, `ChatListTemplate`, `Header`, `Footer` |
+
+### 가져오기(import) 방향 (하위 → 상위만)
+
+```
+templates → organisms → molecules → atoms
+```
+
+- **상위 계층이 하위를 import** — 역방향 금지 (atom이 organism을 import ❌).
+- **같은 계층 간 import** — 가능하나, 공통 패턴이면 하위(molecule)로 내린다.
+- **Page(`app/`)** — Template만 import. Organism/Atom 직접 import 지양.
+- **데이터 조회** — Page(RSC) 또는 Action에서만. Template/Organism에 `*Service` 호출 금지.
+
+### RSC vs 클라이언트 배치
+
+| 계층 | 기본 | `"use client"` 조건 |
+|------|------|---------------------|
+| atoms | 서버 컴포넌트 | 거의 없음 (shadcn primitive) |
+| molecules | 서버 컴포넌트 | 이벤트 핸들러·상태 필요 시 |
+| organisms | 서버 또는 클라이언트 | hooks, `useActionState`, SSE, NextAuth `signIn` 등 |
+| templates | 서버 컴포넌트 | 하위 클라이언트 organism 포함 시 경계 자동 전파 |
+
+- **클라이언트 경계는 가능한 organism에만** — atom/molecule은 상태 없이 유지.
+- 예: `SigninForm`(클라이언트) → `FormField`(서버) → `Input`/`Label`(서버).
+- 예: `ChatMessageStream`(클라이언트, SSE) + `ChatMessageForm`(클라이언트, action) → `ChatRoomTemplate`(서버).
+
+### 네이밍 & 파일 배치
+
+- 경로: `components/{atoms|molecules|organisms|templates}/ComponentName.tsx`
+- **PascalCase** 파일·export명. atoms shadcn 파일은 소문자 허용 (`button.tsx`).
+- Props 타입: `{ComponentName}Props`. UI 모델은 `Ui*` (`types/<domain>/ui.ts`).
+- Template props = Page가 조회한 `Ui*` 데이터 + 세션에서 필요한 최소 필드.
+
+### 계층 선택 가이드
+
+| 상황 | 배치 |
+|------|------|
+| shadcn primitive 1개 | `atoms/` |
+| atom 2~3개 고정 조합 (label+input+error) | `molecules/` |
+| 도메인 데이터 1건 표시 (PostCard, ChatRoomItem) | `molecules/` |
+| 리스트·폼·실시간 스트림 등 기능 블록 | `organisms/` |
+| 페이지 섹션 배치, 히어로/레이아웃 | `templates/` |
+| 여러 페이지 공유 헤더/푸터 | `templates/` |
+
+### 도메인별 예시
+
+**Posts**
+```
+feeds/page (RSC) → listPostsService → HomeTemplate(posts)
+  → PostList(organism) → PostCard(molecule) × N → card/link(atom)
+```
+
+**Auth**
+```
+signin/page → SigninTemplate → SigninForm(클라이언트 organism)
+  → FormField(molecule) → Input + Label(atom)
+  → signIn("credentials") / zod 검증
+signup/page → SignupTemplate → SignupForm(클라이언트) → signupAction
+```
+
+**Chat**
+```
+chat/page (RSC) → ChatListTemplate(rooms) → ChatRoomList(클라이언트, SSE 미리보기)
+  → ChatRoomItem(molecule)
+chat/[uuid] → ChatRoomTemplate → ChatMessageStream(클라이언트, SSE)
+                              → ChatMessageForm(클라이언트, sendChatMessageAction)
+  → ChatList(organism) → ChatListItem(molecule)
+```
+
+## 도메인별 플로우
+
+### Auth
+
+```
+[회원가입] SignupForm → signupAction → signupService → POST /api/v1/auth/sign-up → redirect /signin
+
+[로그인]   SigninForm → signIn("credentials") → lib/auth authorize → signInService
+           → POST /api/v1/auth/sign-in → JWT session (accessToken, uuid)
+           → SessionContextProvider → GET /api/auth/status ({ name }만)
+
+[보호]     middleware: /chat/*, /api/chat/rooms → JWT accessToken + uuid 확인
+           RSC: requireAuth() | Action: requireActionAuth()
+```
+
+- 클라이언트에는 `uuid`, `accessToken`, `logInId` **노출 금지** (`SessionContext`는 `{ name }`만).
+- LAN 접속: `AUTH_TRUST_HOST=true`, `next dev --hostname 0.0.0.0`. `NEXTAUTH_URL` 고정 금지.
+
+### Posts (데모)
+
+```
+/feeds (RSC) → listPostsService → listPosts → POSTS_API_URL/posts → mapPost → HomeTemplate
+```
+
+### Chat
+
+```
+[방 목록 RSC]  /chat → listChatRoomsService → GET CHAT_API_URL/rooms → ChatListTemplate
+               ChatRoomList (클라이언트) → useChatRoomsLive → SSE 방별 최신 메시지
+
+[방 상세]      /chat/[uuid] → getChatRoomService + listLatestChatMessagesService
+               ChatMessageStream → useChatEventSource (브라우저 SSE 직접)
+               ChatMessageForm → sendChatMessageAction → POST /send
+
+[SSE 예외]     EventSource는 Authorization 헤더 불가 → accessToken을 query param으로 전달
+               URL: NEXT_PUBLIC_CHAT_API_URL + /api/v1/chat/reactive/{uuid}
+               LAN: lib/chat/sse.ts가 localhost → 현재 페이지 hostname으로 치환
+```
+
+- SSE는 Next 프록시 없이 **브라우저 → Chat BE 직접** (`lib/chat/sse.ts`).
+- BFF `/api/chat/rooms`는 REST 프록시용 (middleware 보호).
+
+## ActionResult 패턴
+
+```typescript
+// actions/types.ts
+type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string }
+// actionOk(), actionFail() 사용
+```
+
+- 조회 Action: `ActionResult<UiT>` 반환.
+- Form Action: `useActionState`용 커스텀 state (`fieldErrors` 포함) — zod `safeParse` + 필드 오류 flatten.
+
+## 환경 변수
+
+| 변수 | 용도 |
+|------|------|
+| `API_URL` | 게이트웨이 auth-service (서버 전용) |
+| `CHAT_API_URL` | 게이트웨이 chat-service REST (서버) |
+| `NEXT_PUBLIC_CHAT_API_URL` | 브라우저 SSE 기본 URL |
+| `POSTS_API_URL` | 게시글 데모 API |
+| `AUTH_SECRET` / `NEXTAUTH_SECRET` | NextAuth JWT |
+| `AUTH_TRUST_HOST` | LAN IP 로그인 허용 |
+
+**프로덕션:** Spring/백엔드 URL을 `NEXT_PUBLIC_*`로 노출하지 않는다.
+
+## 네이밍 컨벤션
+
+| 레이어 | 접미사 | 예 |
+|--------|--------|-----|
+| Action | `*Action` | `sendChatMessageAction` |
+| Service | `*Service` | `listChatRoomsService` |
+| API | 동사 | `listChatRooms`, `sendChatMessage` |
+| Mapper | `map*` | `mapPost`, `mapRoom`, `mapChatMessage` |
+| UI 타입 | `Ui*` | `UiPost`, `UiChatRoom` |
+| API 타입 | `Api*` | `ApiPost`, `ApiChatRoom` |
+| 컴포넌트 | PascalCase | `PostCard`, `ChatRoomTemplate` |
+
+## 새 기능 추가 체크리스트
+
+1. `types/<domain>/api.ts` + `ui.ts` (+ zod 스키마)
+2. `lib/api/endpoints.ts`에 path 추가
+3. `lib/api/<domain>.ts` — `apiFetch` 호출
+4. `services/<domain>.service.ts` — 매핑 + 오케스트레이션
+5. `actions/<domain>.ts` — 검증, auth, `ActionResult`
+6. RSC page 또는 클라이언트 form에서 Action/Service 연결
+7. `components/` — 아토믹 디자인 계층에 맞게 atom → molecule → organism → template 순으로 추가
+8. 클라이언트에서 BE 직접 호출 필요 시 — SSE/chat 패턴처럼 예외를 문서화하고 `lib/`에 격리

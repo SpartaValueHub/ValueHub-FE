@@ -1,0 +1,14 @@
+---
+description: Next.js 16 App Router layout and folder structure
+globs: app/**,components/**,hooks/**,context/**,provider/**
+alwaysApply: false
+---
+
+# Next.js App Router (ValueHub-FO)
+
+- **Stack:** Next.js 16 App Router, React 19, TypeScript, Tailwind CSS v4, shadcn/ui.
+- **Top-level folders:** `app/`, `components/`, `actions/`, `services/`, `hooks/`, `context/`, `provider/`, `lib/`, `types/`.
+- **Routing:** Route segments and layouts live under `app/`. Global middleware in root `middleware.ts`.
+- **Components:** Presentational and feature UI under `components/`. Prefer Server Components; add `"use client"` only for browser APIs, interactivity, or hooks.
+- **Auth:** NextAuth v4 — session details in `lib/auth.ts`, `lib/session.ts`, `provider/`.
+- **Next.js 16:** APIs may differ from older Next versions — check `node_modules/next/dist/docs/` when unsure.

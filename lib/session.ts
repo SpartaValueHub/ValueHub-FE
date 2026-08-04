@@ -62,7 +62,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
 }
 
 /** RSC/페이지용 — 미로그인 시 /signin 리다이렉트 */
-export async function requireAuth(callbackUrl = "/chat") {
+export async function requireAuth(callbackUrl = "/") {
   const user = await getAuthUser();
   if (!user) {
     redirect(`/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);

@@ -29,9 +29,8 @@ export const signupSchema = z
       ),
     passwordConfirm: z.string().min(1, "비밀번호 확인을 입력해 주세요."),
     email: z
-      .string()
-      .email("올바른 이메일 형식이 아닙니다.")
-      .max(50, "이메일은 50자 이하여야 합니다."),
+      .email({ error: "올바른 이메일 형식이 아닙니다." })
+      .max(50, { error: "이메일은 50자 이하여야 합니다." }),
     /** UI 유지용 — API 미전송 (PortOne prefill 예정) */
     name: z
       .string()

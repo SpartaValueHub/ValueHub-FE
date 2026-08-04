@@ -1,12 +1,14 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 
 import { Button } from "@/components/atoms/button";
-import { FormField } from "@/components/molecules/FormField";
+import { AuthDivider } from "@/components/molecules/AuthDivider";
+import { AuthHelperLinks } from "@/components/molecules/AuthHelperLinks";
+import { SigninInputField } from "@/components/molecules/SigninInputField";
+import { SocialLoginGroup } from "@/components/organisms/SocialLoginGroup";
 import { useSession } from "@/context/SessionContext";
 import {
   emptySigninValues,
@@ -22,7 +24,7 @@ export function SigninForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { refresh } = useSession();
-  const callbackUrl = searchParams.get("callbackUrl") || "/chat";
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
 
   const [isPending, startTransition] = useTransition();
   const [values, setValues] = useState<SigninInput>(emptySigninValues);
@@ -30,10 +32,7 @@ export function SigninForm() {
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [message, setMessage] = useState<string>();
 
-  const realtimeErrors = useMemo(
-    () => getSigninFieldErrors(values),
-    [values]
-  );
+  const realtimeErrors = useMemo(() => getSigninFieldErrors(values), [values]);
 
   const fieldErrors = useMemo(() => {
     const next: SigninFieldErrors = {};
@@ -80,53 +79,57 @@ export function SigninForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-      <FormField
-        label="아이디"
-        name="logInId"
-        type="text"
-        autoComplete="username"
-        placeholder="user01"
-        value={values.logInId}
-        onChange={(e) => updateField("logInId", e.target.value)}
-        error={fieldErrors.logInId?.[0]}
-        disabled={isPending}
-      />
-      <FormField
-        label="비밀번호"
-        name="password"
-        type="password"
-        autoComplete="current-password"
-        placeholder="비밀번호"
-        value={values.password}
-        onChange={(e) => updateField("password", e.target.value)}
-        error={fieldErrors.password?.[0]}
-        disabled={isPending}
-      />
+    <form
+      onSubmit={handleSubmit}
+      className="flex w-full flex-col gap-6"
+      noValidate
+    >
+      <div className="flex flex-col gap-5">
+        <SigninInputField
+          label="아이디"
+          name="logInId"
+          value={values.logInId}
+          autoComplete="username"
+          disabled={isPending}
+          error={fieldErrors.logInId?.[0]}
+          onChange={(value) => updateField("logInId", value)}
+        />
+        <SigninInputField
+          label="비밀번호"
+          name="password"
+          type="password"
+          value={values.password}
+          autoComplete="current-password"
+          disabled={isPending}
+          error={fieldErrors.password?.[0]}
+          onChange={(value) => updateField("password", value)}
+        />
+      </div>
+
+      <AuthHelperLinks />
 
       {isPending ? (
-        <p className="text-sm text-primary" role="status">
+        <p className="text-center text-sm text-vh-gold-500" role="status">
           로그인 중...
         </p>
       ) : message ? (
-        <p className="text-sm text-destructive" role="status">
+        <p className="text-center text-sm text-destructive" role="status">
           {message}
         </p>
       ) : null}
 
-      <Button type="submit" className="w-full" disabled={isPending}>
+      <Button
+        type="submit"
+        variant="brand"
+        className="h-12 w-full rounded-sm text-base"
+        disabled={isPending}
+      >
         {isPending ? "로그인 중..." : "로그인"}
       </Button>
 
-      <p className="text-center text-sm text-muted-foreground">
-        계정이 없으신가요?{" "}
-        <Link
-          href="/signup"
-          className="text-primary underline-offset-4 hover:underline"
-        >
-          회원가입
-        </Link>
-      </p>
+      <AuthDivider label="다른 방법으로 로그인" />
+
+      <SocialLoginGroup />
     </form>
   );
 }

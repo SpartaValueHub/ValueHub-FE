@@ -49,6 +49,11 @@ export function SessionContextProvider({
   };
 
   const logout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (error) {
+      console.error("Backend logout failed:", error);
+    }
     await signOut({ redirect: false });
     setIsAuthenticated(false);
     setUser(null);
@@ -57,7 +62,10 @@ export function SessionContextProvider({
   };
 
   useEffect(() => {
-    void refresh();
+    const timer = window.setTimeout(() => {
+      void refresh();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [refresh]);
 
   return (

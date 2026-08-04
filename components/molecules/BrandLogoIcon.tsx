@@ -6,7 +6,7 @@ type BrandLogoIconSize = "md" | "lg";
 
 const iconSizeClass: Record<BrandLogoIconSize, string> = {
   md: "size-14",
-  lg: "size-[3.75rem]",
+  lg: "size-16 md:size-[4.25rem]",
 };
 
 interface BrandLogoIconProps {

@@ -8,7 +8,7 @@ interface BrandMarkProps {
   subtitle?: string;
 }
 
-/** 메인 — 로고 가로 + 슬로건 (에셋 배치) */
+/** 메인 — 로고 가로 + 슬로건 (목업 배치) */
 export function BrandMark({
   className,
   heading = "Value hub",
@@ -16,10 +16,11 @@ export function BrandMark({
 }: BrandMarkProps) {
   return (
     <BrandLogo
-      className={cn(className)}
+      className={cn("pt-2 md:pt-4", className)}
       heading={heading}
       subtitle={subtitle}
       size="lg"
+      layout="inline"
     />
   );
 }

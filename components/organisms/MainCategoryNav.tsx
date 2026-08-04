@@ -10,18 +10,18 @@ interface MainCategoryNavProps {
   className?: string;
 }
 
-/** 메인 카테고리 — 1행 2개 / 구분선 / 2행 3개 (목업 동일) */
+/** 메인 카테고리 — 1행 2개 / 구분선 / 2행 3개, 행별 space-around */
 export function MainCategoryNav({ className }: MainCategoryNavProps) {
-  const [activeId, setActiveId] = useState("all");
+  const [activeId, setActiveId] = useState("luxury");
   const [primaryRow, secondaryRow] = MAIN_CATEGORY_ROWS;
 
   return (
     <nav
       aria-label="상품 카테고리"
-      className={cn("flex w-full max-w-4xl flex-col items-center", className)}
+      className={cn("w-full max-w-4xl", className)}
     >
-      <ul className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3 md:gap-x-20">
-        {primaryRow.map((category) => (
+      <ul className="flex w-full justify-around">
+        {primaryRow.items.map((category) => (
           <li key={category.id}>
             <CategoryNavItem
               title={category.title}
@@ -33,13 +33,10 @@ export function MainCategoryNav({ className }: MainCategoryNavProps) {
         ))}
       </ul>
 
-      <div
-        aria-hidden
-        className="my-5 h-px w-full max-w-3xl bg-white/15 md:my-6"
-      />
+      <div aria-hidden className="my-5 h-px w-full bg-vh-gray-100/20 md:my-6" />
 
-      <ul className="flex w-full max-w-3xl flex-wrap items-center justify-center gap-x-6 gap-y-3 md:justify-between md:gap-x-8">
-        {secondaryRow.map((category) => (
+      <ul className="flex w-full justify-around">
+        {secondaryRow.items.map((category) => (
           <li key={category.id}>
             <CategoryNavItem
               title={category.title}

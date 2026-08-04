@@ -9,8 +9,8 @@ export function Header() {
   const { isAuthenticated, isLoading, user, logout } = useSession();
 
   return (
-    <header className="w-full">
-      <nav className="mx-auto flex max-w-5xl items-center justify-end gap-2 px-4 py-5 md:gap-3 md:py-6">
+    <header className="w-full shrink-0">
+      <nav className="flex w-full items-center justify-end gap-2 px-6 py-5 md:gap-3 md:px-10 md:py-6">
         {isLoading ? (
           <span className="text-sm text-vh-gray-500">...</span>
         ) : isAuthenticated ? (
@@ -34,7 +34,7 @@ export function Header() {
               <Button
                 variant="brand"
                 size="sm"
-                className="min-w-[5.5rem] rounded-sm px-4"
+                className="min-w-[5.5rem] rounded-md border-vh-gray-100 px-5 py-1.5 text-vh-gray-100 hover:bg-transparent"
               >
                 Sign up
               </Button>
@@ -43,7 +43,7 @@ export function Header() {
               <Button
                 variant="brand"
                 size="sm"
-                className="min-w-[5.5rem] rounded-sm px-4"
+                className="min-w-[5.5rem] rounded-md border-vh-gray-100 px-5 py-1.5 text-vh-gray-100 hover:bg-transparent"
               >
                 Log in
               </Button>

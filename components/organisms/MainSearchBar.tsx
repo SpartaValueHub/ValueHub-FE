@@ -18,7 +18,7 @@ export function MainSearchBar({ className }: MainSearchBarProps) {
     <form
       role="search"
       className={cn(
-        "flex w-full max-w-3xl items-center rounded-full border border-vh-gray-100 px-4 py-2",
+        "flex w-full max-w-xl items-center rounded-full border border-vh-gray-100 px-4 py-2.5 md:max-w-2xl md:px-5 md:py-3",
         className
       )}
       onSubmit={(event) => event.preventDefault()}

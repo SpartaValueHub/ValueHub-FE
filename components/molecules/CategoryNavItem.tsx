@@ -22,22 +22,31 @@ export function CategoryNavItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "group flex items-baseline gap-2 px-2 py-1 text-left transition-colors",
+        "group inline-flex shrink-0 px-1 py-2 transition-colors",
         className
       )}
     >
       <span
         className={cn(
-          "font-serif text-xl md:text-2xl",
+          "inline-flex items-baseline gap-1.5 border-b pb-0.5 md:gap-2",
           active
-            ? "border-b border-vh-gold-500 pb-0.5 text-vh-gold-500"
-            : "text-vh-gray-100 group-hover:text-vh-gold-300"
+            ? "border-vh-brand-gold"
+            : "border-vh-gray-500/50 group-hover:border-vh-brand-gold"
         )}
       >
-        {title}
-      </span>
-      <span className="font-sans text-xs text-vh-gray-500 md:text-sm">
-        {description}
+        <span
+          className={cn(
+            "font-serif text-xl leading-none md:text-2xl",
+            active
+              ? "text-vh-brand-gold"
+              : "text-vh-gray-100 group-hover:text-vh-brand-gold"
+          )}
+        >
+          {title}
+        </span>
+        <span className="font-sans text-xs leading-none text-vh-gray-500 md:text-sm">
+          {description}
+        </span>
       </span>
     </button>
   );

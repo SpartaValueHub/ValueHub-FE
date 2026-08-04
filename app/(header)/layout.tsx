@@ -6,9 +6,9 @@ export default function HomeLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
+    <div className="flex min-h-screen flex-1 flex-col bg-vh-surface-charcoal">
       <Header />
       {children}
-    </>
+    </div>
   );
 }

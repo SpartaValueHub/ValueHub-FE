@@ -10,19 +10,19 @@ export function MainTemplate({ className }: MainTemplateProps) {
   return (
     <main
       className={cn(
-        "mx-auto flex w-full max-w-5xl flex-1 flex-col items-center gap-7 px-4 py-6 md:gap-9 md:py-10",
+        "mx-auto flex w-full max-w-5xl flex-1 flex-col items-center gap-8 px-4 pb-10 pt-4 md:gap-12 md:pb-14 md:pt-6",
         className
       )}
     >
-      <BrandMark className="gap-3 md:gap-4" />
+      <BrandMark />
 
-      <MainSearchBar />
+      <MainSearchBar className="mt-2 w-full" />
 
-      <MainCategoryNav className="mt-2" />
+      <MainCategoryNav className="mt-2 w-full" />
 
       <div
         aria-label="광고 배너"
-        className="mt-2 flex h-16 w-full max-w-xl items-center justify-center rounded-sm bg-vh-gray-300 text-sm text-vh-gray-700 md:h-20 md:max-w-2xl"
+        className="mt-auto flex h-28 w-full max-w-3xl items-center justify-center rounded-sm bg-vh-gray-300 text-base text-vh-gray-700 md:h-36 md:max-w-4xl md:text-lg"
       >
         광고배너
       </div>

@@ -36,6 +36,7 @@ import {
   type SignupInput,
 } from "@/types/auth/signup";
 import type { ApiGender } from "@/types/auth/api";
+import { v4 as uuidv4 } from "uuid";
 
 const initialState: SignupActionState = { ok: false };
 
@@ -126,7 +127,7 @@ export function SignupForm() {
       try {
         const { requestIdentityVerification } =
           await import("@portone/browser-sdk/v2");
-        const identityVerificationId = `identity-verification-${crypto.randomUUID()}`;
+        const identityVerificationId = `identity-verification-${uuidv4()}`;
         const response = await requestIdentityVerification({
           storeId,
           channelKey,

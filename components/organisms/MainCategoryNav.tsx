@@ -33,7 +33,10 @@ export function MainCategoryNav({ className }: MainCategoryNavProps) {
         ))}
       </ul>
 
-      <div aria-hidden className="my-5 h-px w-full bg-vh-gray-100/20 md:my-6" />
+      <div
+        aria-hidden
+        className="my-5 h-px w-full bg-gradient-to-r from-vh-gray-100/15 via-vh-brand-gold/35 to-vh-gray-100/15 md:my-6"
+      />
 
       <ul className="flex w-full justify-around">
         {secondaryRow.items.map((category) => (
@@ -47,6 +50,8 @@ export function MainCategoryNav({ className }: MainCategoryNavProps) {
           </li>
         ))}
       </ul>
+
+      <div aria-hidden className="mt-5 h-px w-full bg-vh-gray-100/20 md:mt-6" />
     </nav>
   );
 }

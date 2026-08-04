@@ -32,18 +32,18 @@ export function Header() {
           <>
             <Link href="/signup">
               <Button
-                variant="brand"
+                variant="ghost"
                 size="sm"
-                className="min-w-[5.5rem] rounded-md border-vh-gray-100 px-5 py-1.5 text-vh-gray-100 hover:bg-transparent"
+                className="min-w-[5.5rem] rounded-md border border-vh-gray-100 bg-transparent px-5 py-1.5 text-vh-gray-100 hover:border-vh-gray-100 hover:bg-transparent hover:text-vh-gray-100"
               >
                 Sign up
               </Button>
             </Link>
             <Link href="/signin">
               <Button
-                variant="brand"
+                variant="ghost"
                 size="sm"
-                className="min-w-[5.5rem] rounded-md border-vh-gray-100 px-5 py-1.5 text-vh-gray-100 hover:bg-transparent"
+                className="min-w-[5.5rem] rounded-md border border-vh-gray-100 bg-transparent px-5 py-1.5 text-vh-gray-100 hover:border-vh-gray-100 hover:bg-transparent hover:text-vh-gray-100"
               >
                 Log in
               </Button>

@@ -28,7 +28,7 @@ export function CategoryNavItem({
     >
       <span
         className={cn(
-          "inline-flex items-baseline gap-1.5 border-b pb-0.5 md:gap-2",
+          "inline-flex items-baseline gap-1.5 whitespace-nowrap border-b pb-0.5 md:gap-2",
           active
             ? "border-vh-brand-gold"
             : "border-vh-gray-500/50 group-hover:border-vh-brand-gold"
@@ -44,7 +44,12 @@ export function CategoryNavItem({
         >
           {title}
         </span>
-        <span className="font-sans text-xs leading-none text-vh-gray-500 md:text-sm">
+        <span
+          className={cn(
+            "font-sans text-xs leading-none md:text-sm",
+            active ? "text-vh-brand-gold/80" : "text-vh-gray-100/70"
+          )}
+        >
           {description}
         </span>
       </span>

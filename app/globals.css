@@ -110,7 +110,7 @@
   --vh-purple-100: #eef1f8;
 
   /* Main page surface */
-  --vh-surface-charcoal: #222222;
+  --vh-surface-charcoal: #1e1e1e;
 
   /* Grayscale */
   --vh-gray-900: #2c2c2c;
@@ -156,7 +156,7 @@
 }
 
 .dark {
-  --background: #222222;
+  --background: #1e1e1e;
   --foreground: var(--vh-gray-100);
   --card: var(--vh-gray-900);
   --card-foreground: var(--vh-gray-100);

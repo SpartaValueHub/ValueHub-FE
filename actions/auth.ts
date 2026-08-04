@@ -7,7 +7,11 @@
 import { redirect } from "next/navigation";
 
 import { ApiError } from "@/lib/api/client";
-import { signupService } from "@/services/auth.service";
+import {
+  checkEmailAvailabilityService,
+  checkLoginIdAvailabilityService,
+  signupService,
+} from "@/services/auth.service";
 import {
   signupSchema,
   type SignupFieldErrors,
@@ -82,4 +86,56 @@ export async function signupAction(
   }
 
   redirect("/signin");
+}
+
+export async function checkLoginIdAvailabilityAction(loginId: string) {
+  const trimmed = loginId.trim();
+  if (!trimmed) {
+    return { ok: false, message: "아이디를 입력해 주세요." };
+  }
+
+  try {
+    const available = await checkLoginIdAvailabilityService(trimmed);
+    return {
+      ok: true,
+      available,
+      message: available
+        ? "사용 가능한 아이디입니다."
+        : "이미 사용 중인 아이디입니다.",
+    };
+  } catch (e) {
+    const message =
+      e instanceof ApiError
+        ? e.message
+        : e instanceof Error
+          ? e.message
+          : "아이디 중복 확인에 실패했습니다.";
+    return { ok: false, message };
+  }
+}
+
+export async function checkEmailAvailabilityAction(email: string) {
+  const trimmed = email.trim();
+  if (!trimmed) {
+    return { ok: false, message: "이메일을 입력해 주세요." };
+  }
+
+  try {
+    const available = await checkEmailAvailabilityService(trimmed);
+    return {
+      ok: true,
+      available,
+      message: available
+        ? "사용 가능한 이메일입니다."
+        : "이미 사용 중인 이메일입니다.",
+    };
+  } catch (e) {
+    const message =
+      e instanceof ApiError
+        ? e.message
+        : e instanceof Error
+          ? e.message
+          : "이메일 중복 확인에 실패했습니다.";
+    return { ok: false, message };
+  }
 }

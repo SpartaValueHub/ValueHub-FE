@@ -53,6 +53,8 @@ export interface ApiIdentityVerificationConfirmRequest {
   purpose: VerificationPurpose;
 }
 
+export type ApiGender = "MALE" | "FEMALE" | "OTHER";
+
 export interface ApiIdentityVerificationResponse {
   requestToken: string;
   purpose: VerificationPurpose;
@@ -60,6 +62,7 @@ export interface ApiIdentityVerificationResponse {
   memberName?: string;
   phoneNumber?: string;
   birthdayDate?: string;
+  gender?: ApiGender;
 }
 
 export interface ApiErrorResponse {

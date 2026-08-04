@@ -1,27 +1,13 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/atoms/card";
-import { Section } from "@/components/atoms/Section";
+import { SigninAuthHeader } from "@/components/molecules/SigninAuthHeader";
 import { SigninForm } from "@/components/organisms/SigninForm";
 
 export function SigninTemplate() {
   return (
-    <Section className="flex flex-1 items-center justify-center">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>로그인</CardTitle>
-          <CardDescription>
-            로그인 후 채팅 기능을 이용할 수 있습니다.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <SigninForm />
-        </CardContent>
-      </Card>
-    </Section>
+    <main className="flex flex-1 flex-col items-center justify-center px-4 py-12">
+      <div className="flex w-full max-w-md flex-col gap-10">
+        <SigninAuthHeader />
+        <SigninForm />
+      </div>
+    </main>
   );
 }

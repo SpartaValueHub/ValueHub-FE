@@ -6,47 +6,50 @@ import { Button } from "@/components/atoms/button";
 import { useSession } from "@/context/SessionContext";
 
 export function Header() {
-  const { isAuthenticated, isLoading, user, login, logout } = useSession();
+  const { isAuthenticated, isLoading, user, logout } = useSession();
 
   return (
-    <header className="border-b">
-      <nav className="container mx-auto flex items-center justify-between gap-4 px-4 py-3">
-        <ul className="flex flex-wrap items-center gap-4 text-sm">
-          <li>
-            <Link href="/">Home</Link>
-          </li>
-          <li>
-            <Link href="/feeds">Feeds</Link>
-          </li>
-          <li>
-            <Link href="/chat">Chat</Link>
-          </li>
-          <li>
-            <Link href="/signup">Signup</Link>
-          </li>
-          <li>
-            <Link href="/signin">Signin</Link>
-          </li>
-        </ul>
-
-        <div className="flex items-center gap-2 text-sm">
-          {isLoading ? (
-            <span className="text-muted-foreground">...</span>
-          ) : isAuthenticated ? (
-            <>
-              <span className="text-muted-foreground">
-                {user?.name || "회원"}
-              </span>
-              <Button type="button" variant="outline" size="sm" onClick={logout}>
-                로그아웃
-              </Button>
-            </>
-          ) : (
-            <Button type="button" size="sm" onClick={login}>
-              로그인
+    <header className="w-full">
+      <nav className="mx-auto flex max-w-5xl items-center justify-end gap-2 px-4 py-5 md:gap-3 md:py-6">
+        {isLoading ? (
+          <span className="text-sm text-vh-gray-500">...</span>
+        ) : isAuthenticated ? (
+          <>
+            <span className="text-sm text-vh-gray-100">
+              {user?.name || "회원"}
+            </span>
+            <Button
+              type="button"
+              variant="brand"
+              size="sm"
+              className="rounded-sm px-5"
+              onClick={logout}
+            >
+              Log out
             </Button>
-          )}
-        </div>
+          </>
+        ) : (
+          <>
+            <Link href="/signup">
+              <Button
+                variant="brand"
+                size="sm"
+                className="min-w-[5.5rem] rounded-sm px-4"
+              >
+                Sign up
+              </Button>
+            </Link>
+            <Link href="/signin">
+              <Button
+                variant="brand"
+                size="sm"
+                className="min-w-[5.5rem] rounded-sm px-4"
+              >
+                Log in
+              </Button>
+            </Link>
+          </>
+        )}
       </nav>
     </header>
   );

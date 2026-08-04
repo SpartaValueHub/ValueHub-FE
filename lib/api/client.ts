@@ -1,9 +1,7 @@
 /**
- * Transaction / data layer — sole HTTP client for `API_URL`.
- * Do not call fetch(API_URL) outside this module tree (lib/api/*).
- * UI/Client → actions → services → lib/api
+ * Transaction / data layer — API_URL(Gateway) 호출은 이 모듈 트리에서만.
+ * 클라이언트 번들에서 getApiUrl() 호출 시 throw — Server Action 경유 강제.
  */
-
 export class ApiError extends Error {
   status: number;
 
@@ -107,14 +105,17 @@ export async function apiFetch<T>(
   }
 
   if (!res.ok) {
-    const body = json as { message?: string; error?: string } | null;
-    throw new ApiError(
-      res.status,
+    const body = json as {
+      message?: string;
+      error?: string;
+      code?: string;
+    } | null;
+    const message =
       body?.message ||
-        body?.error ||
-        text ||
-        `API 오류 (${res.status} ${res.statusText})`
-    );
+      body?.error ||
+      text ||
+      `API 오류 (${res.status} ${res.statusText})`;
+    throw new ApiError(res.status, message);
   }
 
   return json as T;

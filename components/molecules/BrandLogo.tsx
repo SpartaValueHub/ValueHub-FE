@@ -17,7 +17,7 @@ interface BrandLogoProps {
 
 const headingSizeClass: Record<BrandLogoSize, string> = {
   md: "text-vh-xl md:text-vh-2xl",
-  lg: "text-[2rem] md:text-[2.25rem]",
+  lg: "text-[2.25rem] md:text-[2.5rem]",
 };
 
 /** Value Hub 로고 — PNG 에셋 + 타이틀 (중앙 정렬) */
@@ -30,7 +30,7 @@ export function BrandLogo({
   layout = "stacked",
 }: BrandLogoProps) {
   const headingClassName = cn(
-    "text-vh-brand-gold font-normal normal-case tracking-tight",
+    "!font-normal normal-case tracking-tight text-vh-brand-gold",
     headingSizeClass[size]
   );
 
@@ -42,7 +42,7 @@ export function BrandLogo({
           className
         )}
       >
-        <div className="flex items-center justify-center gap-3 md:gap-4">
+        <div className="flex flex-nowrap items-center justify-center gap-3 md:gap-4">
           <BrandLogoIcon size={size} />
           <BrandHeading size="2xl" className={headingClassName}>
             {heading}
@@ -52,7 +52,7 @@ export function BrandLogo({
         {showSubtitle && subtitle ? (
           <BodyText
             size="sm"
-            className="text-vh-brand-gold font-sans font-normal md:text-vh-base"
+            className="font-sans font-normal text-vh-brand-gold/90 md:text-vh-base"
           >
             {subtitle}
           </BodyText>

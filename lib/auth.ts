@@ -3,6 +3,10 @@ import CredentialsProvider from "next-auth/providers/credentials";
 
 import { signInService } from "@/services/auth.service";
 
+/**
+ * NextAuth JWT 세션 — access/refresh token·authUuid는 서버(session/JWT)에만 보관.
+ * 클라이언트 SessionContext는 /api/auth/status 로 name 만 노출.
+ */
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -24,12 +28,13 @@ export const authOptions: NextAuthOptions = {
             password: credentials.password,
           });
 
+          // auth-service 응답 authUuid → NextAuth User.id / session.uuid
           return {
-            id: result.userId,
-            uuid: result.userId,
+            id: result.authUuid,
+            uuid: result.authUuid,
             logInId: result.logInId || credentials.logInId,
-            name: result.name,
-            email: result.email ?? result.logInId ?? credentials.logInId,
+            name: result.memberName || result.logInId,
+            email: result.email ?? result.logInId,
             accessToken: result.accessToken,
             refreshToken: result.refreshToken,
           };

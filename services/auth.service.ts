@@ -1,71 +1,55 @@
-import { registerUser, signInUser } from "@/lib/api/auth";
+/**
+ * auth-service 오케스트레이션.
+ * UI/actions → service → lib/api (3-layer). nickname은 member-service 예정.
+ */
+import {
+  checkEmailAvailability,
+  checkLoginIdAvailability,
+  logoutUser,
+  refreshTokens,
+  registerUser,
+  signInUser,
+} from "@/lib/api/auth";
 import type { ApiSignInResponse, ApiSignupResponse } from "@/types/auth/api";
 import type { SigninInput } from "@/types/auth/signin";
-import type { SignupInput } from "@/types/auth/signup";
+import type { SignupApiInput } from "@/types/auth/signup";
 
 export async function signupService(
-  input: Omit<SignupInput, "passwordConfirm">
+  input: SignupApiInput
 ): Promise<ApiSignupResponse> {
+  // auth-service sign-up: requestToken + credentials만 전송 (실명·전화는 PortOne·서버 조회)
   return registerUser({
+    requestToken: input.requestToken,
     logInId: input.logInId,
     password: input.password,
     email: input.email,
-    name: input.name,
-    phone: input.phone,
   });
 }
 
-function normalizeSignInResponse(raw: unknown): ApiSignInResponse {
-  const body = raw as Record<string, unknown> | null;
-  const data =
-    body && typeof body === "object" && "data" in body
-      ? (body.data as Record<string, unknown>)
-      : body;
-
-  if (!data || typeof data !== "object") {
-    throw new Error("로그인 응답이 올바르지 않습니다.");
-  }
-
-  const accessToken = String(data.accessToken ?? "");
-  const userId = String(data.userId ?? data.uuid ?? "");
-  const logInId = String(data.logInId ?? data.loginId ?? "");
-  const name = String(data.name ?? logInId);
-
-  if (!accessToken || !userId) {
-    throw new Error("로그인 토큰 또는 사용자 정보가 없습니다.");
-  }
-
-  return {
-    accessToken,
-    refreshToken:
-      data.refreshToken != null ? String(data.refreshToken) : undefined,
-    userId,
-    logInId,
-    name,
-    email: data.email != null ? String(data.email) : undefined,
-  };
-}
-
-/** POST /api/v1/auth/sign-in */
 export async function signInService(
   input: SigninInput
 ): Promise<ApiSignInResponse> {
-  const raw = await signInUser({
+  return signInUser({
     logInId: input.logInId,
     password: input.password,
   });
+}
 
-  console.log(
-    "[sign-in] raw response:\n",
-    JSON.stringify(raw, null, 2)
-  );
+export async function refreshSessionService(refreshToken: string) {
+  return refreshTokens({ refreshToken });
+}
 
-  const normalized = normalizeSignInResponse(raw);
+export async function logoutService(accessToken: string, refreshToken: string) {
+  // logout은 Gateway JWT 검증 필요 — Bearer accessToken 전달
+  await logoutUser({ accessToken, refreshToken }, accessToken);
+}
 
-  console.log(
-    "[sign-in] normalized response:\n",
-    JSON.stringify(normalized, null, 2)
-  );
+export async function checkLoginIdAvailabilityService(loginId: string) {
+  const result = await checkLoginIdAvailability(loginId);
+  return result.available;
+}
 
-  return normalized;
+export async function checkEmailAvailabilityService(email: string) {
+  const result = await checkEmailAvailability(email);
+  return result.available;
 }

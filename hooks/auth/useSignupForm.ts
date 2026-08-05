@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useTransition } from "react";
 import { useForm } from "react-hook-form";
 
 import { signupAction, type SignupActionState } from "@/actions/auth";
@@ -19,6 +19,7 @@ export function useSignupForm() {
     signupAction,
     initialState
   );
+  const [, startTransition] = useTransition();
 
   const form = useForm<SignupFormInput>({
     resolver: zodResolver(signupFormSchema),
@@ -77,7 +78,9 @@ export function useSignupForm() {
     formData.set("email", data.email);
     formData.set("name", data.name);
     formData.set("phone", data.phone);
-    formAction(formData);
+    startTransition(() => {
+      formAction(formData);
+    });
   }
 
   return {

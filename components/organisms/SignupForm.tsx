@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Controller } from "react-hook-form";
+import { Controller, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/atoms/button";
 import { Spinner } from "@/components/atoms/spinner";
@@ -35,6 +35,9 @@ export function SignupForm() {
     state,
     isPending,
   } = useSignupForm();
+
+  const terms = useWatch({ control, name: "terms" });
+  const requiredTermsAccepted = Boolean(terms?.service && terms?.privacy);
 
   const {
     loginIdCheck,
@@ -222,8 +225,9 @@ export function SignupForm() {
         />
         {!getFieldError("password") ? (
           <p className="-mt-3 text-xs text-vh-gray-500">
-            영문 대소문자, 숫자, 특수문자(!@#$%^&*()-+_=)를 각각 1자 이상 포함한
-            8~20자
+            비밀번호는 8~20자, 영문
+            대문자·소문자·숫자·특수문자(!@#$%^&*()-+_=)를 각각 1자 이상 포함해야
+            합니다.
           </p>
         ) : null}
 
@@ -332,7 +336,7 @@ export function SignupForm() {
         type="submit"
         variant="brand"
         className="h-12 w-full rounded-sm text-base"
-        disabled={isPending}
+        disabled={isPending || !requiredTermsAccepted}
         aria-busy={isPending}
       >
         {isPending ? <Spinner size="sm" label="가입 중" inline /> : "회원가입"}

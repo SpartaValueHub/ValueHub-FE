@@ -61,6 +61,29 @@ function CheckboxRow({
   );
 }
 
+function computeAllChecked(terms: TermsState): boolean {
+  return (
+    terms.service &&
+    terms.privacy &&
+    terms.marketing &&
+    terms.marketingEmail &&
+    terms.marketingSms
+  );
+}
+
+function syncTermsState(terms: TermsState): TermsState {
+  const next = { ...terms };
+
+  if (next.marketingEmail || next.marketingSms) {
+    next.marketing = true;
+  } else {
+    next.marketing = false;
+  }
+
+  next.all = computeAllChecked(next);
+  return next;
+}
+
 /** 약관 동의 — UI 검증 (약관 API 미연동) */
 export function TermsAgreementSection({
   value,
@@ -68,32 +91,37 @@ export function TermsAgreementSection({
   error,
   className,
 }: TermsAgreementSectionProps) {
+  const allChecked = computeAllChecked(value);
+
   function toggleAll(checked: boolean) {
-    onChange({
-      all: checked,
-      service: checked,
-      privacy: checked,
-      marketing: checked,
-      marketingEmail: checked,
-      marketingSms: checked,
-    });
+    onChange(
+      syncTermsState({
+        all: checked,
+        service: checked,
+        privacy: checked,
+        marketing: checked,
+        marketingEmail: checked,
+        marketingSms: checked,
+      })
+    );
   }
 
   function updateField<K extends keyof TermsState>(key: K, checked: boolean) {
-    const next = { ...value, [key]: checked };
-    next.all =
-      next.service &&
-      next.privacy &&
-      next.marketing &&
-      next.marketingEmail &&
-      next.marketingSms;
-    onChange(next);
+    onChange(
+      syncTermsState({
+        ...value,
+        [key]: checked,
+        ...(key === "marketing" && !checked
+          ? { marketingEmail: false, marketingSms: false }
+          : {}),
+      })
+    );
   }
 
   return (
     <div className={cn("flex flex-col gap-1", className)}>
       <CheckboxRow
-        checked={value.all}
+        checked={allChecked}
         onChange={toggleAll}
         label="약관 전체동의"
       />

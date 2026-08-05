@@ -29,12 +29,12 @@ function Spinner({
 
   const content = (
     <>
+      {label ? <span>{label}</span> : null}
       <Loader2
         className={cn("animate-spin text-vh-gold-500", sizeClasses[size])}
         aria-hidden={!!label || inline}
         aria-label={!label && inline ? accessibleLabel : undefined}
       />
-      {label ? <span>{label}</span> : null}
     </>
   );
 

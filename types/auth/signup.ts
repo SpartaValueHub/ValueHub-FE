@@ -24,7 +24,7 @@ const signupFieldsSchema = z.object({
     .string()
     .regex(
       PASSWORD_PATTERN,
-      "비밀번호는 8~20자이며 영문 대소문자, 숫자, 특수문자(!@#$%^&*()-+_=)를 각각 1자 이상 포함해야 합니다."
+      "비밀번호는 8~20자, 영문 대문자·소문자·숫자·특수문자(!@#$%^&*()-+_=)를 각각 1자 이상 포함해야 합니다."
     ),
   passwordConfirm: z.string().min(1, "비밀번호 확인을 입력해 주세요."),
   email: z

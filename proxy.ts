@@ -1,14 +1,14 @@
-import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 /**
  * Auth.js 세션 기반 라우트 보호 — matcher 확장 가능.
- * HttpOnly JWT 쿠키는 Gateway가 검증; middleware는 Auth.js 세션만 확인.
+ * HttpOnly JWT 쿠키는 Gateway가 검증하고, Proxy는 Auth.js 세션만 확인한다.
  */
 const PUBLIC_PATHS = ["/signin", "/signup"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (PUBLIC_PATHS.some((path) => pathname.startsWith(path))) {

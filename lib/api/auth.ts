@@ -2,8 +2,6 @@ import { apiFetch } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import type {
   ApiAvailabilityResponse,
-  ApiLogoutRequest,
-  ApiRefreshRequest,
   ApiSignInRequest,
   ApiSignInResponse,
   ApiSignupRequest,
@@ -17,6 +15,7 @@ export function registerUser(body: ApiSignupRequest) {
     method: "POST",
     body,
     cache: { noStore: true },
+    skipSessionRecovery: true,
   });
 }
 
@@ -25,22 +24,21 @@ export function signInUser(body: ApiSignInRequest) {
     method: "POST",
     body,
     cache: { noStore: true },
+    skipSessionRecovery: true,
   });
 }
 
-export function refreshTokens(body: ApiRefreshRequest) {
+export function refreshTokens() {
   return apiFetch<ApiSignInResponse>(API_ENDPOINTS.auth.refresh, {
     method: "POST",
-    body,
     cache: { noStore: true },
+    skipSessionRecovery: true,
   });
 }
 
-export function logoutUser(body: ApiLogoutRequest, accessToken: string) {
+export function logoutUser() {
   return apiFetch<void>(API_ENDPOINTS.auth.logout, {
     method: "POST",
-    body,
-    accessToken,
     cache: { noStore: true },
   });
 }
@@ -48,13 +46,13 @@ export function logoutUser(body: ApiLogoutRequest, accessToken: string) {
 export function checkLoginIdAvailability(loginId: string) {
   return apiFetch<ApiAvailabilityResponse>(
     API_ENDPOINTS.auth.checkLoginId(loginId),
-    { cache: { noStore: true } }
+    { cache: { noStore: true }, skipSessionRecovery: true }
   );
 }
 
 export function checkEmailAvailability(email: string) {
   return apiFetch<ApiAvailabilityResponse>(
     API_ENDPOINTS.auth.checkEmail(email),
-    { cache: { noStore: true } }
+    { cache: { noStore: true }, skipSessionRecovery: true }
   );
 }

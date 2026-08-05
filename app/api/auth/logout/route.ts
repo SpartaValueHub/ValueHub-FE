@@ -1,24 +1,19 @@
-import { ApiError } from "@/lib/api/client";
+import { clearAuthCookies } from "@/lib/auth/cookie-store";
 import { getAuthUser } from "@/lib/session";
 import { logoutService } from "@/services/auth.service";
 
-/** auth-service logout — refresh 블랙리스트 등록 후 NextAuth signOut과 함께 호출 */
+/** auth-service logout — Redis·blacklist 처리 후 Auth.js·HttpOnly Cookie 정리 */
 export async function POST() {
   const user = await getAuthUser();
-  if (!user?.accessToken || !user.refreshToken) {
-    return Response.json({ ok: true });
-  }
 
   try {
-    await logoutService(user.accessToken, user.refreshToken);
-    return Response.json({ ok: true });
+    if (user) {
+      await logoutService();
+    }
   } catch (error) {
-    const message =
-      error instanceof ApiError
-        ? error.message
-        : error instanceof Error
-          ? error.message
-          : "로그아웃에 실패했습니다.";
-    return Response.json({ ok: false, message }, { status: 502 });
+    console.error("Backend logout failed:", error);
   }
+
+  await clearAuthCookies();
+  return Response.json({ ok: true });
 }

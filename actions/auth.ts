@@ -29,7 +29,6 @@ export async function signupAction(
   _prevState: SignupActionState,
   formData: FormData
 ): Promise<SignupActionState> {
-  // PortOne confirm 후 SignupForm hidden field 로 전달 예정
   const requestToken = String(formData.get("requestToken") ?? "").trim();
 
   const values = {

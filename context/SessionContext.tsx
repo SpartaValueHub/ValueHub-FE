@@ -1,10 +1,11 @@
 "use client";
 
-import React, { createContext, useContext } from "react";
+import { createContext, useContext } from "react";
 
-/** 클라이언트 노출용 — 이름만 (uuid/logInId 미포함) */
+/** 클라이언트 노출용 — nickname·role (memberUuid 미포함) */
 export type SessionUserSummary = {
-  name: string;
+  nickname: string;
+  role: string;
 };
 
 interface SessionContextType {
@@ -18,10 +19,12 @@ interface SessionContextType {
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
-export const useSession = (): SessionContextType => {
+export const useAppSession = (): SessionContextType => {
   const context = useContext(SessionContext);
   if (context === undefined) {
-    throw new Error("useSession must be used within a SessionContextProvider");
+    throw new Error(
+      "useAppSession must be used within a SessionContextProvider"
+    );
   }
   return context;
 };

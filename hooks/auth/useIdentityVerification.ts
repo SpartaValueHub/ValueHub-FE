@@ -44,6 +44,7 @@ export function useIdentityVerification(
           storeId,
           channelKey,
           identityVerificationId,
+          popup: { center: true },
         });
 
         if (!response) {

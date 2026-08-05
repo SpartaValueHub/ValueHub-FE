@@ -2,7 +2,8 @@ import { apiFetch } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import type {
   ApiIdentityVerificationConfirmRequest,
-  ApiIdentityVerificationResponse,
+  ApiIdentityVerificationConfirmResponse,
+  ApiIdentityVerificationStatusResponse,
 } from "@/types/auth/api";
 
 /** PortOne 본인인증 — confirm 후 requestToken을 sign-up에 사용 */
@@ -10,7 +11,7 @@ import type {
 export function confirmIdentityVerification(
   body: ApiIdentityVerificationConfirmRequest
 ) {
-  return apiFetch<ApiIdentityVerificationResponse>(
+  return apiFetch<ApiIdentityVerificationConfirmResponse>(
     API_ENDPOINTS.identityVerification.confirm,
     {
       method: "POST",
@@ -21,8 +22,12 @@ export function confirmIdentityVerification(
 }
 
 export function getIdentityVerificationStatus(requestToken: string) {
-  return apiFetch<ApiIdentityVerificationResponse>(
-    API_ENDPOINTS.identityVerification.status(requestToken),
-    { cache: { noStore: true } }
+  return apiFetch<ApiIdentityVerificationStatusResponse>(
+    API_ENDPOINTS.identityVerification.status,
+    {
+      method: "POST",
+      body: { requestToken },
+      cache: { noStore: true },
+    }
   );
 }

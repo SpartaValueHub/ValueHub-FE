@@ -15,7 +15,6 @@ export const API_ENDPOINTS = {
   },
   identityVerification: {
     confirm: "/api/v1/identity-verifications/confirm",
-    status: (requestToken: string) =>
-      `/api/v1/identity-verifications/${encodeURIComponent(requestToken)}`,
+    status: "/api/v1/identity-verifications/status",
   },
 } as const;

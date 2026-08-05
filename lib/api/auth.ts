@@ -2,8 +2,6 @@ import { apiFetch } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import type {
   ApiAvailabilityResponse,
-  ApiSignInRequest,
-  ApiSignInResponse,
   ApiSignupRequest,
   ApiSignupResponse,
 } from "@/types/auth/api";
@@ -19,27 +17,11 @@ export function registerUser(body: ApiSignupRequest) {
   });
 }
 
-export function signInUser(body: ApiSignInRequest) {
-  return apiFetch<ApiSignInResponse>(API_ENDPOINTS.auth.signIn, {
-    method: "POST",
-    body,
-    cache: { noStore: true },
-    skipSessionRecovery: true,
-  });
-}
-
-export function refreshTokens() {
-  return apiFetch<ApiSignInResponse>(API_ENDPOINTS.auth.refresh, {
-    method: "POST",
-    cache: { noStore: true },
-    skipSessionRecovery: true,
-  });
-}
-
 export function logoutUser() {
   return apiFetch<void>(API_ENDPOINTS.auth.logout, {
     method: "POST",
     cache: { noStore: true },
+    trustedOrigin: true,
   });
 }
 

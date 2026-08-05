@@ -18,11 +18,6 @@ export interface ApiSignupResponse {
   birthdayDate: string;
 }
 
-export interface ApiSignInRequest {
-  logInId: string;
-  password: string;
-}
-
 export interface ApiSignInResponse {
   memberUuid: string;
   nickname: string;
@@ -43,7 +38,7 @@ export interface ApiIdentityVerificationConfirmRequest {
 
 export type ApiGender = "MALE" | "FEMALE" | "OTHER";
 
-export interface ApiIdentityVerificationResponse {
+export interface ApiIdentityVerificationConfirmResponse {
   requestToken: string;
   purpose: VerificationPurpose;
   status: string;
@@ -53,10 +48,16 @@ export interface ApiIdentityVerificationResponse {
   gender?: ApiGender;
 }
 
+export interface ApiIdentityVerificationStatusResponse {
+  purpose: VerificationPurpose;
+  status: string;
+}
+
 export interface ApiErrorResponse {
   timestamp: string;
   status: number;
   code: string;
   message: string;
   path: string;
+  retryAfterSeconds?: number;
 }

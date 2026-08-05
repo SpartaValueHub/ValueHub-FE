@@ -49,6 +49,8 @@ export async function buildAuthCookieHeader(): Promise<string | undefined> {
 
 export async function clearAuthCookies() {
   const store = await cookies();
-  store.delete(AUTH_COOKIE_ACCESS);
-  store.delete(AUTH_COOKIE_REFRESH);
+  store.delete({ name: AUTH_COOKIE_ACCESS, path: "/" });
+  store.delete({ name: AUTH_COOKIE_REFRESH, path: "/" });
+  // 이전 refresh-path(/api/v1/auth) 고아 쿠키 정리
+  store.delete({ name: AUTH_COOKIE_REFRESH, path: "/api/v1/auth" });
 }

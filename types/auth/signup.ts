@@ -118,9 +118,3 @@ export const emptySignupFormValues: SignupFormInput = {
   region: "",
   terms: initialTermsFormValues,
 };
-
-export function getSignupFieldErrors(values: SignupInput): SignupFieldErrors {
-  const parsed = signupSchema.safeParse(values);
-  if (parsed.success) return {};
-  return parsed.error.flatten().fieldErrors;
-}

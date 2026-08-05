@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Button } from "@/components/atoms/button";
 import { useAppSession } from "@/context/SessionContext";
 
+const headerAuthButtonClassName = "rounded-sm px-5";
+
 export function Header() {
   const { isAuthenticated, isLoading, user, logout } = useAppSession();
 
@@ -15,11 +17,11 @@ export function Header() {
           <>
             <span
               aria-hidden
-              className="inline-block h-10 min-w-24 rounded-none md:h-11 md:min-w-[108px]"
+              className="inline-block h-7 min-w-20 rounded-sm"
             />
             <span
               aria-hidden
-              className="inline-block h-10 min-w-24 rounded-none md:h-11 md:min-w-[108px]"
+              className="inline-block h-7 min-w-20 rounded-sm"
             />
           </>
         ) : isAuthenticated ? (
@@ -31,28 +33,28 @@ export function Header() {
               type="button"
               variant="brand"
               size="sm"
-              className="rounded-sm px-5"
+              className={headerAuthButtonClassName}
               onClick={logout}
             >
-              Log out
+              로그아웃
             </Button>
           </>
         ) : (
           <>
             <Link href="/signup">
               <Button
-                variant="ghost"
+                variant="brand"
                 size="sm"
-                className="h-10 min-w-24 rounded-none border border-vh-gray-100/70 bg-transparent px-5 text-sm font-normal text-vh-gray-100 hover:border-vh-brand-gold hover:bg-transparent hover:text-vh-brand-gold md:h-11 md:min-w-[108px] md:text-base"
+                className={headerAuthButtonClassName}
               >
                 회원가입
               </Button>
             </Link>
             <Link href="/signin">
               <Button
-                variant="ghost"
+                variant="brand"
                 size="sm"
-                className="h-10 min-w-24 rounded-none border border-vh-gray-100/70 bg-transparent px-5 text-sm font-normal text-vh-gray-100 hover:border-vh-brand-gold hover:bg-transparent hover:text-vh-brand-gold md:h-11 md:min-w-[108px] md:text-base"
+                className={headerAuthButtonClassName}
               >
                 로그인
               </Button>

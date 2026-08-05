@@ -6,12 +6,9 @@ import {
   checkEmailAvailability,
   checkLoginIdAvailability,
   logoutUser,
-  refreshTokens,
   registerUser,
-  signInUser,
 } from "@/lib/api/auth";
-import type { ApiSignInResponse, ApiSignupResponse } from "@/types/auth/api";
-import type { SigninInput } from "@/types/auth/signin";
+import type { ApiSignupResponse } from "@/types/auth/api";
 import type { SignupApiInput } from "@/types/auth/signup";
 
 export async function signupService(
@@ -23,19 +20,6 @@ export async function signupService(
     password: input.password,
     email: input.email,
   });
-}
-
-export async function signInService(
-  input: SigninInput
-): Promise<ApiSignInResponse> {
-  return signInUser({
-    logInId: input.logInId,
-    password: input.password,
-  });
-}
-
-export async function refreshSessionService() {
-  return refreshTokens();
 }
 
 export async function logoutService() {

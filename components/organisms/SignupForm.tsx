@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Controller, useWatch } from "react-hook-form";
+import { Controller } from "react-hook-form";
 
 import { Button } from "@/components/atoms/button";
 import { Spinner } from "@/components/atoms/spinner";
@@ -35,9 +35,6 @@ export function SignupForm() {
     state,
     isPending,
   } = useSignupForm();
-
-  const terms = useWatch({ control, name: "terms" });
-  const requiredTermsAccepted = Boolean(terms?.service && terms?.privacy);
 
   const {
     loginIdCheck,
@@ -336,7 +333,7 @@ export function SignupForm() {
         type="submit"
         variant="brand"
         className="h-12 w-full rounded-sm text-base"
-        disabled={isPending || !requiredTermsAccepted}
+        disabled={isPending}
         aria-busy={isPending}
       >
         {isPending ? <Spinner size="sm" label="가입 중" inline /> : "회원가입"}

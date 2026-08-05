@@ -110,7 +110,7 @@ export function SignupFieldWithAction({
           onClick={onAction}
         >
           {actionPending ? (
-            <Spinner size="sm" label="확인 중..." inline />
+            <Spinner size="sm" label="확인 중" inline />
           ) : (
             actionLabel
           )}

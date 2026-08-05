@@ -114,12 +114,7 @@ export function SigninForm() {
 
       <AuthHelperLinks />
 
-      {isPending ? (
-        <Spinner
-          label="로그인 중..."
-          className="w-full justify-center text-sm text-vh-gold-500"
-        />
-      ) : message ? (
+      {!isPending && message ? (
         <p className="text-center text-sm text-destructive" role="status">
           {message}
         </p>
@@ -132,11 +127,7 @@ export function SigninForm() {
         disabled={isPending}
         aria-busy={isPending}
       >
-        {isPending ? (
-          <Spinner size="sm" label="로그인 중..." inline />
-        ) : (
-          "로그인"
-        )}
+        {isPending ? <Spinner size="sm" label="로그인 중" inline /> : "로그인"}
       </Button>
 
       <AuthDivider label="다른 방법으로 로그인" />

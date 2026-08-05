@@ -322,12 +322,7 @@ export function SignupForm() {
         )}
       />
 
-      {isPending ? (
-        <Spinner
-          label="회원가입 처리 중..."
-          className="w-full justify-center text-sm text-vh-gold-500"
-        />
-      ) : state.message ? (
+      {!isPending && state.message ? (
         <p className="text-center text-sm text-destructive" role="status">
           {state.message}
         </p>
@@ -340,11 +335,7 @@ export function SignupForm() {
         disabled={isPending}
         aria-busy={isPending}
       >
-        {isPending ? (
-          <Spinner size="sm" label="가입 중..." inline />
-        ) : (
-          "회원가입"
-        )}
+        {isPending ? <Spinner size="sm" label="가입 중" inline /> : "회원가입"}
       </Button>
 
       <p className="text-center text-sm text-vh-gray-500">

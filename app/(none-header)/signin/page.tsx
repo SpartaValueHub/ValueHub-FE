@@ -8,7 +8,7 @@ export default function SigninPage() {
     <Suspense
       fallback={
         <Spinner
-          label="로딩 중..."
+          label="로딩 중"
           className="w-full justify-center p-8 text-sm text-vh-gold-500"
         />
       }

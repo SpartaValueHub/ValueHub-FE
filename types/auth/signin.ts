@@ -10,8 +10,14 @@ export const signinSchema = z.object({
     ),
   password: z
     .string()
-    .min(8, "비밀번호는 8자 이상이어야 합니다.")
-    .max(20, "비밀번호는 20자 이하여야 합니다."),
+    .min(
+      8,
+      "비밀번호는 8~20자, 영문 대문자·소문자·숫자·특수문자(!@#$%^&*()-+_=)를 각각 1자 이상 포함해야 합니다."
+    )
+    .max(
+      20,
+      "비밀번호는 8~20자, 영문 대문자·소문자·숫자·특수문자(!@#$%^&*()-+_=)를 각각 1자 이상 포함해야 합니다."
+    ),
 });
 
 export type SigninInput = z.infer<typeof signinSchema>;

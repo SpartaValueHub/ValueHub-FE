@@ -107,12 +107,12 @@ flowchart LR
 
 리뷰에서 지적·보완된 항목입니다.
 
-| 항목                               | 내용                                                                                                                                 |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| **`handleSubmit`**                 | 네이티브 `action=` 제거, RHF `handleSubmit(onSubmit)` 단일 진입점                                                                    |
-| **`field.onChange`**               | `Controller` render prop에서 `onChange={(v) => { field.onChange(v); clear*Check(); }}` — RHF dirty/touch와 중복확인 초기화 동시 처리 |
-| **비밀번호 hint**                  | auth-service 규칙과 동일하게 수정: 「영문 대소문자, 숫자, 특수문자(!@#$%^&*()-+_=)를 각각 1자 이상 포함한 8~20자」                   |
-| **중복확인 gate (`checkedValue`)** | 성공 시 `checkedValue` 저장 → 제출 시 현재 값과 비교. 변경 시 「다시 중복 확인」 메시지                                              |
+| 항목                               | 내용                                                                                                                                        |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`handleSubmit`**                 | 네이티브 `action=` 제거, RHF `handleSubmit(onSubmit)` 단일 진입점                                                                           |
+| **`field.onChange`**               | `Controller` render prop에서 `onChange={(v) => { field.onChange(v); clear*Check(); }}` — RHF dirty/touch와 중복확인 초기화 동시 처리        |
+| **비밀번호 hint**                  | auth-service 규칙과 동일하게 수정: 「비밀번호는 8~20자, 영문 대문자·소문자·숫자·특수문자(!@#$%^&*()-+_=)를 각각 1자 이상 포함해야 합니다.」 |
+| **중복확인 gate (`checkedValue`)** | 성공 시 `checkedValue` 저장 → 제출 시 현재 값과 비교. 변경 시 「다시 중복 확인」 메시지                                                     |
 
 ```typescript
 // useAvailabilityCheck — gate 핵심

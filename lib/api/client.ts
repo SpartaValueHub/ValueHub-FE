@@ -1,7 +1,14 @@
 /**
- * Transaction / data layer — API_URL(Gateway) 호출은 이 모듈 트리에서만.
- * 클라이언트 번들에서 getApiUrl() 호출 시 throw — Server Action 경유 강제.
+ * Transaction / data layer — API_URL(Gateway) 호출은 이 module 트리에서만.
+ * HttpOnly Cookie 인증 — credentials: include, Authorization Bearer 미사용.
  */
+import {
+  applyResponseCookies,
+  buildAuthCookieHeader,
+} from "@/lib/auth/cookie-store";
+import { AUTH_COOKIE_REFRESH } from "@/lib/auth/cookies";
+import { API_ENDPOINTS } from "@/lib/api/endpoints";
+
 export class ApiError extends Error {
   status: number;
 
@@ -9,6 +16,13 @@ export class ApiError extends Error {
     super(message);
     this.name = "ApiError";
     this.status = status;
+  }
+}
+
+export class AuthSessionExpiredError extends Error {
+  constructor(message = "세션이 만료되었습니다. 다시 로그인해 주세요.") {
+    super(message);
+    this.name = "AuthSessionExpiredError";
   }
 }
 
@@ -33,15 +47,42 @@ type FetchCacheOpts = {
   noStore?: boolean;
 };
 
+type ApiFetchOptions = {
+  method?: string;
+  body?: unknown;
+  cache?: FetchCacheOpts;
+  baseUrl?: string;
+  /** 401 refresh 재시도 방지 */
+  _retried?: boolean;
+  /** refresh 실패 시 signOut 생략 (authorize 등) */
+  skipSessionRecovery?: boolean;
+};
+
+async function refreshAuthCookies(baseUrl: string): Promise<boolean> {
+  const cookieHeader = await buildAuthCookieHeader();
+  if (!cookieHeader?.includes(AUTH_COOKIE_REFRESH)) {
+    return false;
+  }
+
+  const url = `${baseUrl}${API_ENDPOINTS.auth.refresh}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Cookie: cookieHeader,
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) return false;
+
+  await applyResponseCookies(res);
+  return true;
+}
+
 export async function apiFetch<T>(
   path: string,
-  options: {
-    method?: string;
-    body?: unknown;
-    accessToken?: string | null;
-    cache?: FetchCacheOpts;
-    baseUrl?: string;
-  } = {}
+  options: ApiFetchOptions = {}
 ): Promise<T> {
   const base = (options.baseUrl ?? getApiUrl()).replace(/\/$/, "");
   const url = `${base}${path.startsWith("/") ? path : `/${path}`}`;
@@ -50,8 +91,10 @@ export async function apiFetch<T>(
   if (options.body !== undefined) {
     headers["Content-Type"] = "application/json";
   }
-  if (options.accessToken) {
-    headers.Authorization = `Bearer ${options.accessToken}`;
+
+  const cookieHeader = await buildAuthCookieHeader();
+  if (cookieHeader) {
+    headers.Cookie = cookieHeader;
   }
 
   const cache = options.cache;
@@ -61,6 +104,7 @@ export async function apiFetch<T>(
   } = {
     method: options.method ?? "GET",
     headers,
+    credentials: "include",
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
   };
 
@@ -80,6 +124,14 @@ export async function apiFetch<T>(
   } catch (err) {
     const detail = err instanceof Error ? err.message : "network error";
     throw new ApiError(502, `API에 연결할 수 없습니다 (${base}). ${detail}`);
+  }
+
+  if (res.status === 401 && !options._retried && !options.skipSessionRecovery) {
+    const refreshed = await refreshAuthCookies(base);
+    if (refreshed) {
+      return apiFetch<T>(path, { ...options, _retried: true });
+    }
+    throw new AuthSessionExpiredError();
   }
 
   const text = await res.text();

@@ -24,21 +24,9 @@ export interface ApiSignInRequest {
 }
 
 export interface ApiSignInResponse {
-  accessToken: string;
-  refreshToken: string;
-  authUuid: string;
-  logInId: string;
-  memberName: string;
-  email: string;
-}
-
-export interface ApiRefreshRequest {
-  refreshToken: string;
-}
-
-export interface ApiLogoutRequest {
-  accessToken: string;
-  refreshToken: string;
+  memberUuid: string;
+  nickname: string;
+  role: string;
 }
 
 export interface ApiAvailabilityResponse {

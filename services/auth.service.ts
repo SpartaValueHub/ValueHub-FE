@@ -1,6 +1,6 @@
 /**
  * auth-service 오케스트레이션.
- * UI/actions → service → lib/api (3-layer). nickname은 member-service 예정.
+ * UI/actions → service → lib/api (3-layer).
  */
 import {
   checkEmailAvailability,
@@ -17,7 +17,6 @@ import type { SignupApiInput } from "@/types/auth/signup";
 export async function signupService(
   input: SignupApiInput
 ): Promise<ApiSignupResponse> {
-  // auth-service sign-up: requestToken + credentials만 전송 (실명·전화는 PortOne·서버 조회)
   return registerUser({
     requestToken: input.requestToken,
     logInId: input.logInId,
@@ -35,13 +34,12 @@ export async function signInService(
   });
 }
 
-export async function refreshSessionService(refreshToken: string) {
-  return refreshTokens({ refreshToken });
+export async function refreshSessionService() {
+  return refreshTokens();
 }
 
-export async function logoutService(accessToken: string, refreshToken: string) {
-  // logout은 Gateway JWT 검증 필요 — Bearer accessToken 전달
-  await logoutUser({ accessToken, refreshToken }, accessToken);
+export async function logoutService() {
+  await logoutUser();
 }
 
 export async function checkLoginIdAvailabilityService(loginId: string) {

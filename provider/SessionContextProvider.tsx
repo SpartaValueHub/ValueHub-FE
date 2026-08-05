@@ -23,7 +23,10 @@ export function SessionContextProvider({
 
   const refresh = useCallback(async () => {
     try {
-      const response = await fetch("/api/auth/status", { cache: "no-store" });
+      const response = await fetch("/api/auth/status", {
+        cache: "no-store",
+        credentials: "include",
+      });
       if (!response.ok) {
         setIsAuthenticated(false);
         setUser(null);
@@ -50,7 +53,10 @@ export function SessionContextProvider({
 
   const logout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
     } catch (error) {
       console.error("Backend logout failed:", error);
     }

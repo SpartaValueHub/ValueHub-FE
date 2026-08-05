@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Ephesis, Geist_Mono, Noto_Serif_KR } from "next/font/google";
 
 import { Footer } from "@/components/templates/Footer";
+import { AuthSessionProvider } from "@/provider/AuthSessionProvider";
 import { SessionContextProvider } from "@/provider/SessionContextProvider";
 
 import "./globals.css";
@@ -39,10 +40,12 @@ export default function RootLayout({
       className={`${notoSerifKr.variable} ${ephesis.variable} ${geistMono.variable} dark h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <SessionContextProvider>
-          {children}
-          <Footer />
-        </SessionContextProvider>
+        <AuthSessionProvider>
+          <SessionContextProvider>
+            {children}
+            <Footer />
+          </SessionContextProvider>
+        </AuthSessionProvider>
       </body>
     </html>
   );

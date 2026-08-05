@@ -16,7 +16,7 @@ export function BrandMark({
 }: BrandMarkProps) {
   return (
     <BrandLogo
-      className={cn("pt-2 md:pt-4", className)}
+      className={cn("pt-4 md:pt-6", className)}
       heading={heading}
       subtitle={subtitle}
       size="lg"

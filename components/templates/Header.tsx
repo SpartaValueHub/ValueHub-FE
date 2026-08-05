@@ -3,10 +3,10 @@
 import Link from "next/link";
 
 import { Button } from "@/components/atoms/button";
-import { useSession } from "@/context/SessionContext";
+import { useAppSession } from "@/context/SessionContext";
 
 export function Header() {
-  const { isAuthenticated, isLoading, user, logout } = useSession();
+  const { isAuthenticated, isLoading, user, logout } = useAppSession();
 
   return (
     <header className="w-full shrink-0">
@@ -16,7 +16,7 @@ export function Header() {
         ) : isAuthenticated ? (
           <>
             <span className="text-sm text-vh-gray-100">
-              {user?.name || "회원"}
+              {user?.nickname || "회원"}
             </span>
             <Button
               type="button"

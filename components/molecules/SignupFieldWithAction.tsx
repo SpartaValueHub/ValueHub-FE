@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/atoms/button";
+import { Spinner } from "@/components/atoms/spinner";
 import { cn } from "@/lib/utils";
 
 interface SignupFieldWithActionProps {
@@ -105,9 +106,14 @@ export function SignupFieldWithAction({
           size="sm"
           className="mb-1 shrink-0 rounded-sm px-3 py-1 text-xs"
           disabled={disabled || actionDisabled || actionPending}
+          aria-busy={actionPending}
           onClick={onAction}
         >
-          {actionPending ? "확인 중..." : actionLabel}
+          {actionPending ? (
+            <Spinner size="sm" label="확인 중..." inline />
+          ) : (
+            actionLabel
+          )}
         </Button>
       </div>
       {error ? (

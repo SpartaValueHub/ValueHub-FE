@@ -65,7 +65,19 @@ export function useSignupForm() {
   function getFieldError(name: keyof SignupFormInput): string | undefined {
     const serverError = state.fieldErrors?.[name as keyof SignupInput]?.[0];
     if (serverError) return serverError;
-    if (!touchedFields[name] && !isSubmitted) return undefined;
+
+    const isTouched =
+      name === "terms"
+        ? Boolean(touchedFields.terms) || isSubmitted
+        : Boolean(touchedFields[name]) || isSubmitted;
+    if (!isTouched) return undefined;
+
+    if (name === "terms") {
+      const termsError = errors.terms as
+        { message?: string; root?: { message?: string } } | undefined;
+      return termsError?.message ?? termsError?.root?.message;
+    }
+
     return errors[name]?.message;
   }
 

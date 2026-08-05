@@ -56,7 +56,14 @@ type ApiFetchOptions = {
   _retried?: boolean;
   /** refresh 실패 시 signOut 생략 (authorize 등) */
   skipSessionRecovery?: boolean;
+  /** auth-service refresh·logout Origin 검증용 (서버 env AUTH_TRUSTED_ORIGIN) */
+  trustedOrigin?: boolean;
 };
+
+function getTrustedOriginHeader(): Record<string, string> {
+  const origin = process.env.AUTH_TRUSTED_ORIGIN?.trim();
+  return origin ? { Origin: origin } : {};
+}
 
 async function refreshAuthCookies(baseUrl: string): Promise<boolean> {
   const cookieHeader = await buildAuthCookieHeader();
@@ -70,6 +77,7 @@ async function refreshAuthCookies(baseUrl: string): Promise<boolean> {
     headers: {
       Accept: "application/json",
       Cookie: cookieHeader,
+      ...getTrustedOriginHeader(),
     },
     cache: "no-store",
   });
@@ -90,6 +98,10 @@ export async function apiFetch<T>(
 
   if (options.body !== undefined) {
     headers["Content-Type"] = "application/json";
+  }
+
+  if (options.trustedOrigin) {
+    Object.assign(headers, getTrustedOriginHeader());
   }
 
   const cookieHeader = await buildAuthCookieHeader();

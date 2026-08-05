@@ -2,10 +2,10 @@
 
 import { ApiError } from "@/lib/api/client";
 import { confirmIdentityVerificationService } from "@/services/identity-verification.service";
-import type { ApiIdentityVerificationResponse } from "@/types/auth/api";
+import type { ApiIdentityVerificationConfirmResponse } from "@/types/auth/api";
 
 export type ConfirmIdentityVerificationActionResult =
-  | { ok: true; data: ApiIdentityVerificationResponse }
+  | { ok: true; data: ApiIdentityVerificationConfirmResponse }
   | { ok: false; message: string };
 
 /** PortOne SDK 완료 후 auth-service confirm — requestToken·prefill 반환 */

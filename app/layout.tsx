@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { Ephesis, Geist_Mono, Noto_Serif_KR } from "next/font/google";
 
 import { Footer } from "@/components/templates/Footer";
+import { getAuthUser } from "@/lib/session";
 import { AuthSessionProvider } from "@/provider/AuthSessionProvider";
 import { SessionContextProvider } from "@/provider/SessionContextProvider";
+import { toClientSessionUser } from "@/types/auth/session";
 
 import "./globals.css";
 
@@ -29,11 +31,17 @@ export const metadata: Metadata = {
   description: "Value Hub",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const authUser = await getAuthUser();
+  const initialSession = {
+    isAuthenticated: !!authUser,
+    user: authUser ? toClientSessionUser(authUser) : null,
+  };
+
   return (
     <html
       lang="ko"
@@ -41,7 +49,7 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         <AuthSessionProvider>
-          <SessionContextProvider>
+          <SessionContextProvider initialSession={initialSession}>
             {children}
             <Footer />
           </SessionContextProvider>

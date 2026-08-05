@@ -1,6 +1,5 @@
 import { BrandLogo } from "@/components/molecules/BrandLogo";
 import { MAIN_SLOGAN } from "@/constants/main-page";
-import { cn } from "@/lib/utils";
 
 interface BrandMarkProps {
   className?: string;
@@ -16,7 +15,7 @@ export function BrandMark({
 }: BrandMarkProps) {
   return (
     <BrandLogo
-      className={cn("pt-4 md:pt-6", className)}
+      className={className}
       heading={heading}
       subtitle={subtitle}
       size="lg"

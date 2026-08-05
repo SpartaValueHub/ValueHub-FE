@@ -17,8 +17,11 @@ interface BrandLogoProps {
 
 const headingSizeClass: Record<BrandLogoSize, string> = {
   md: "text-vh-xl md:text-vh-2xl",
-  lg: "text-[2.25rem] md:text-[2.5rem]",
+  lg: "text-[2.5rem] md:text-[64px]",
 };
+
+const subtitleClassName =
+  "m-0 text-center font-sans text-sm font-normal text-vh-brand-gold md:text-xl";
 
 /** Value Hub 로고 — PNG 에셋 + 타이틀 (중앙 정렬) */
 export function BrandLogo({
@@ -36,27 +39,31 @@ export function BrandLogo({
 
   if (layout === "inline") {
     return (
-      <div
-        className={cn(
-          "flex w-full flex-col items-center gap-3 text-center",
-          className
-        )}
-      >
-        <div className="flex flex-nowrap items-center justify-center gap-3 md:gap-4">
-          <BrandLogoIcon size={size} />
-          <BrandHeading size="2xl" className={headingClassName}>
+      <div className={cn("flex w-full justify-center", className)}>
+        <div className="inline-grid grid-cols-[auto_auto] items-center gap-x-4 gap-y-4 md:gap-x-5 md:gap-y-5">
+          <BrandLogoIcon size={size} className="row-start-1 self-center" />
+          <BrandHeading
+            size="2xl"
+            className={cn(
+              headingClassName,
+              "col-start-2 row-start-1 m-0 leading-none"
+            )}
+          >
             {heading}
           </BrandHeading>
-        </div>
 
-        {showSubtitle && subtitle ? (
-          <BodyText
-            size="sm"
-            className="font-sans font-normal text-vh-brand-gold/90 md:text-vh-base"
-          >
-            {subtitle}
-          </BodyText>
-        ) : null}
+          {showSubtitle && subtitle ? (
+            <BodyText
+              size="sm"
+              className={cn(
+                subtitleClassName,
+                "col-start-2 row-start-2 justify-self-center"
+              )}
+            >
+              {subtitle}
+            </BodyText>
+          ) : null}
+        </div>
       </div>
     );
   }
@@ -74,10 +81,7 @@ export function BrandLogo({
       </BrandHeading>
 
       {showSubtitle && subtitle ? (
-        <BodyText
-          size="sm"
-          className="text-vh-brand-gold font-sans font-normal md:text-vh-base"
-        >
+        <BodyText size="sm" className={subtitleClassName}>
           {subtitle}
         </BodyText>
       ) : null}

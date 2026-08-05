@@ -22,37 +22,32 @@ export function CategoryNavItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "group inline-flex shrink-0 px-1 py-2 transition-colors",
+        "inline-flex shrink-0 flex-col items-stretch py-2 transition-colors",
         className
       )}
     >
-      <span
-        className={cn(
-          "inline-flex items-baseline gap-1.5 whitespace-nowrap border-b pb-0.5 md:gap-2",
-          active
-            ? "border-vh-brand-gold"
-            : "border-vh-gray-500/50 group-hover:border-vh-brand-gold"
-        )}
-      >
+      <span className="inline-flex justify-center gap-2 whitespace-nowrap md:items-baseline md:gap-4">
         <span
           className={cn(
-            "font-serif text-xl leading-none md:text-2xl",
-            active
-              ? "text-vh-brand-gold"
-              : "text-vh-gray-100 group-hover:text-vh-brand-gold"
+            "font-serif text-xl leading-none md:text-[28px]",
+            active ? "text-vh-gray-100" : "text-vh-gray-100/85"
           )}
         >
           {title}
         </span>
-        <span
-          className={cn(
-            "font-sans text-xs leading-none md:text-sm",
-            active ? "text-vh-brand-gold/80" : "text-vh-gray-100/70"
-          )}
-        >
+        <span className="font-sans text-xs leading-none text-vh-gray-500 md:text-base">
           {description}
         </span>
       </span>
+      <span
+        aria-hidden
+        className={cn(
+          "mt-4 h-px w-full",
+          active
+            ? "bg-[linear-gradient(90deg,var(--vh-gold-100)_0%,var(--vh-brand-gold)_42%,var(--vh-gold-500)_100%)]"
+            : "bg-[linear-gradient(90deg,var(--vh-gold-900)_0%,var(--vh-gold-700)_50%,var(--vh-gold-900)_100%)]"
+        )}
+      />
     </button>
   );
 }

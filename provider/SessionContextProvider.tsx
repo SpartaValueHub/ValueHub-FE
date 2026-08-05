@@ -9,17 +9,28 @@ import {
   type SessionUserSummary,
 } from "@/context/SessionContext";
 
+export type InitialSession = {
+  isAuthenticated: boolean;
+  user: SessionUserSummary | null;
+};
+
 interface SessionContextProviderProps {
   children: React.ReactNode;
+  initialSession: InitialSession;
 }
 
 export function SessionContextProvider({
   children,
+  initialSession,
 }: SessionContextProviderProps) {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState<SessionUserSummary | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    initialSession.isAuthenticated
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState<SessionUserSummary | null>(
+    initialSession.user
+  );
 
   const refresh = useCallback(async () => {
     try {

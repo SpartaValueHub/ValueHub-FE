@@ -158,7 +158,7 @@ export function SignupForm() {
               {isIdentityVerified ? (
                 "인증완료"
               ) : isVerifying ? (
-                <Spinner size="sm" label="인증 중..." inline />
+                <Spinner size="sm" label="인증 중" inline />
               ) : (
                 "본인인증"
               )}

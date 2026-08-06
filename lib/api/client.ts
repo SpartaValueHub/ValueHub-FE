@@ -26,17 +26,31 @@ export class AuthSessionExpiredError extends Error {
   }
 }
 
-export function getApiUrl() {
+function assertServerOnlyApiUrl() {
   if (typeof window !== "undefined") {
     throw new Error(
-      "외부 API는 서버(API_URL)에서만 호출하세요. 클라이언트는 Server Actions를 사용합니다."
+      "외부 API는 서버에서만 호출하세요. 클라이언트는 Server Actions를 사용합니다."
     );
   }
+}
+
+export function getApiUrl() {
+  assertServerOnlyApiUrl();
 
   const raw =
     process.env.API_URL ||
     process.env.API_BASE_URL ||
     "http://localhost:8000/auth-service";
+
+  return raw.replace(/\/$/, "");
+}
+
+/** Gateway category-service — auth API_URL과 분리 (다른 서비스 영향 금지) */
+export function getCategoryApiUrl() {
+  assertServerOnlyApiUrl();
+
+  const raw =
+    process.env.CATEGORY_API_URL || "http://localhost:8000/category-service";
 
   return raw.replace(/\/$/, "");
 }

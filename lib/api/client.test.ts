@@ -1,65 +1,71 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  AUTH_SESSION_TERMINATED,
-  DuplicateLoginError,
-} from "@/lib/auth/duplicate-login";
-
 vi.mock("@/lib/auth/cookie-store", () => ({
   applyResponseCookies: vi.fn(),
   buildAuthCookieHeader: vi.fn(),
-  markDuplicateLoginDetected: vi.fn(),
 }));
 
-import { markDuplicateLoginDetected } from "@/lib/auth/cookie-store";
 import { apiFetch, AuthSessionExpiredError } from "@/lib/api/client";
 import { buildAuthCookieHeader } from "@/lib/auth/cookie-store";
 
-const mockMarkDuplicate = vi.mocked(markDuplicateLoginDetected);
 const mockBuildCookie = vi.mocked(buildAuthCookieHeader);
 
-describe("apiFetch duplicate login detection", () => {
+describe("apiFetch session recovery", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockBuildCookie.mockResolvedValue("refresh=token");
+    mockBuildCookie.mockResolvedValue("vh_refresh_token=token");
   });
 
-  it("401 AUTH_SESSION_TERMINATED이면 markDuplicateLoginDetected 후 DuplicateLoginError", async () => {
-    const fetchMock = vi.fn().mockResolvedValueOnce({
-      status: 401,
-      ok: false,
-      text: async () =>
-        JSON.stringify({
-          code: AUTH_SESSION_TERMINATED,
-          message: "terminated",
-        }),
-    } as Response);
+  it("401이면 refresh 시도 후 재요청", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        status: 401,
+        ok: false,
+        text: async () => JSON.stringify({ code: "INVALID_TOKEN" }),
+      } as Response)
+      .mockResolvedValueOnce({
+        status: 200,
+        ok: true,
+        headers: { getSetCookie: () => [] },
+        text: async () => JSON.stringify({ ok: true }),
+      } as Response)
+      .mockResolvedValueOnce({
+        status: 200,
+        ok: true,
+        text: async () => JSON.stringify({ data: "ok" }),
+      } as Response);
 
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(
-      apiFetch("/api/v1/example", {
-        baseUrl: "http://localhost:8000/auth-service",
-      })
-    ).rejects.toBeInstanceOf(DuplicateLoginError);
+    const result = await apiFetch<{ data: string }>("/api/v1/example", {
+      baseUrl: "http://localhost:8000/auth-service",
+    });
 
-    expect(mockMarkDuplicate).toHaveBeenCalledOnce();
-    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(result).toEqual({ data: "ok" });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
-  it("401 INVALID_TOKEN이면 duplicate login 처리하지 않고 세션 만료", async () => {
+  it("401 refresh 실패 시 AuthSessionExpiredError", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
         status: 401,
         ok: false,
         text: async () =>
-          JSON.stringify({ code: "INVALID_TOKEN", message: "invalid" }),
+          JSON.stringify({
+            code: "AUTH_SESSION_TERMINATED",
+            message: "terminated",
+          }),
       } as Response)
       .mockResolvedValueOnce({
         status: 401,
         ok: false,
-        text: async () => JSON.stringify({ code: "INVALID_TOKEN" }),
+        text: async () =>
+          JSON.stringify({
+            code: "AUTH_SESSION_TERMINATED",
+            message: "terminated",
+          }),
       } as Response);
 
     vi.stubGlobal("fetch", fetchMock);
@@ -69,11 +75,9 @@ describe("apiFetch duplicate login detection", () => {
         baseUrl: "http://localhost:8000/auth-service",
       })
     ).rejects.toBeInstanceOf(AuthSessionExpiredError);
-
-    expect(mockMarkDuplicate).not.toHaveBeenCalled();
   });
 
-  it("network error이면 duplicate login 처리 없음", async () => {
+  it("network error이면 ApiError", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockRejectedValue(new TypeError("fetch failed"))
@@ -84,7 +88,5 @@ describe("apiFetch duplicate login detection", () => {
         baseUrl: "http://localhost:8000/auth-service",
       })
     ).rejects.toBeInstanceOf(Error);
-
-    expect(mockMarkDuplicate).not.toHaveBeenCalled();
   });
 });

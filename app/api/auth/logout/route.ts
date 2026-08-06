@@ -1,7 +1,4 @@
-import {
-  clearAuthCookies,
-  clearDuplicateLoginFlag,
-} from "@/lib/auth/cookie-store";
+import { clearAuthCookies } from "@/lib/auth/cookie-store";
 import { isIgnorableLogoutFailure } from "@/lib/auth/logout-errors";
 import { clearNextAuthSession } from "@/lib/auth/nextauth-session";
 import { getAuthUser } from "@/lib/session";
@@ -22,7 +19,6 @@ export async function POST() {
   }
 
   await clearAuthCookies();
-  await clearDuplicateLoginFlag();
   await clearNextAuthSession();
   return Response.json({ ok: true });
 }

@@ -7,7 +7,6 @@ export const API_ENDPOINTS = {
     signUp: "/api/v1/auth/sign-up",
     signIn: "/api/v1/auth/sign-in",
     refresh: "/api/v1/auth/refresh",
-    session: "/api/v1/auth/session",
     logout: "/api/v1/auth/logout",
     checkLoginId: (loginId: string) =>
       `/api/v1/auth/check/login-id?loginId=${encodeURIComponent(loginId)}`,

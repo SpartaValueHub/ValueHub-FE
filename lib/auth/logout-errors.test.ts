@@ -2,13 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { ApiError } from "@/lib/api/client";
 import { isIgnorableLogoutFailure } from "@/lib/auth/logout-errors";
-import { DuplicateLoginError } from "@/lib/auth/duplicate-login";
 
 describe("isIgnorableLogoutFailure", () => {
-  it("DuplicateLoginError는 무시", () => {
-    expect(isIgnorableLogoutFailure(new DuplicateLoginError())).toBe(true);
-  });
-
   it("401 ApiError는 무시", () => {
     expect(isIgnorableLogoutFailure(new ApiError(401, "Unauthorized"))).toBe(
       true

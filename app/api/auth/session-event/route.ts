@@ -3,15 +3,17 @@ import {
   hasDuplicateLoginFlag,
   hasSessionMaterial,
 } from "@/lib/auth/cookie-store";
+import { AUTH_SESSION_TERMINATED } from "@/lib/auth/duplicate-login";
 import { probeDuplicateLoginSession } from "@/lib/auth/session-probe";
 
-/** duplicate login 감지 — 플래그 우선, Gateway session ping·refresh probe */
+/** duplicate login 감지 — HttpOnly 플래그 우선, Gateway session ping·refresh probe (mount/focus fallback) */
 export async function GET() {
   const sessionMaterial = await hasSessionMaterial();
 
   if (await hasDuplicateLoginFlag()) {
     return Response.json({
       duplicateLogin: true,
+      code: AUTH_SESSION_TERMINATED,
       hasSessionMaterial: sessionMaterial,
     });
   }
@@ -30,13 +32,14 @@ export async function GET() {
     if (process.env.NODE_ENV === "development") {
       const detail = err instanceof Error ? err.message : String(err);
       console.warn(
-        `[session-event] Duplicate login probe failed; continuing polling (${detail})`
+        `[session-event] Duplicate login probe failed; returning duplicateLogin=false (${detail})`
       );
     }
   }
 
   return Response.json({
     duplicateLogin,
+    ...(duplicateLogin ? { code: AUTH_SESSION_TERMINATED } : {}),
     hasSessionMaterial: sessionMaterial,
   });
 }

@@ -19,6 +19,13 @@ export class DuplicateLoginError extends Error {
   }
 }
 
+export function isDuplicateLoginActionFailure(result: {
+  ok: boolean;
+  code?: string;
+}): boolean {
+  return !result.ok && result.code === AUTH_SESSION_TERMINATED;
+}
+
 /** 서버 duplicate login 플래그 Cookie 이름 */
 export const DUPLICATE_LOGIN_COOKIE = "vh_duplicate_login";
 

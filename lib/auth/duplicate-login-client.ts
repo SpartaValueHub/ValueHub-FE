@@ -1,4 +1,4 @@
-/** 클라이언트 전역 singleton — 동시 API 실패·polling 시 모달 중복 표시 방지 */
+/** 클라이언트 전역 singleton — 동시 이벤트·session-event 검사 시 모달 중복 표시 방지 */
 
 let modalActive = false;
 

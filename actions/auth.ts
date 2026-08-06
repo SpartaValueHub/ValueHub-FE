@@ -6,7 +6,7 @@
  */
 import { redirect } from "next/navigation";
 
-import { ApiError } from "@/lib/api/client";
+import { mapActionError } from "@/lib/auth/map-action-error";
 import {
   checkEmailAvailabilityService,
   checkLoginIdAvailabilityService,
@@ -21,6 +21,7 @@ import {
 export type SignupActionState = {
   ok: boolean;
   message?: string;
+  code?: string;
   fieldErrors?: SignupFieldErrors;
   values?: Pick<SignupInput, "logInId" | "email" | "name" | "phone">;
 };
@@ -71,15 +72,8 @@ export async function signupAction(
     const { logInId, password, email } = parsed.data;
     await signupService({ requestToken, logInId, password, email });
   } catch (e) {
-    const message =
-      e instanceof ApiError
-        ? e.message
-        : e instanceof Error
-          ? e.message
-          : "회원가입에 실패했습니다.";
     return {
-      ok: false,
-      message,
+      ...mapActionError(e, "회원가입에 실패했습니다."),
       values: preserved,
     };
   }
@@ -103,13 +97,7 @@ export async function checkLoginIdAvailabilityAction(loginId: string) {
         : "이미 사용 중인 아이디입니다.",
     };
   } catch (e) {
-    const message =
-      e instanceof ApiError
-        ? e.message
-        : e instanceof Error
-          ? e.message
-          : "아이디 중복 확인에 실패했습니다.";
-    return { ok: false, message };
+    return mapActionError(e, "아이디 중복 확인에 실패했습니다.");
   }
 }
 
@@ -129,12 +117,6 @@ export async function checkEmailAvailabilityAction(email: string) {
         : "이미 사용 중인 이메일입니다.",
     };
   } catch (e) {
-    const message =
-      e instanceof ApiError
-        ? e.message
-        : e instanceof Error
-          ? e.message
-          : "이메일 중복 확인에 실패했습니다.";
-    return { ok: false, message };
+    return mapActionError(e, "이메일 중복 확인에 실패했습니다.");
   }
 }

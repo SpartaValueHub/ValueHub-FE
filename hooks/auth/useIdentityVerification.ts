@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { v4 as uuidv4 } from "uuid";
 
 import { confirmIdentityVerificationAction } from "@/actions/identity-verification";
+import { handleDuplicateLoginActionResult } from "@/lib/auth/handle-duplicate-login-action-result";
 import type { GenderOption } from "@/components/molecules/GenderToggle";
 import type { ApiGender } from "@/types/auth/api";
 import type { SignupInput } from "@/types/auth/signup";
@@ -61,6 +62,7 @@ export function useIdentityVerification(
           response.identityVerificationId ?? identityVerificationId
         );
         if (!confirmResult.ok) {
+          if (handleDuplicateLoginActionResult(confirmResult)) return;
           setIdentityMessage(confirmResult.message);
           return;
         }

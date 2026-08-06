@@ -6,6 +6,7 @@ import {
   checkEmailAvailabilityAction,
   checkLoginIdAvailabilityAction,
 } from "@/actions/auth";
+import { handleDuplicateLoginActionResult } from "@/lib/auth/handle-duplicate-login-action-result";
 
 type AvailabilityCheckState = {
   message?: string;
@@ -31,6 +32,7 @@ export function useAvailabilityCheck() {
     const trimmed = loginId.trim();
     startLoginIdCheck(async () => {
       const result = await checkLoginIdAvailabilityAction(trimmed);
+      if (handleDuplicateLoginActionResult(result)) return;
       const success = result.ok && result.available;
       setLoginIdCheck({
         message: result.message,
@@ -44,6 +46,7 @@ export function useAvailabilityCheck() {
     const trimmed = email.trim();
     startEmailCheck(async () => {
       const result = await checkEmailAvailabilityAction(trimmed);
+      if (handleDuplicateLoginActionResult(result)) return;
       const success = result.ok && result.available;
       setEmailCheck({
         message: result.message,

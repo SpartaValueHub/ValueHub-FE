@@ -4,7 +4,6 @@ import { Ephesis, Geist_Mono, Noto_Serif_KR } from "next/font/google";
 import { Footer } from "@/components/templates/Footer";
 import { getAuthUser } from "@/lib/session";
 import { AuthSessionProvider } from "@/provider/AuthSessionProvider";
-import { DuplicateLoginModalProvider } from "@/provider/DuplicateLoginModalProvider";
 import { SessionContextProvider } from "@/provider/SessionContextProvider";
 import { toClientSessionUser } from "@/types/auth/session";
 
@@ -51,10 +50,8 @@ export default async function RootLayout({
       <body className="flex min-h-full flex-col">
         <AuthSessionProvider>
           <SessionContextProvider initialSession={initialSession}>
-            <DuplicateLoginModalProvider>
-              {children}
-              <Footer />
-            </DuplicateLoginModalProvider>
+            {children}
+            <Footer />
           </SessionContextProvider>
         </AuthSessionProvider>
       </body>

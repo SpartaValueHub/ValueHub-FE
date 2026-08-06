@@ -54,8 +54,8 @@ describe("apiFetch session recovery", () => {
         ok: false,
         text: async () =>
           JSON.stringify({
-            code: "AUTH_SESSION_TERMINATED",
-            message: "terminated",
+            code: "INVALID_TOKEN",
+            message: "unauthorized",
           }),
       } as Response)
       .mockResolvedValueOnce({
@@ -63,8 +63,8 @@ describe("apiFetch session recovery", () => {
         ok: false,
         text: async () =>
           JSON.stringify({
-            code: "AUTH_SESSION_TERMINATED",
-            message: "terminated",
+            code: "INVALID_TOKEN",
+            message: "unauthorized",
           }),
       } as Response);
 

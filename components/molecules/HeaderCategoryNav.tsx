@@ -31,7 +31,7 @@ export function HeaderCategoryNav({
   return (
     <ul
       className={cn(
-        "flex min-w-0 flex-1 flex-wrap items-center gap-x-8 gap-y-2 md:gap-x-12 lg:gap-x-14",
+        "flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-2 md:gap-x-8",
         className
       )}
     >

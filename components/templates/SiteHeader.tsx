@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 
+import { Button } from "@/components/atoms/button";
 import { BrandLogoIcon } from "@/components/molecules/BrandLogoIcon";
 import { HeaderCategoryNav } from "@/components/molecules/HeaderCategoryNav";
 import { HeaderSearchCategorySelect } from "@/components/molecules/HeaderSearchCategorySelect";
@@ -29,7 +30,10 @@ const fallbackNavItems: UiCategoryNavItem[] = [
   },
 ];
 
-const authLinkClassName =
+/** 메인 Header와 동일한 auth 버튼 */
+const headerAuthButtonClassName = "rounded-sm px-5";
+
+const authTextLinkClassName =
   "font-sans text-sm text-vh-gray-100 transition-colors hover:text-vh-brand-gold";
 
 const iconButtonClassName =
@@ -76,43 +80,53 @@ export function SiteHeader({
   }, []);
 
   const authLinks = (
-    <nav className="flex shrink-0 items-center gap-2 self-center">
+    <nav className="flex shrink-0 items-center gap-3 self-center md:gap-4">
       {isLoading ? (
         <>
           <span
             aria-hidden
-            className="inline-block h-5 min-w-14 rounded-sm bg-vh-gray-700/40"
+            className="inline-block h-7 min-w-20 rounded-sm bg-vh-gray-700/40"
           />
-          <span aria-hidden className="text-vh-gray-500">
-            |
-          </span>
           <span
             aria-hidden
-            className="inline-block h-5 min-w-14 rounded-sm bg-vh-gray-700/40"
+            className="inline-block h-7 min-w-20 rounded-sm bg-vh-gray-700/40"
           />
         </>
       ) : isAuthenticated ? (
         <>
-          <Link href="/mypage" className={authLinkClassName}>
+          <Link href="/mypage" className={authTextLinkClassName}>
             마이페이지
           </Link>
           <span aria-hidden className="text-vh-gray-500">
             |
           </span>
-          <button type="button" onClick={logout} className={authLinkClassName}>
+          <button
+            type="button"
+            onClick={logout}
+            className={authTextLinkClassName}
+          >
             로그아웃
           </button>
         </>
       ) : (
         <>
-          <Link href="/signup" className={authLinkClassName}>
-            회원가입
+          <Link href="/signup">
+            <Button
+              variant="brand"
+              size="sm"
+              className={headerAuthButtonClassName}
+            >
+              회원가입
+            </Button>
           </Link>
-          <span aria-hidden className="text-vh-gray-500">
-            |
-          </span>
-          <Link href="/signin" className={authLinkClassName}>
-            로그인
+          <Link href="/signin">
+            <Button
+              variant="brand"
+              size="sm"
+              className={headerAuthButtonClassName}
+            >
+              로그인
+            </Button>
           </Link>
         </>
       )}
@@ -120,10 +134,9 @@ export function SiteHeader({
   );
 
   return (
-    <header
-      className={cn("w-full shrink-0 bg-vh-surface-charcoal", className)}
-    >
-      <div className="mx-auto flex w-full max-w-[1240px] flex-col gap-5 px-5 pb-5 pt-5 sm:px-8 md:gap-6 md:px-10 md:pt-7">
+    <header className={cn("w-full shrink-0 bg-vh-surface-charcoal", className)}>
+      {/* 메인 Header와 동일: full-width + px-5/sm:px-8/md:px-10 (max-w 제한 없음) */}
+      <div className="flex w-full flex-col gap-5 px-5 pb-5 pt-5 sm:px-8 md:gap-6 md:px-10 md:pt-8">
         {/* 1행: 로고 | 검색(+ 로그인 시 알림·채팅) */}
         <div className="flex items-center justify-between gap-4">
           <Link href="/" className="shrink-0" aria-label="Value Hub 홈">
@@ -199,7 +212,7 @@ export function SiteHeader({
           </div>
         </div>
 
-        {/* 2행: 카테고리 | 회원가입·로그인 또는 마이페이지·로그아웃 (같은 라인) */}
+        {/* 2행: 카테고리(Noto Serif) | auth (메인과 동일 Button) */}
         <div className="flex items-center justify-between gap-4 md:gap-8">
           <Suspense
             fallback={

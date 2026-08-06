@@ -41,7 +41,7 @@ export function HeaderCategoryNav({
             <Link
               href={categoryNavHref(item.id)}
               className={cn(
-                "font-serif text-sm tracking-wide transition-colors md:text-[15px]",
+                "font-serif text-sm font-medium tracking-wide transition-colors md:text-[15px]",
                 active
                   ? "vh-text-category-active"
                   : "text-vh-gray-500 hover:text-vh-gray-300"

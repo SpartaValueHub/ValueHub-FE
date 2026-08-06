@@ -1,7 +1,7 @@
 /** Listing 목록 스텁 — 헤더 미리보기용. 실제 목록은 Listing 서비스 때 교체 */
 export default function ListingsPage() {
   return (
-    <main className="mx-auto flex w-full max-w-[1240px] flex-1 flex-col px-5 py-10 sm:px-8 md:px-10">
+    <main className="mx-auto flex w-full max-w-[1240px] flex-1 flex-col px-5 pb-16 pt-10 sm:px-8 md:pb-20 md:pt-12">
       <h1 className="font-serif text-2xl text-vh-gray-100 md:text-3xl">
         상품 목록
       </h1>

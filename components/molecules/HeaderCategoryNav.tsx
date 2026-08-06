@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
+import { CategoryLabel } from "@/components/atoms/typography";
 import { ALL_CATEGORY_NAV_ID } from "@/constants/categories";
 import { cn } from "@/lib/utils";
 import type { UiCategoryNavItem } from "@/types/categories/ui";
@@ -40,15 +41,20 @@ export function HeaderCategoryNav({
           <li key={item.id}>
             <Link
               href={categoryNavHref(item.id)}
-              className={cn(
-                "font-serif text-sm font-medium tracking-wide transition-colors md:text-[15px]",
-                active
-                  ? "vh-text-category-active"
-                  : "text-vh-gray-500 hover:text-vh-gray-300"
-              )}
+              className="inline-flex"
               aria-current={active ? "page" : undefined}
             >
-              {item.label}
+              <CategoryLabel
+                size="sm"
+                className={cn(
+                  "md:text-[15px] transition-colors",
+                  active
+                    ? "vh-text-category-active"
+                    : "text-vh-gray-500 hover:text-vh-gray-300"
+                )}
+              >
+                {item.label}
+              </CategoryLabel>
             </Link>
           </li>
         );

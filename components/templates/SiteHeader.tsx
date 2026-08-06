@@ -11,9 +11,9 @@ import {
 } from "react";
 
 import { Button } from "@/components/atoms/button";
-import { BrandLogoIcon } from "@/components/molecules/BrandLogoIcon";
 import { HeaderCategoryNav } from "@/components/molecules/HeaderCategoryNav";
 import { HeaderSearchCategorySelect } from "@/components/molecules/HeaderSearchCategorySelect";
+import { SiteHeaderLogo } from "@/components/molecules/SiteHeaderLogo";
 import { useAppSession } from "@/context/SessionContext";
 import {
   ALL_CATEGORY_NAV_ID,
@@ -34,10 +34,10 @@ const fallbackNavItems: UiCategoryNavItem[] = [
 const headerAuthButtonClassName = "rounded-sm px-5";
 
 const authTextLinkClassName =
-  "font-sans text-sm text-vh-gray-100 transition-colors hover:text-vh-brand-gold";
+  "font-sans text-sm text-vh-gray-100 transition-colors hover:text-[#F2CA7B]";
 
 const iconButtonClassName =
-  "rounded-sm p-1 text-vh-gray-100 transition-colors hover:text-vh-brand-gold";
+  "rounded-sm p-1 text-vh-gray-100 transition-colors hover:text-[#F2CA7B]";
 
 interface SiteHeaderProps {
   categoryNavItems?: UiCategoryNavItem[];
@@ -139,7 +139,7 @@ export function SiteHeader({
         {/* 1행: 로고 | 검색(+ 로그인 시 알림·채팅) */}
         <div className="flex items-center justify-between gap-4">
           <Link href="/" className="shrink-0" aria-label="Value Hub 홈">
-            <BrandLogoIcon size="md" className="size-9 md:size-10" />
+            <SiteHeaderLogo size="md" />
           </Link>
 
           <div

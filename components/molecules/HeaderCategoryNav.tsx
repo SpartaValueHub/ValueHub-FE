@@ -50,7 +50,7 @@ export function HeaderCategoryNav({
                   "md:text-[15px] transition-colors",
                   active
                     ? "vh-text-category-active"
-                    : "text-vh-gray-500 hover:text-vh-gray-300"
+                    : "text-vh-gray-500 hover:text-[#F2CA7B]"
                 )}
               >
                 {item.label}

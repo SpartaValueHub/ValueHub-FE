@@ -47,7 +47,7 @@ export function HeaderSearchCategorySelect({
     <div ref={rootRef} className={cn("relative shrink-0", className)}>
       <button
         type="button"
-        className="flex items-center gap-1 font-sans text-sm text-vh-gray-300 transition-colors hover:text-vh-brand-gold"
+        className="flex items-center gap-1 font-sans text-sm text-vh-gray-300 transition-colors hover:text-[#F2CA7B]"
         aria-label="검색 카테고리"
         aria-expanded={open}
         aria-haspopup="listbox"
@@ -73,7 +73,7 @@ export function HeaderSearchCategorySelect({
                   className={cn(
                     "flex w-full px-3 py-2 text-left font-sans text-sm transition-colors",
                     active
-                      ? "text-vh-brand-gold"
+                      ? "text-[#F2CA7B]"
                       : "text-vh-gray-300 hover:bg-vh-gray-700/40 hover:text-vh-gray-100"
                   )}
                   onClick={() => {

@@ -28,14 +28,18 @@ describe("GET /api/auth/session-event", () => {
     vi.clearAllMocks();
   });
 
-  it("플래그가 있으면 NextAuth 없이 duplicateLogin=true", async () => {
+  it("플래그가 있으면 NextAuth 없이 duplicateLogin=true + code", async () => {
     mockHasMaterial.mockResolvedValue(false);
     mockHasFlag.mockResolvedValue(true);
 
     const res = await GET();
     const body = await res.json();
 
-    expect(body).toEqual({ duplicateLogin: true, hasSessionMaterial: false });
+    expect(body).toEqual({
+      duplicateLogin: true,
+      code: AUTH_SESSION_TERMINATED,
+      hasSessionMaterial: false,
+    });
     expect(mockProbe).not.toHaveBeenCalled();
   });
 
@@ -50,7 +54,7 @@ describe("GET /api/auth/session-event", () => {
     expect(mockProbe).not.toHaveBeenCalled();
   });
 
-  it("material 있고 probe가 duplicate면 true", async () => {
+  it("material 있고 probe가 duplicate면 true + code", async () => {
     mockHasMaterial.mockResolvedValue(true);
     mockHasFlag.mockResolvedValue(false);
     mockProbe.mockResolvedValue(true);
@@ -58,7 +62,11 @@ describe("GET /api/auth/session-event", () => {
     const res = await GET();
     const body = await res.json();
 
-    expect(body).toEqual({ duplicateLogin: true, hasSessionMaterial: true });
+    expect(body).toEqual({
+      duplicateLogin: true,
+      code: AUTH_SESSION_TERMINATED,
+      hasSessionMaterial: true,
+    });
     expect(mockProbe).toHaveBeenCalledOnce();
   });
 

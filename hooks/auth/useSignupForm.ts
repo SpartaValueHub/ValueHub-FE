@@ -5,6 +5,7 @@ import { useActionState, useEffect, useTransition } from "react";
 import { useForm } from "react-hook-form";
 
 import { signupAction, type SignupActionState } from "@/actions/auth";
+import { handleDuplicateLoginActionResult } from "@/lib/auth/handle-duplicate-login-action-result";
 import {
   emptySignupFormValues,
   signupFormSchema,
@@ -36,6 +37,10 @@ export function useSignupForm() {
     handleSubmit,
     formState: { errors, touchedFields, isSubmitted },
   } = form;
+
+  useEffect(() => {
+    if (handleDuplicateLoginActionResult(state)) return;
+  }, [state]);
 
   useEffect(() => {
     if (!state.values) return;

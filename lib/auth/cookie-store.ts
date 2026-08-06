@@ -61,7 +61,7 @@ export async function getRefreshTokenValue(): Promise<string | undefined> {
   return store.get(AUTH_COOKIE_REFRESH)?.value;
 }
 
-/** apiFetch refresh 실패(duplicate login) — 서버 session-event polling용 HttpOnly 플래그 */
+/** apiFetch refresh 실패(duplicate login) — session-event·focus fallback용 HttpOnly 플래그 */
 export async function markDuplicateLoginDetected() {
   const store = await cookies();
   store.set(DUPLICATE_LOGIN_COOKIE, "1", {

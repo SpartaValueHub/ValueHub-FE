@@ -5,9 +5,15 @@
 import {
   applyResponseCookies,
   buildAuthCookieHeader,
+  markDuplicateLoginDetected,
 } from "@/lib/auth/cookie-store";
 import { AUTH_COOKIE_REFRESH } from "@/lib/auth/cookies";
+import {
+  DuplicateLoginError,
+  isDuplicateLoginRefreshFailure,
+} from "@/lib/auth/duplicate-login";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
+import type { ApiErrorResponse } from "@/types/auth/api";
 
 export class ApiError extends Error {
   status: number;
@@ -65,10 +71,25 @@ function getTrustedOriginHeader(): Record<string, string> {
   return origin ? { Origin: origin } : {};
 }
 
-async function refreshAuthCookies(baseUrl: string): Promise<boolean> {
+type RefreshAuthCookiesResult =
+  | { ok: true }
+  | { ok: false; reason: "missing_refresh" | "duplicate_login" | "expired" };
+
+async function parseErrorBody(text: string): Promise<ApiErrorResponse | null> {
+  if (!text) return null;
+  try {
+    return JSON.parse(text) as ApiErrorResponse;
+  } catch {
+    return null;
+  }
+}
+
+async function refreshAuthCookies(
+  baseUrl: string
+): Promise<RefreshAuthCookiesResult> {
   const cookieHeader = await buildAuthCookieHeader();
   if (!cookieHeader?.includes(AUTH_COOKIE_REFRESH)) {
-    return false;
+    return { ok: false, reason: "missing_refresh" };
   }
 
   const url = `${baseUrl}${API_ENDPOINTS.auth.refresh}`;
@@ -82,10 +103,18 @@ async function refreshAuthCookies(baseUrl: string): Promise<boolean> {
     cache: "no-store",
   });
 
-  if (!res.ok) return false;
+  if (res.ok) {
+    await applyResponseCookies(res);
+    return { ok: true };
+  }
 
-  await applyResponseCookies(res);
-  return true;
+  const body = await parseErrorBody(await res.text());
+  if (isDuplicateLoginRefreshFailure(res.status, body)) {
+    await markDuplicateLoginDetected();
+    return { ok: false, reason: "duplicate_login" };
+  }
+
+  return { ok: false, reason: "expired" };
 }
 
 export async function apiFetch<T>(
@@ -139,9 +168,20 @@ export async function apiFetch<T>(
   }
 
   if (res.status === 401 && !options._retried && !options.skipSessionRecovery) {
-    const refreshed = await refreshAuthCookies(base);
-    if (refreshed) {
+    const errorText = await res.text();
+    const errorBody = await parseErrorBody(errorText);
+
+    if (isDuplicateLoginRefreshFailure(res.status, errorBody)) {
+      await markDuplicateLoginDetected();
+      throw new DuplicateLoginError();
+    }
+
+    const refreshResult = await refreshAuthCookies(base);
+    if (refreshResult.ok) {
       return apiFetch<T>(path, { ...options, _retried: true });
+    }
+    if (refreshResult.reason === "duplicate_login") {
+      throw new DuplicateLoginError();
     }
     throw new AuthSessionExpiredError();
   }

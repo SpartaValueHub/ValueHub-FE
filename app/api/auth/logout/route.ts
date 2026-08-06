@@ -1,4 +1,9 @@
-import { clearAuthCookies } from "@/lib/auth/cookie-store";
+import {
+  clearAuthCookies,
+  clearDuplicateLoginFlag,
+} from "@/lib/auth/cookie-store";
+import { isIgnorableLogoutFailure } from "@/lib/auth/logout-errors";
+import { clearNextAuthSession } from "@/lib/auth/nextauth-session";
 import { getAuthUser } from "@/lib/session";
 import { logoutService } from "@/services/auth.service";
 
@@ -11,9 +16,13 @@ export async function POST() {
       await logoutService();
     }
   } catch (error) {
-    console.error("Backend logout failed:", error);
+    if (!isIgnorableLogoutFailure(error)) {
+      console.error("Backend logout failed:", error);
+    }
   }
 
   await clearAuthCookies();
+  await clearDuplicateLoginFlag();
+  await clearNextAuthSession();
   return Response.json({ ok: true });
 }

@@ -11,11 +11,23 @@ export interface ApiSignupRequest {
 }
 
 export interface ApiSignupResponse {
+  signupCompletionToken: string;
   authUuid: string;
   logInId: string;
   email: string;
   memberName: string;
   birthdayDate: string;
+}
+
+export interface ApiSignupResumeRequest {
+  logInId: string;
+  password: string;
+  captchaToken?: string;
+}
+
+export interface ApiSignupResumeResponse {
+  authUuid: string;
+  signupCompletionToken: string;
 }
 
 export interface ApiSignInResponse {
@@ -46,11 +58,6 @@ export interface ApiIdentityVerificationConfirmResponse {
   phoneNumber?: string;
   birthdayDate?: string;
   gender?: ApiGender;
-}
-
-export interface ApiIdentityVerificationStatusResponse {
-  purpose: VerificationPurpose;
-  status: string;
 }
 
 export interface ApiErrorResponse {

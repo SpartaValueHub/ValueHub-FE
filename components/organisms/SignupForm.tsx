@@ -6,14 +6,16 @@ import { Controller } from "react-hook-form";
 import { Button } from "@/components/atoms/button";
 import { Spinner } from "@/components/atoms/spinner";
 import { GenderToggle } from "@/components/molecules/GenderToggle";
+import { AddressSearchField } from "@/components/molecules/AddressSearchField";
 import { SigninInputField } from "@/components/molecules/SigninInputField";
 import { SignupFieldWithAction } from "@/components/molecules/SignupFieldWithAction";
 import { TermsAgreementSection } from "@/components/organisms/TermsAgreementSection";
 import { useAvailabilityCheck } from "@/hooks/auth/useAvailabilityCheck";
 import { useIdentityVerification } from "@/hooks/auth/useIdentityVerification";
 import { useSignupForm } from "@/hooks/auth/useSignupForm";
+import { SIGNUP_AUTO_LOGIN_FAILED_FOOTER } from "@/lib/auth/signup-auto-login";
 import { cn } from "@/lib/utils";
-import type { SignupFormInput } from "@/types/auth/signup";
+import { PASSWORD_HINT, type SignupFormInput } from "@/types/auth/signup";
 
 function formatPhoneDisplay(value: string) {
   const digits = value.replace(/\D/g, "");
@@ -34,19 +36,31 @@ export function SignupForm() {
     submitToAction,
     state,
     isPending,
+    submitDisabled,
+    showSubmitSpinner,
+    isPartialSuccess,
+    partialSuccessMessage,
+    autoLoginFailedMessage,
+    showPartialSuccessMessage,
+    showAutoLoginFailedMessage,
   } = useSignupForm();
 
   const {
     loginIdCheck,
     emailCheck,
+    nicknameCheck,
     isCheckingLoginId,
     isCheckingEmail,
+    isCheckingNickname,
     checkLoginId,
     checkEmail,
+    checkNickname,
     clearLoginIdCheck,
     clearEmailCheck,
+    clearNicknameCheck,
     verifyLoginId,
     verifyEmail,
+    verifyNickname,
   } = useAvailabilityCheck();
 
   const {
@@ -63,13 +77,16 @@ export function SignupForm() {
   });
 
   function onSubmit(data: SignupFormInput) {
-    if (!requestToken) {
+    if (!requestToken && !isPartialSuccess) {
       setIdentityMessage("본인인증을 먼저 완료해 주세요.");
       return;
     }
 
-    const loginIdError = verifyLoginId(data.logInId);
-    const emailError = verifyEmail(data.email);
+    const loginIdError = isPartialSuccess
+      ? undefined
+      : verifyLoginId(data.logInId);
+    const emailError = isPartialSuccess ? undefined : verifyEmail(data.email);
+    const nicknameError = verifyNickname(data.nickname);
 
     if (loginIdError) {
       setError("logInId", { type: "manual", message: loginIdError });
@@ -77,7 +94,10 @@ export function SignupForm() {
     if (emailError) {
       setError("email", { type: "manual", message: emailError });
     }
-    if (loginIdError || emailError) return;
+    if (nicknameError) {
+      setError("nickname", { type: "manual", message: nicknameError });
+    }
+    if (loginIdError || emailError || nicknameError) return;
 
     submitToAction(data, requestToken);
   }
@@ -118,7 +138,7 @@ export function SignupForm() {
             </div>
             <GenderToggle
               value={gender}
-              disabled={isPending}
+              disabled={submitDisabled}
               readOnly
               className="pb-2"
             />
@@ -132,26 +152,28 @@ export function SignupForm() {
           >
             휴대폰
           </label>
-          <div className="flex items-end gap-3 border-b border-vh-gray-100">
-            <Controller
-              control={control}
-              name="phone"
-              render={({ field }) => (
-                <input
-                  id="phone-display"
-                  readOnly
-                  value={formatPhoneDisplay(field.value)}
-                  placeholder="010-1234-5678"
-                  className="h-10 min-w-0 flex-1 bg-transparent py-1 text-base text-vh-gray-100 outline-none placeholder:text-vh-gray-700 md:text-sm"
-                />
-              )}
-            />
+          <div className="flex items-end gap-3">
+            <div className="min-w-0 flex-1 border-b border-vh-gray-100">
+              <Controller
+                control={control}
+                name="phone"
+                render={({ field }) => (
+                  <input
+                    id="phone-display"
+                    readOnly
+                    value={formatPhoneDisplay(field.value)}
+                    placeholder="010-1234-5678"
+                    className="h-10 min-w-0 w-full bg-transparent py-1 text-base text-vh-gray-100 outline-none placeholder:text-vh-gray-700 md:text-sm"
+                  />
+                )}
+              />
+            </div>
             <Button
               type="button"
               variant="brand"
               size="sm"
               className="mb-1 shrink-0 rounded-sm px-3 py-1 text-xs"
-              disabled={isPending || isVerifying || isIdentityVerified}
+              disabled={submitDisabled}
               aria-busy={isVerifying}
               onClick={handleIdentityVerification}
             >
@@ -186,7 +208,7 @@ export function SignupForm() {
               name="logInId"
               required
               value={field.value}
-              disabled={isPending}
+              disabled={submitDisabled}
               error={getFieldError("logInId")}
               hint="영소문자, 숫자 조합 4~20자리"
               actionLabel="중복확인"
@@ -209,11 +231,12 @@ export function SignupForm() {
           name="password"
           render={({ field }) => (
             <SigninInputField
-              label="비밀번호*"
+              label="비밀번호"
               name="password"
+              required
               type="password"
               value={field.value}
-              disabled={isPending}
+              disabled={submitDisabled}
               error={getFieldError("password")}
               autoComplete="new-password"
               onChange={field.onChange}
@@ -221,11 +244,7 @@ export function SignupForm() {
           )}
         />
         {!getFieldError("password") ? (
-          <p className="-mt-3 text-xs text-vh-gray-500">
-            비밀번호는 8~20자, 영문
-            대문자·소문자·숫자·특수문자(!@#$%^&*()-+_=)를 각각 1자 이상 포함해야
-            합니다.
-          </p>
+          <p className="-mt-3 text-xs text-vh-gray-500">{PASSWORD_HINT}</p>
         ) : null}
 
         <Controller
@@ -233,11 +252,12 @@ export function SignupForm() {
           name="passwordConfirm"
           render={({ field }) => (
             <SigninInputField
-              label="비밀번호 확인*"
+              label="비밀번호 확인"
               name="passwordConfirm"
+              required
               type="password"
               value={field.value}
-              disabled={isPending}
+              disabled={submitDisabled}
               error={getFieldError("passwordConfirm")}
               autoComplete="new-password"
               onChange={field.onChange}
@@ -248,20 +268,32 @@ export function SignupForm() {
         <Controller
           control={control}
           name="nickname"
-          render={({ field }) => (
-            <SignupFieldWithAction
-              label="닉네임"
-              name="nickname"
-              required
-              value={field.value}
-              disabled
-              placeholder="member-service 연동 예정"
-              hint="한글 2-10자"
-              actionLabel="중복확인"
-              actionDisabled
-              onChange={field.onChange}
-            />
-          )}
+          render={({ field }) => {
+            const nicknameError = getFieldError("nickname");
+            return (
+              <SignupFieldWithAction
+                label="닉네임"
+                name="nickname"
+                required
+                value={field.value}
+                disabled={submitDisabled}
+                error={nicknameError}
+                hint={nicknameError ? undefined : "한글 2-10자"}
+                actionLabel="중복확인"
+                actionPending={isCheckingNickname}
+                actionDisabled={!field.value.trim()}
+                actionMessage={
+                  nicknameError ? undefined : nicknameCheck.message
+                }
+                actionTone={nicknameCheck.tone}
+                onAction={() => checkNickname(field.value)}
+                onChange={(value) => {
+                  field.onChange(value);
+                  clearNicknameCheck();
+                }}
+              />
+            );
+          }}
         />
 
         <Controller
@@ -275,7 +307,7 @@ export function SignupForm() {
               type="text"
               inputMode="email"
               value={field.value}
-              disabled={isPending}
+              disabled={submitDisabled}
               error={getFieldError("email")}
               actionLabel="중복확인"
               actionPending={isCheckingEmail}
@@ -296,16 +328,20 @@ export function SignupForm() {
           control={control}
           name="region"
           render={({ field }) => (
-            <SignupFieldWithAction
-              label="주소"
-              name="region"
-              required
-              value={field.value}
-              disabled
-              placeholder="주소 검색 (준비 중)"
-              actionLabel="주소검색"
-              actionDisabled
-              onChange={field.onChange}
+            <Controller
+              control={control}
+              name="regionLegalDong"
+              render={({ field: legalDongField }) => (
+                <AddressSearchField
+                  name="region"
+                  value={field.value}
+                  disabled={submitDisabled}
+                  error={getFieldError("region")}
+                  required
+                  onChange={field.onChange}
+                  onLegalDongChange={legalDongField.onChange}
+                />
+              )}
             />
           )}
         />
@@ -323,20 +359,50 @@ export function SignupForm() {
         )}
       />
 
-      {!isPending && state.message ? (
+      {!isPending && state.message && !showPartialSuccessMessage ? (
         <p className="text-center text-sm text-destructive" role="status">
           {state.message}
         </p>
+      ) : null}
+
+      {showPartialSuccessMessage && partialSuccessMessage ? (
+        <div className="text-center text-sm text-vh-gray-500" role="status">
+          <p>{partialSuccessMessage}</p>
+          <p className="mt-2">
+            비밀번호와 프로필 정보를 확인한 뒤 가입을 이어서 완료해 주세요.
+          </p>
+        </div>
+      ) : null}
+
+      {showAutoLoginFailedMessage && autoLoginFailedMessage ? (
+        <div className="text-center text-sm text-vh-gray-500" role="status">
+          <p>{autoLoginFailedMessage}</p>
+          <p className="mt-2">{SIGNUP_AUTO_LOGIN_FAILED_FOOTER}</p>
+          <p className="mt-2">
+            <Link
+              href="/signin"
+              className="text-vh-gold-500 underline-offset-4 hover:underline"
+            >
+              로그인 페이지
+            </Link>
+          </p>
+        </div>
       ) : null}
 
       <Button
         type="submit"
         variant="brand"
         className="h-12 w-full rounded-sm text-base"
-        disabled={isPending}
-        aria-busy={isPending}
+        disabled={submitDisabled}
+        aria-busy={showSubmitSpinner}
       >
-        {isPending ? <Spinner size="sm" label="가입 중" inline /> : "회원가입"}
+        {showSubmitSpinner ? (
+          <Spinner size="sm" label="가입 중" inline />
+        ) : isPartialSuccess ? (
+          "가입 이어서 완료"
+        ) : (
+          "회원가입"
+        )}
       </Button>
 
       <p className="text-center text-sm text-vh-gray-500">

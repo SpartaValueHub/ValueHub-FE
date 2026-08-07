@@ -1,15 +1,50 @@
 import type { NextAuthOptions, User } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
-import { applyResponseCookies } from "@/lib/auth/cookie-store";
-import { buildAuthorizeErrorPayload } from "@/lib/auth/signin-errors";
-import { getApiUrl } from "@/lib/api/client";
-import type { ApiErrorResponse, ApiSignInResponse } from "@/types/auth/api";
+import { signInUserForAuthorize } from "@/lib/api/auth.authorize";
+import { getMyMemberProfileService } from "@/services/member.service";
+
+type AuthorizeCredentials = {
+  logInId?: string;
+  password?: string;
+  captchaToken?: string;
+};
 
 /**
  * Auth.js JWT 세션 — memberUuid, nickname, role 만 보관.
  * Access/Refresh JWT는 HttpOnly Cookie(vh_*) — NextAuth payload에 넣지 않음.
  */
+export async function authorizeCredentials(
+  credentials: AuthorizeCredentials | undefined
+): Promise<User | null> {
+  if (!credentials?.logInId || !credentials?.password) return null;
+
+  try {
+    const { cookieHeader, signIn } = await signInUserForAuthorize({
+      logInId: credentials.logInId!,
+      password: credentials.password!,
+      captchaToken: credentials.captchaToken,
+    });
+
+    const member = await getMyMemberProfileService(
+      cookieHeader ? { cookieHeader } : {}
+    );
+
+    return {
+      id: signIn.memberUuid,
+      memberUuid: signIn.memberUuid,
+      nickname: member.nickname,
+      role: signIn.role,
+    };
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("{")) {
+      throw error;
+    }
+    console.error("authorize failed:", error);
+    return null;
+  }
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -23,47 +58,7 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.logInId || !credentials?.password) return null;
 
         try {
-          const body: Record<string, string> = {
-            logInId: credentials.logInId,
-            password: credentials.password,
-          };
-          if (credentials.captchaToken) {
-            body.captchaToken = credentials.captchaToken;
-          }
-
-          const res = await fetch(`${getApiUrl()}/api/v1/auth/sign-in`, {
-            method: "POST",
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(body),
-            cache: "no-store",
-          });
-
-          if (!res.ok) {
-            const errorText = await res.text();
-            let errorBody: ApiErrorResponse | null = null;
-            if (errorText) {
-              try {
-                errorBody = JSON.parse(errorText) as ApiErrorResponse;
-              } catch {
-                errorBody = null;
-              }
-            }
-            const payload = buildAuthorizeErrorPayload(res.status, errorBody);
-            throw new Error(JSON.stringify(payload));
-          }
-
-          await applyResponseCookies(res);
-          const data = (await res.json()) as ApiSignInResponse;
-
-          return {
-            id: data.memberUuid,
-            memberUuid: data.memberUuid,
-            nickname: data.nickname,
-            role: data.role,
-          };
+          return await authorizeCredentials(credentials);
         } catch (error) {
           if (error instanceof Error && error.message.startsWith("{")) {
             throw error;

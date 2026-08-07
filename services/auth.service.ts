@@ -7,6 +7,7 @@ import {
   checkLoginIdAvailability,
   logoutUser,
   registerUser,
+  resumeSignup,
 } from "@/lib/api/auth";
 import type { ApiSignupResponse } from "@/types/auth/api";
 import type { SignupApiInput } from "@/types/auth/signup";
@@ -20,6 +21,14 @@ export async function signupService(
     password: input.password,
     email: input.email,
   });
+}
+
+export function resumeSignupService(input: {
+  logInId: string;
+  password: string;
+  captchaToken?: string;
+}) {
+  return resumeSignup(input);
 }
 
 export async function logoutService() {

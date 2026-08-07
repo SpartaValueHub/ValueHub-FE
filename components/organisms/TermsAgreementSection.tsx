@@ -47,7 +47,7 @@ function CheckboxRow({
           type="checkbox"
           checked={checked}
           onChange={(event) => onChange(event.target.checked)}
-          className="size-4 rounded-none border border-vh-gray-100 bg-transparent accent-vh-gold-500"
+          className="vh-checkbox size-4 rounded-none"
         />
         <span className="text-sm text-vh-gray-100">{label}</span>
       </span>
@@ -111,6 +111,9 @@ export function TermsAgreementSection({
       syncTermsState({
         ...value,
         [key]: checked,
+        ...(key === "marketing" && checked
+          ? { marketingEmail: true, marketingSms: true }
+          : {}),
         ...(key === "marketing" && !checked
           ? { marketingEmail: false, marketingSms: false }
           : {}),
@@ -153,7 +156,7 @@ export function TermsAgreementSection({
             onChange={(event) =>
               updateField("marketingEmail", event.target.checked)
             }
-            className="size-4 rounded-none border border-vh-gray-100 bg-transparent accent-vh-gold-500"
+            className="vh-checkbox size-4 rounded-none"
           />
           E-mail
         </label>
@@ -164,7 +167,7 @@ export function TermsAgreementSection({
             onChange={(event) =>
               updateField("marketingSms", event.target.checked)
             }
-            className="size-4 rounded-none border border-vh-gray-100 bg-transparent accent-vh-gold-500"
+            className="vh-checkbox size-4 rounded-none"
           />
           SMS
         </label>

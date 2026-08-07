@@ -1,9 +1,11 @@
-import { apiFetch } from "@/lib/api/client";
+import { apiFetch, apiTimeoutFromEnv } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import type {
   ApiAvailabilityResponse,
   ApiSignupRequest,
   ApiSignupResponse,
+  ApiSignupResumeRequest,
+  ApiSignupResumeResponse,
 } from "@/types/auth/api";
 
 /** auth-service HTTP — lib/api/* 전용. UI·actions에서 import 금지. */
@@ -14,6 +16,17 @@ export function registerUser(body: ApiSignupRequest) {
     body,
     cache: { noStore: true },
     skipSessionRecovery: true,
+    timeoutMillis: apiTimeoutFromEnv("AUTH_SIGNUP_TIMEOUT_MILLIS", 10_000),
+  });
+}
+
+export function resumeSignup(body: ApiSignupResumeRequest) {
+  return apiFetch<ApiSignupResumeResponse>(API_ENDPOINTS.auth.resumeSignUp, {
+    method: "POST",
+    body,
+    cache: { noStore: true },
+    skipSessionRecovery: true,
+    timeoutMillis: 5_000,
   });
 }
 
@@ -23,6 +36,7 @@ export function logoutUser() {
     cache: { noStore: true },
     trustedOrigin: true,
     skipSessionRecovery: true,
+    timeoutMillis: 5_000,
   });
 }
 

@@ -13,8 +13,10 @@ import {
   createMemberService,
 } from "@/services/member.service";
 import {
+  parseTermsFromFormData,
   signupOrchestrationSchema,
   signupResumeOrchestrationSchema,
+  toTermConsents,
   type SignupFieldErrors,
   type SignupOrchestrationInput,
   type SignupResumeOrchestrationInput,
@@ -65,12 +67,14 @@ export async function signupAction(
   const preserved = preservedFromForm(formData);
 
   if (isResume) {
+    const terms = parseTermsFromFormData(formData);
     const resumeValues = {
       logInId: preserved.logInId,
       password: String(formData.get("password") ?? ""),
       nickname: preserved.nickname,
       region: preserved.region,
       regionLegalDong: preserved.regionLegalDong,
+      terms,
     };
     const parsed = signupResumeOrchestrationSchema.safeParse(resumeValues);
     if (!parsed.success) {
@@ -90,7 +94,13 @@ export async function signupAction(
 
     let authStepSucceeded = false;
     try {
-      const { logInId, password, nickname, regionLegalDong } = parsed.data;
+      const {
+        logInId,
+        password,
+        nickname,
+        regionLegalDong,
+        terms: parsedTerms,
+      } = parsed.data;
       const authResult = await resumeSignupService({
         logInId,
         password,
@@ -119,6 +129,7 @@ export async function signupAction(
           memberUuid: authResult.authUuid,
           nickname,
           address: regionLegalDong,
+          termConsents: toTermConsents(parsedTerms),
         },
         { completionToken: authResult.signupCompletionToken }
       );
@@ -144,6 +155,7 @@ export async function signupAction(
     }
   }
 
+  const terms = parseTermsFromFormData(formData);
   const values = {
     logInId: preserved.logInId,
     password: String(formData.get("password") ?? ""),
@@ -154,6 +166,7 @@ export async function signupAction(
     nickname: preserved.nickname,
     region: preserved.region,
     regionLegalDong: preserved.regionLegalDong,
+    terms,
   };
   const parsed = signupOrchestrationSchema.safeParse(values);
   if (!parsed.success) {
@@ -174,7 +187,14 @@ export async function signupAction(
 
   let authStepSucceeded = false;
   try {
-    const { logInId, password, email, nickname, regionLegalDong } = parsed.data;
+    const {
+      logInId,
+      password,
+      email,
+      nickname,
+      regionLegalDong,
+      terms: parsedTerms,
+    } = parsed.data;
     const authResult = await signupService({
       requestToken,
       logInId,
@@ -199,6 +219,7 @@ export async function signupAction(
         memberUuid: authResult.authUuid,
         nickname,
         address: regionLegalDong,
+        termConsents: toTermConsents(parsedTerms),
       },
       { completionToken: authResult.signupCompletionToken }
     );

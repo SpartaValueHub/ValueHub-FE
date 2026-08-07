@@ -34,6 +34,7 @@ export async function createMemberService(
       nickname: input.nickname,
       profileImageUrl: input.profileImageUrl,
       address: input.address,
+      termConsents: input.termConsents,
     },
     { completionToken: options.completionToken }
   );

@@ -23,4 +23,7 @@ export const API_ENDPOINTS = {
     checkNickname: (nickname: string) =>
       `/api/v1/members/check/nickname?nickname=${encodeURIComponent(nickname)}`,
   },
+  terms: {
+    active: "/api/v1/terms/active",
+  },
 } as const;

@@ -212,6 +212,20 @@ export function useSignupForm(options: UseSignupFormOptions = {}) {
     formData.set("region", data.region);
     formData.set("regionLegalDong", data.regionLegalDong);
 
+    const terms =
+      "terms" in data && data.terms
+        ? data.terms
+        : {
+            service: false,
+            privacy: false,
+            marketingEmail: false,
+            marketingSms: false,
+          };
+    formData.set("termService", String(terms.service));
+    formData.set("termPrivacy", String(terms.privacy));
+    formData.set("termEmail", String(terms.marketingEmail));
+    formData.set("termSms", String(terms.marketingSms));
+
     if (!isResumeFlow && "passwordConfirm" in data) {
       formData.set("passwordConfirm", data.passwordConfirm);
       formData.set("email", data.email);

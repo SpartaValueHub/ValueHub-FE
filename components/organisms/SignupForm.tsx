@@ -1,22 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState } from "react";
 import { Controller } from "react-hook-form";
 
 import { Button } from "@/components/atoms/button";
 import { Spinner } from "@/components/atoms/spinner";
 import { GenderToggle } from "@/components/molecules/GenderToggle";
 import { AddressSearchField } from "@/components/molecules/AddressSearchField";
-import {
-  RECAPTCHA_EXPIRED_MESSAGE,
-  RecaptchaWidget,
-} from "@/components/molecules/RecaptchaWidget";
+import { RecaptchaWidget } from "@/components/molecules/RecaptchaWidget";
 import { SigninInputField } from "@/components/molecules/SigninInputField";
 import { SignupFieldWithAction } from "@/components/molecules/SignupFieldWithAction";
 import { TermsAgreementSection } from "@/components/organisms/TermsAgreementSection";
 import { useAvailabilityCheck } from "@/hooks/auth/useAvailabilityCheck";
 import { useIdentityVerification } from "@/hooks/auth/useIdentityVerification";
+import { useSignupCaptcha } from "@/hooks/auth/useSignupCaptcha";
 import { useSignupForm } from "@/hooks/auth/useSignupForm";
 import { SIGNUP_AUTO_LOGIN_FAILED_FOOTER } from "@/lib/auth/signup-auto-login";
 import {
@@ -97,12 +94,21 @@ export function SignupForm({ resumeMode = false }: SignupFormProps) {
     setValue("phone" as keyof SignupFormInput, prefill.phone);
   });
 
-  const [captchaRequired, setCaptchaRequired] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState<string>();
-  const [captchaMessage, setCaptchaMessage] = useState<string>();
-  const [captchaExpiredMessage, setCaptchaExpiredMessage] = useState<string>();
-  const [captchaKey, setCaptchaKey] = useState(0);
-  const [trackedCaptchaErrorKey, setTrackedCaptchaErrorKey] = useState("");
+  const {
+    captchaRequired,
+    captchaToken,
+    captchaMessage,
+    captchaExpiredMessage,
+    captchaKey,
+    handleCaptchaChange,
+    handleCaptchaExpired,
+    handleCaptchaLoadError,
+    setCaptchaCompletionRequired,
+  } = useSignupCaptcha({
+    code: state.code,
+    message: state.message,
+    retryAfterSeconds: state.retryAfterSeconds,
+  });
 
   const resumeError = state.code
     ? parseSignInError(
@@ -127,42 +133,6 @@ export function SignupForm({ resumeMode = false }: SignupFormProps) {
     ].includes(resumeError.code)
   );
 
-  // action state 변화에 맞춰 CAPTCHA UI 상태 조정 (render-time adjust)
-  const captchaErrorKey = resumeError
-    ? `${resumeError.code}|${resumeError.retryAfterSeconds ?? ""}|${state.message ?? ""}`
-    : "";
-  if (captchaErrorKey && captchaErrorKey !== trackedCaptchaErrorKey) {
-    setTrackedCaptchaErrorKey(captchaErrorKey);
-    if (resumeError && isCaptchaRequiredError(resumeError)) {
-      setCaptchaRequired(true);
-      setCaptchaMessage(signInErrorMessage(resumeError));
-    } else if (resumeError?.code === "AUTH_CAPTCHA_INVALID") {
-      setCaptchaRequired(true);
-      setCaptchaToken(undefined);
-      setCaptchaExpiredMessage(undefined);
-      setCaptchaKey((key) => key + 1);
-      setCaptchaMessage(signInErrorMessage(resumeError));
-    }
-  }
-
-  const handleCaptchaChange = useCallback((token: string | undefined) => {
-    setCaptchaToken(token);
-    if (token) {
-      setCaptchaExpiredMessage(undefined);
-      setCaptchaMessage(undefined);
-    }
-  }, []);
-
-  const handleCaptchaExpired = useCallback(() => {
-    setCaptchaExpiredMessage(RECAPTCHA_EXPIRED_MESSAGE);
-  }, []);
-
-  const handleCaptchaLoadError = useCallback(() => {
-    setCaptchaMessage(
-      "보안 확인을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."
-    );
-  }, []);
-
   function onSubmit(data: SignupFormInput | SignupResumeFormInput) {
     if (!isResumeFlow && !requestToken) {
       setIdentityMessage("본인인증을 먼저 완료해 주세요.");
@@ -170,7 +140,7 @@ export function SignupForm({ resumeMode = false }: SignupFormProps) {
     }
 
     if (isResumeFlow && captchaRequired && !captchaToken) {
-      setCaptchaMessage("보안 확인을 완료해 주세요.");
+      setCaptchaCompletionRequired();
       return;
     }
 
@@ -468,19 +438,26 @@ export function SignupForm({ resumeMode = false }: SignupFormProps) {
         />
       </div>
 
-      {!isResumeFlow ? (
-        <Controller
-          control={control}
-          name={"terms" as keyof SignupFormInput}
-          render={({ field }) => (
-            <TermsAgreementSection
-              value={field.value as SignupFormInput["terms"]}
-              onChange={field.onChange}
-              error={getFieldError("terms")}
-            />
-          )}
-        />
-      ) : null}
+      <Controller
+        control={control}
+        name={"terms" as keyof SignupFormInput}
+        render={({ field }) => (
+          <TermsAgreementSection
+            value={
+              (field.value as SignupFormInput["terms"] | undefined) ?? {
+                all: false,
+                service: false,
+                privacy: false,
+                marketing: false,
+                marketingEmail: false,
+                marketingSms: false,
+              }
+            }
+            onChange={field.onChange}
+            error={getFieldError("terms")}
+          />
+        )}
+      />
 
       {isResumeFlow && captchaRequired && recaptchaSiteKey ? (
         <div className="flex flex-col items-center gap-2">

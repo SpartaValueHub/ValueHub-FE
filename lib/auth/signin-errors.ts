@@ -4,9 +4,11 @@ export type SignInErrorCode =
   | "AUTH_UNAUTHORIZED"
   | "AUTH_CAPTCHA_REQUIRED"
   | "AUTH_CAPTCHA_INVALID"
+  | "AUTH_CAPTCHA_PROVIDER_UNAVAILABLE"
   | "AUTH_ACCOUNT_LOCKED"
   | "AUTH_RATE_LIMITED"
   | "AUTH_MEMBER_NOT_ACTIVE"
+  | "AUTH_REQUEST_TIMEOUT"
   | "CredentialsSignin";
 
 export type ParsedSignInError = {
@@ -21,6 +23,9 @@ const ACCOUNT_LOCKED_FALLBACK =
 const RATE_LIMITED_FALLBACK =
   "로그인 요청이 많습니다. 잠시 후 다시 시도해 주세요.";
 
+const CAPTCHA_PROVIDER_FALLBACK =
+  "보안 확인을 일시적으로 사용할 수 없습니다. 잠시 후 다시 시도해 주세요.";
+
 const SIGN_IN_ERROR_MESSAGES: Record<
   Exclude<SignInErrorCode, "CredentialsSignin">,
   string
@@ -28,9 +33,12 @@ const SIGN_IN_ERROR_MESSAGES: Record<
   AUTH_UNAUTHORIZED: "아이디 또는 비밀번호가 올바르지 않습니다.",
   AUTH_CAPTCHA_REQUIRED: "로그인 시도가 많습니다. 보안 확인을 완료해 주세요.",
   AUTH_CAPTCHA_INVALID: "보안 확인에 실패했습니다. 다시 시도해 주세요.",
+  AUTH_CAPTCHA_PROVIDER_UNAVAILABLE: CAPTCHA_PROVIDER_FALLBACK,
   AUTH_ACCOUNT_LOCKED: ACCOUNT_LOCKED_FALLBACK,
   AUTH_RATE_LIMITED: RATE_LIMITED_FALLBACK,
   AUTH_MEMBER_NOT_ACTIVE: "현재 로그인할 수 없는 계정입니다.",
+  AUTH_REQUEST_TIMEOUT:
+    "요청 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.",
 };
 
 function formatRetryAfterMessage(
@@ -212,6 +220,14 @@ export function signInErrorMessage(error: ParsedSignInError): string {
 
   if (error.code === "AUTH_RATE_LIMITED") {
     return formatRateLimitedMessage(error.retryAfterSeconds);
+  }
+
+  if (error.code === "AUTH_CAPTCHA_PROVIDER_UNAVAILABLE") {
+    return formatRetryAfterMessage(
+      error.retryAfterSeconds,
+      CAPTCHA_PROVIDER_FALLBACK,
+      "보안 확인을 일시적으로 사용할 수 없습니다."
+    );
   }
 
   if (error.message && !looksLikeInternalError(error.message)) {

@@ -14,8 +14,10 @@ import {
 } from "@/services/member.service";
 import {
   signupOrchestrationSchema,
+  signupResumeOrchestrationSchema,
   type SignupFieldErrors,
   type SignupOrchestrationInput,
+  type SignupResumeOrchestrationInput,
 } from "@/types/auth/signup";
 
 export type SignupActionState = {
@@ -24,28 +26,25 @@ export type SignupActionState = {
   partialSuccess?: boolean;
   message?: string;
   code?: string;
+  retryAfterSeconds?: number;
   fieldErrors?: SignupFieldErrors;
-  values?: Pick<
-    SignupOrchestrationInput,
-    | "logInId"
-    | "email"
-    | "name"
-    | "phone"
-    | "nickname"
-    | "region"
-    | "regionLegalDong"
+  values?: Partial<
+    Pick<
+      SignupOrchestrationInput & SignupResumeOrchestrationInput,
+      | "logInId"
+      | "email"
+      | "name"
+      | "phone"
+      | "nickname"
+      | "region"
+      | "regionLegalDong"
+    >
   >;
 };
 
-export async function signupAction(
-  previousState: SignupActionState,
-  formData: FormData
-): Promise<SignupActionState> {
-  const requestToken = String(formData.get("requestToken") ?? "").trim();
-  const values = {
+function preservedFromForm(formData: FormData) {
+  return {
     logInId: String(formData.get("logInId") ?? ""),
-    password: String(formData.get("password") ?? ""),
-    passwordConfirm: String(formData.get("passwordConfirm") ?? ""),
     email: String(formData.get("email") ?? ""),
     name: String(formData.get("name") ?? ""),
     phone: String(formData.get("phone") ?? ""),
@@ -53,26 +52,119 @@ export async function signupAction(
     region: String(formData.get("region") ?? ""),
     regionLegalDong: String(formData.get("regionLegalDong") ?? ""),
   };
-  const preserved = {
-    logInId: values.logInId,
-    email: values.email,
-    name: values.name,
-    phone: values.phone,
-    nickname: values.nickname,
-    region: values.region,
-    regionLegalDong: values.regionLegalDong,
+}
+
+export async function signupAction(
+  previousState: SignupActionState,
+  formData: FormData
+): Promise<SignupActionState> {
+  const resumeMode = formData.get("resumeMode") === "true";
+  const isResume = resumeMode || Boolean(previousState.partialSuccess);
+  const requestToken = String(formData.get("requestToken") ?? "").trim();
+  const captchaToken = String(formData.get("captchaToken") ?? "").trim();
+  const preserved = preservedFromForm(formData);
+
+  if (isResume) {
+    const resumeValues = {
+      logInId: preserved.logInId,
+      password: String(formData.get("password") ?? ""),
+      nickname: preserved.nickname,
+      region: preserved.region,
+      regionLegalDong: preserved.regionLegalDong,
+    };
+    const parsed = signupResumeOrchestrationSchema.safeParse(resumeValues);
+    if (!parsed.success) {
+      return {
+        ok: false,
+        partialSuccess: true,
+        message: "입력값을 확인해 주세요.",
+        fieldErrors: parsed.error.flatten().fieldErrors,
+        values: {
+          logInId: preserved.logInId,
+          nickname: preserved.nickname,
+          region: preserved.region,
+          regionLegalDong: preserved.regionLegalDong,
+        },
+      };
+    }
+
+    let authStepSucceeded = false;
+    try {
+      const { logInId, password, nickname, regionLegalDong } = parsed.data;
+      const authResult = await resumeSignupService({
+        logInId,
+        password,
+        ...(captchaToken ? { captchaToken } : {}),
+      });
+      authStepSucceeded = true;
+
+      if (!authResult.signupCompletionToken) {
+        return {
+          ok: false,
+          partialSuccess: true,
+          code: "SIGNUP_COMPLETION_TOKEN_MISSING",
+          message:
+            "회원가입 처리 구성이 아직 반영되지 않았습니다. 잠시 후 가입을 이어서 완료해 주세요.",
+          values: {
+            logInId: preserved.logInId,
+            nickname: preserved.nickname,
+            region: preserved.region,
+            regionLegalDong: preserved.regionLegalDong,
+          },
+        };
+      }
+
+      await createMemberService(
+        {
+          memberUuid: authResult.authUuid,
+          nickname,
+          address: regionLegalDong,
+        },
+        { completionToken: authResult.signupCompletionToken }
+      );
+
+      return { ok: true, autoLoginRequired: true };
+    } catch (error) {
+      return {
+        ...mapSignupError(
+          error,
+          {
+            authStepSucceeded,
+            keepPartialSuccess: true,
+          },
+          "가입 이어서 완료에 실패했습니다."
+        ),
+        values: {
+          logInId: preserved.logInId,
+          nickname: preserved.nickname,
+          region: preserved.region,
+          regionLegalDong: preserved.regionLegalDong,
+        },
+      };
+    }
+  }
+
+  const values = {
+    logInId: preserved.logInId,
+    password: String(formData.get("password") ?? ""),
+    passwordConfirm: String(formData.get("passwordConfirm") ?? ""),
+    email: preserved.email,
+    name: preserved.name,
+    phone: preserved.phone,
+    nickname: preserved.nickname,
+    region: preserved.region,
+    regionLegalDong: preserved.regionLegalDong,
   };
   const parsed = signupOrchestrationSchema.safeParse(values);
   if (!parsed.success) {
     return {
       ok: false,
-      partialSuccess: previousState.partialSuccess,
       message: "입력값을 확인해 주세요.",
       fieldErrors: parsed.error.flatten().fieldErrors,
       values: preserved,
     };
   }
-  if (!previousState.partialSuccess && !requestToken) {
+  if (!requestToken) {
     return {
       ok: false,
       message: "본인인증을 먼저 완료해 주세요.",
@@ -80,13 +172,17 @@ export async function signupAction(
     };
   }
 
-  let authCreated = Boolean(previousState.partialSuccess);
+  let authStepSucceeded = false;
   try {
     const { logInId, password, email, nickname, regionLegalDong } = parsed.data;
-    const authResult = previousState.partialSuccess
-      ? await resumeSignupService({ logInId, password })
-      : await signupService({ requestToken, logInId, password, email });
-    authCreated = true;
+    const authResult = await signupService({
+      requestToken,
+      logInId,
+      password,
+      email,
+    });
+    authStepSucceeded = true;
+
     if (!authResult.signupCompletionToken) {
       return {
         ok: false,
@@ -110,7 +206,14 @@ export async function signupAction(
     return { ok: true, autoLoginRequired: true };
   } catch (error) {
     return {
-      ...mapSignupError(error, { authCreated }, "회원가입에 실패했습니다."),
+      ...mapSignupError(
+        error,
+        {
+          authStepSucceeded,
+          keepPartialSuccess: authStepSucceeded,
+        },
+        "회원가입에 실패했습니다."
+      ),
       values: preserved,
     };
   }

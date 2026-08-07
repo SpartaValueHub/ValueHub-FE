@@ -139,6 +139,44 @@ export type SignupOrchestrationInput = z.infer<
   typeof signupOrchestrationSchema
 >;
 
+/** 고아 계정 복구 — 아이디·비밀번호·닉네임·주소만 (본인인증 불필요) */
+export const signupResumeOrchestrationSchema = z.object({
+  logInId: z
+    .string()
+    .regex(
+      LOGIN_ID_PATTERN,
+      "아이디는 영문 소문자와 숫자 조합 4~20자여야 합니다."
+    ),
+  password: z.string().regex(PASSWORD_PATTERN, PASSWORD_VALIDATION_MESSAGE),
+  nickname: z
+    .string()
+    .regex(NICKNAME_PATTERN, "닉네임은 한글 2~10자여야 합니다."),
+  region: z
+    .string()
+    .min(1, "주소를 검색해 주세요.")
+    .max(200, "주소는 200자 이하여야 합니다."),
+  regionLegalDong: z
+    .string()
+    .min(1, "주소를 검색해 주세요.")
+    .max(100, "주소는 100자 이하여야 합니다."),
+});
+
+export type SignupResumeOrchestrationInput = z.infer<
+  typeof signupResumeOrchestrationSchema
+>;
+
+export const signupResumeFormSchema = signupResumeOrchestrationSchema;
+
+export type SignupResumeFormInput = z.infer<typeof signupResumeFormSchema>;
+
+export const emptySignupResumeFormValues: SignupResumeFormInput = {
+  logInId: "",
+  password: "",
+  nickname: "",
+  region: "",
+  regionLegalDong: "",
+};
+
 export const emptySignupValues: SignupInput = {
   logInId: "",
   password: "",

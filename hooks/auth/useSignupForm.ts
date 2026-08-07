@@ -10,7 +10,7 @@ import {
   useState,
   useTransition,
 } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type FieldErrors } from "react-hook-form";
 
 import { signupAction, type SignupActionState } from "@/actions/auth";
 import { useAppSession } from "@/context/SessionContext";
@@ -23,14 +23,22 @@ import { SIGNUP_PARTIAL_SUCCESS_MESSAGE } from "@/lib/auth/signup-partial-succes
 import { resolveSignupFormUiState } from "@/lib/auth/signup-form-state";
 import {
   emptySignupFormValues,
+  emptySignupResumeFormValues,
   signupFormSchema,
+  signupResumeFormSchema,
   type SignupFieldErrors,
   type SignupFormInput,
+  type SignupResumeFormInput,
 } from "@/types/auth/signup";
 
 const initialState: SignupActionState = { ok: false };
 
-export function useSignupForm() {
+type UseSignupFormOptions = {
+  resumeMode?: boolean;
+};
+
+export function useSignupForm(options: UseSignupFormOptions = {}) {
+  const resumeMode = Boolean(options.resumeMode);
   const router = useRouter();
   const { refresh } = useAppSession();
   const [state, formAction, actionPending] = useActionState(
@@ -45,6 +53,12 @@ export function useSignupForm() {
     useState<string>();
 
   const isPartialSuccess = Boolean(state.partialSuccess);
+  const isResumeFlow = resumeMode || isPartialSuccess;
+  const isResumeFlowRef = useRef(isResumeFlow);
+
+  useEffect(() => {
+    isResumeFlowRef.current = isResumeFlow;
+  }, [isResumeFlow]);
 
   const uiState = resolveSignupFormUiState({
     actionPending,
@@ -52,9 +66,17 @@ export function useSignupForm() {
     partialSuccess: isPartialSuccess,
   });
 
-  const form = useForm<SignupFormInput>({
-    resolver: zodResolver(signupFormSchema),
-    defaultValues: emptySignupFormValues,
+  const form = useForm<SignupFormInput | SignupResumeFormInput>({
+    // partialSuccess로 전환돼도 resume 스키마를 쓰도록 ref로 동적 선택
+    resolver: async (values, context, options) => {
+      const schema = isResumeFlowRef.current
+        ? signupResumeFormSchema
+        : signupFormSchema;
+      return zodResolver(schema)(values, context, options);
+    },
+    defaultValues: resumeMode
+      ? emptySignupResumeFormValues
+      : emptySignupFormValues,
     mode: "onChange",
   });
 
@@ -127,7 +149,9 @@ export function useSignupForm() {
     })();
   }, [state.ok, state.autoLoginRequired, getValues, refresh, router]);
 
-  function getFieldError(name: keyof SignupFormInput): string | undefined {
+  function getFieldError(
+    name: keyof SignupFormInput | keyof SignupResumeFormInput
+  ): string | undefined {
     const serverError =
       name === "terms"
         ? undefined
@@ -136,21 +160,27 @@ export function useSignupForm() {
 
     const shouldShowClientError =
       name === "terms"
-        ? Boolean(dirtyFields.terms) ||
-          Boolean(touchedFields.terms) ||
-          isSubmitted
-        : Boolean(dirtyFields[name]) ||
-          Boolean(touchedFields[name]) ||
-          isSubmitted;
+        ? Boolean(
+            (dirtyFields as Partial<SignupFormInput>).terms ||
+            (touchedFields as Partial<SignupFormInput>).terms ||
+            isSubmitted
+          )
+        : Boolean(
+            dirtyFields[name as keyof typeof dirtyFields] ||
+            touchedFields[name as keyof typeof touchedFields] ||
+            isSubmitted
+          );
     if (!shouldShowClientError) return undefined;
 
     if (name === "terms") {
-      const termsError = errors.terms as
+      const termsError = (errors as FieldErrors<SignupFormInput>).terms as
         { message?: string; root?: { message?: string } } | undefined;
       return termsError?.message ?? termsError?.root?.message;
     }
 
-    const fieldError = errors[name];
+    const fieldError = (
+      errors as Record<string, { message?: string } | undefined>
+    )[name];
     if (fieldError && typeof fieldError.message === "string") {
       return fieldError.message;
     }
@@ -158,7 +188,10 @@ export function useSignupForm() {
     return undefined;
   }
 
-  function submitToAction(data: SignupFormInput, requestToken: string) {
+  function submitToAction(
+    data: SignupFormInput | SignupResumeFormInput,
+    options?: { requestToken?: string; captchaToken?: string }
+  ) {
     if (uiState.autoLoginFailed) return;
 
     autoLoginPhaseRef.current = "idle";
@@ -166,16 +199,26 @@ export function useSignupForm() {
     setAutoLoginFailedMessage(undefined);
 
     const formData = new FormData();
-    formData.set("requestToken", requestToken);
+    if (isResumeFlow) {
+      formData.set("resumeMode", "true");
+    }
+    formData.set("requestToken", options?.requestToken ?? "");
+    if (options?.captchaToken) {
+      formData.set("captchaToken", options.captchaToken);
+    }
     formData.set("logInId", data.logInId);
     formData.set("password", data.password);
-    formData.set("passwordConfirm", data.passwordConfirm);
-    formData.set("email", data.email);
-    formData.set("name", data.name);
-    formData.set("phone", data.phone);
     formData.set("nickname", data.nickname);
     formData.set("region", data.region);
     formData.set("regionLegalDong", data.regionLegalDong);
+
+    if (!isResumeFlow && "passwordConfirm" in data) {
+      formData.set("passwordConfirm", data.passwordConfirm);
+      formData.set("email", data.email);
+      formData.set("name", data.name);
+      formData.set("phone", data.phone);
+    }
+
     startTransition(() => {
       formAction(formData);
     });
@@ -194,6 +237,8 @@ export function useSignupForm() {
     submitDisabled: uiState.submitDisabled,
     showSubmitSpinner: uiState.showSubmitSpinner,
     isPartialSuccess,
+    isResumeFlow,
+    resumeMode,
     partialSuccessMessage: isPartialSuccess
       ? (state.message ?? SIGNUP_PARTIAL_SUCCESS_MESSAGE)
       : undefined,

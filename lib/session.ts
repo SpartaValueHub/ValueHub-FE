@@ -1,27 +1,52 @@
-import { getServerSession } from "next-auth";
+import { cookies } from "next/headers";
+import { getToken } from "next-auth/jwt";
 import { redirect } from "next/navigation";
 
-import { authOptions } from "@/lib/auth";
 import type { SessionUser } from "@/types/auth/session";
-
-export async function getAuthSession() {
-  return getServerSession(authOptions);
-}
 
 export type AuthUser = SessionUser;
 
+/**
+ * 서버 전용 세션 사용자.
+ * memberUuid·role은 JWT token에만 두고 /api/auth/session에는 노출하지 않으므로
+ * getServerSession 대신 getToken으로 읽는다.
+ */
 export async function getAuthUser(): Promise<AuthUser | null> {
-  const session = await getAuthSession();
-  const user = session?.user;
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore
+    .getAll()
+    .map((cookie) => `${cookie.name}=${cookie.value}`)
+    .join("; ");
 
-  if (!user?.memberUuid || !user.nickname) {
+  if (!cookieHeader) {
+    return null;
+  }
+
+  const token = await getToken({
+    req: {
+      headers: {
+        cookie: cookieHeader,
+      },
+    } as Parameters<typeof getToken>[0]["req"],
+    secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+  });
+
+  const memberUuid =
+    typeof token?.memberUuid === "string" ? token.memberUuid.trim() : "";
+  const nickname =
+    typeof token?.nickname === "string" ? token.nickname.trim() : "";
+
+  if (!memberUuid || !nickname) {
     return null;
   }
 
   return {
-    memberUuid: user.memberUuid,
-    nickname: user.nickname,
-    role: user.role || "USER",
+    memberUuid,
+    nickname,
+    role:
+      typeof token?.role === "string" && token.role.trim()
+        ? token.role.trim()
+        : "USER",
   };
 }
 

@@ -22,6 +22,8 @@ interface SignupFieldWithActionProps {
   autoComplete?: string;
   placeholder?: string;
   actionPending?: boolean;
+  /** true면 우측 액션 버튼 숨김 (resume 모드 아이디 등) */
+  actionHidden?: boolean;
   readOnly?: boolean;
   inputMode?:
     | "none"
@@ -53,6 +55,7 @@ export function SignupFieldWithAction({
   autoComplete,
   placeholder,
   actionPending,
+  actionHidden,
   readOnly,
   inputMode,
 }: SignupFieldWithActionProps) {
@@ -106,21 +109,23 @@ export function SignupFieldWithAction({
             )}
           />
         </div>
-        <Button
-          type="button"
-          variant="brand"
-          size="sm"
-          className="mb-1 shrink-0 rounded-sm px-3 py-1 text-xs"
-          disabled={disabled || actionDisabled || actionPending}
-          aria-busy={actionPending}
-          onClick={onAction}
-        >
-          {actionPending ? (
-            <Spinner size="sm" label="확인 중" inline />
-          ) : (
-            actionLabel
-          )}
-        </Button>
+        {!actionHidden ? (
+          <Button
+            type="button"
+            variant="brand"
+            size="sm"
+            className="mb-1 shrink-0 rounded-sm px-3 py-1 text-xs"
+            disabled={disabled || actionDisabled || actionPending}
+            aria-busy={actionPending}
+            onClick={onAction}
+          >
+            {actionPending ? (
+              <Spinner size="sm" label="확인 중" inline />
+            ) : (
+              actionLabel
+            )}
+          </Button>
+        ) : null}
       </div>
       {error ? (
         <p

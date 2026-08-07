@@ -14,11 +14,11 @@ interface BrandLogoIconProps {
   className?: string;
 }
 
-/** Value Hub 원형 V 엠블럼 (PNG) */
+/** Value Hub 원형 V 엠블럼 (SVG) */
 export function BrandLogoIcon({ size = "lg", className }: BrandLogoIconProps) {
   return (
     <Image
-      src="/brand/logo.png"
+      src="/brand/logo.svg"
       alt=""
       aria-hidden
       width={72}

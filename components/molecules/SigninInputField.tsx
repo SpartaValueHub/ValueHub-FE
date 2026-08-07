@@ -12,6 +12,7 @@ interface SigninInputFieldProps {
   onChange: (value: string) => void;
   error?: string;
   disabled?: boolean;
+  required?: boolean;
   type?: "text" | "password";
   autoComplete?: string;
 }
@@ -24,6 +25,7 @@ export function SigninInputField({
   onChange,
   error,
   disabled,
+  required,
   type = "text",
   autoComplete,
 }: SigninInputFieldProps) {
@@ -47,6 +49,11 @@ export function SigninInputField({
         )}
       >
         {label}
+        {required ? (
+          <span className="ml-0.5 text-vh-gold-500" aria-hidden>
+            *
+          </span>
+        ) : null}
       </label>
       <div
         className={cn(
@@ -92,9 +99,9 @@ export function SigninInputField({
             aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 표시"}
           >
             {showPassword ? (
-              <EyeOff className="size-4" aria-hidden />
+              <Eye className="size-6" aria-hidden />
             ) : (
-              <Eye className="size-4" aria-hidden />
+              <EyeOff className="size-6" aria-hidden />
             )}
           </button>
         ) : null}

@@ -22,6 +22,7 @@ interface SignupFieldWithActionProps {
   autoComplete?: string;
   placeholder?: string;
   actionPending?: boolean;
+  readOnly?: boolean;
   inputMode?:
     | "none"
     | "text"
@@ -52,6 +53,7 @@ export function SignupFieldWithAction({
   autoComplete,
   placeholder,
   actionPending,
+  readOnly,
   inputMode,
 }: SignupFieldWithActionProps) {
   const fieldId = name;
@@ -72,34 +74,38 @@ export function SignupFieldWithAction({
           </span>
         ) : null}
       </label>
-      <div
-        className={cn(
-          "flex items-end gap-3 border-b border-vh-gray-100 transition-colors",
-          "focus-within:border-vh-gold-500",
-          error && "border-destructive",
-          disabled && "border-vh-gray-700"
-        )}
-      >
-        <input
-          id={fieldId}
-          name={name}
-          type={type}
-          value={value}
-          placeholder={placeholder}
-          autoComplete={autoComplete}
-          inputMode={inputMode}
-          disabled={disabled}
-          aria-invalid={!!error}
-          aria-describedby={
-            error || hint || actionMessage ? `${fieldId}-desc` : undefined
-          }
-          onChange={(event) => onChange(event.target.value)}
+      <div className="flex items-end gap-3">
+        <div
           className={cn(
-            "h-10 min-w-0 flex-1 bg-transparent py-1 text-base text-vh-gray-100 outline-none",
-            "placeholder:text-vh-gray-700 md:text-sm",
-            "disabled:cursor-not-allowed disabled:text-vh-gray-700"
+            "flex min-w-0 flex-1 items-center border-b border-vh-gray-100 transition-colors",
+            "focus-within:border-vh-gold-500",
+            error && "border-destructive",
+            disabled && "border-vh-gray-700"
           )}
-        />
+        >
+          <input
+            id={fieldId}
+            name={name}
+            type={type}
+            value={value}
+            placeholder={placeholder}
+            autoComplete={autoComplete}
+            inputMode={inputMode}
+            disabled={disabled}
+            readOnly={readOnly}
+            aria-invalid={!!error}
+            aria-describedby={
+              error || hint || actionMessage ? `${fieldId}-desc` : undefined
+            }
+            onChange={(event) => onChange(event.target.value)}
+            className={cn(
+              "h-10 min-w-0 flex-1 bg-transparent py-1 text-base text-vh-gray-100 outline-none",
+              "placeholder:text-vh-gray-700 md:text-sm",
+              readOnly && "cursor-default caret-transparent",
+              "disabled:cursor-not-allowed disabled:text-vh-gray-700"
+            )}
+          />
+        </div>
         <Button
           type="button"
           variant="brand"
@@ -117,7 +123,11 @@ export function SignupFieldWithAction({
         </Button>
       </div>
       {error ? (
-        <p id={`${fieldId}-desc`} className="text-sm text-destructive">
+        <p
+          id={`${fieldId}-desc`}
+          className="text-xs text-destructive"
+          role="alert"
+        >
           {error}
         </p>
       ) : actionMessage ? (

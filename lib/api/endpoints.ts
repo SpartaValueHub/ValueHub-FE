@@ -5,6 +5,7 @@
 export const API_ENDPOINTS = {
   auth: {
     signUp: "/api/v1/auth/sign-up",
+    resumeSignUp: "/api/v1/auth/sign-up/resume",
     signIn: "/api/v1/auth/sign-in",
     refresh: "/api/v1/auth/refresh",
     logout: "/api/v1/auth/logout",
@@ -15,6 +16,11 @@ export const API_ENDPOINTS = {
   },
   identityVerification: {
     confirm: "/api/v1/identity-verifications/confirm",
-    status: "/api/v1/identity-verifications/status",
+  },
+  members: {
+    create: "/api/v1/members",
+    me: "/api/v1/members/me",
+    checkNickname: (nickname: string) =>
+      `/api/v1/members/check/nickname?nickname=${encodeURIComponent(nickname)}`,
   },
 } as const;

@@ -1,25 +1,56 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useActionState, useEffect, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
+import {
+  useActionState,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { useForm } from "react-hook-form";
 
 import { signupAction, type SignupActionState } from "@/actions/auth";
+import { useAppSession } from "@/context/SessionContext";
+import {
+  canStartSignupAutoLogin,
+  runSignupAutoLogin,
+  type SignupAutoLoginPhase,
+} from "@/lib/auth/signup-auto-login";
+import { SIGNUP_PARTIAL_SUCCESS_MESSAGE } from "@/lib/auth/signup-partial-success";
+import { resolveSignupFormUiState } from "@/lib/auth/signup-form-state";
 import {
   emptySignupFormValues,
   signupFormSchema,
+  type SignupFieldErrors,
   type SignupFormInput,
-  type SignupInput,
 } from "@/types/auth/signup";
 
 const initialState: SignupActionState = { ok: false };
 
 export function useSignupForm() {
-  const [state, formAction, isPending] = useActionState(
+  const router = useRouter();
+  const { refresh } = useAppSession();
+  const [state, formAction, actionPending] = useActionState(
     signupAction,
     initialState
   );
   const [, startTransition] = useTransition();
+  const autoLoginPhaseRef = useRef<SignupAutoLoginPhase>("idle");
+  const [autoLoginPhase, setAutoLoginPhase] =
+    useState<SignupAutoLoginPhase>("idle");
+  const [autoLoginFailedMessage, setAutoLoginFailedMessage] =
+    useState<string>();
+
+  const isPartialSuccess = Boolean(state.partialSuccess);
+
+  const uiState = resolveSignupFormUiState({
+    actionPending,
+    autoLoginPhase,
+    partialSuccess: isPartialSuccess,
+  });
 
   const form = useForm<SignupFormInput>({
     resolver: zodResolver(signupFormSchema),
@@ -34,7 +65,7 @@ export function useSignupForm() {
     setError,
     reset,
     handleSubmit,
-    formState: { errors, touchedFields, isSubmitted },
+    formState: { errors, dirtyFields, touchedFields, isSubmitted },
   } = form;
 
   useEffect(() => {
@@ -62,15 +93,56 @@ export function useSignupForm() {
     });
   }, [state.fieldErrors, setError]);
 
+  useEffect(() => {
+    if (!state.ok || !state.autoLoginRequired) return;
+    if (!canStartSignupAutoLogin(autoLoginPhaseRef.current)) return;
+
+    autoLoginPhaseRef.current = "pending";
+    setAutoLoginPhase("pending");
+    setAutoLoginFailedMessage(undefined);
+
+    const { logInId, password } = getValues();
+
+    void (async () => {
+      const result = await runSignupAutoLogin({ logInId, password }, signIn);
+
+      if (!result.ok) {
+        autoLoginPhaseRef.current = "failed";
+        setAutoLoginPhase("failed");
+        setAutoLoginFailedMessage(result.message);
+        return;
+      }
+
+      autoLoginPhaseRef.current = "success";
+      setAutoLoginPhase("success");
+
+      try {
+        await refresh();
+      } catch {
+        // SessionContext refresh 실패만으로 메인 이동을 막지 않음
+      }
+
+      router.replace("/");
+      router.refresh();
+    })();
+  }, [state.ok, state.autoLoginRequired, getValues, refresh, router]);
+
   function getFieldError(name: keyof SignupFormInput): string | undefined {
-    const serverError = state.fieldErrors?.[name as keyof SignupInput]?.[0];
+    const serverError =
+      name === "terms"
+        ? undefined
+        : state.fieldErrors?.[name as keyof SignupFieldErrors]?.[0];
     if (serverError) return serverError;
 
-    const isTouched =
+    const shouldShowClientError =
       name === "terms"
-        ? Boolean(touchedFields.terms) || isSubmitted
-        : Boolean(touchedFields[name]) || isSubmitted;
-    if (!isTouched) return undefined;
+        ? Boolean(dirtyFields.terms) ||
+          Boolean(touchedFields.terms) ||
+          isSubmitted
+        : Boolean(dirtyFields[name]) ||
+          Boolean(touchedFields[name]) ||
+          isSubmitted;
+    if (!shouldShowClientError) return undefined;
 
     if (name === "terms") {
       const termsError = errors.terms as
@@ -78,10 +150,21 @@ export function useSignupForm() {
       return termsError?.message ?? termsError?.root?.message;
     }
 
-    return errors[name]?.message;
+    const fieldError = errors[name];
+    if (fieldError && typeof fieldError.message === "string") {
+      return fieldError.message;
+    }
+
+    return undefined;
   }
 
   function submitToAction(data: SignupFormInput, requestToken: string) {
+    if (uiState.autoLoginFailed) return;
+
+    autoLoginPhaseRef.current = "idle";
+    setAutoLoginPhase("idle");
+    setAutoLoginFailedMessage(undefined);
+
     const formData = new FormData();
     formData.set("requestToken", requestToken);
     formData.set("logInId", data.logInId);
@@ -90,6 +173,9 @@ export function useSignupForm() {
     formData.set("email", data.email);
     formData.set("name", data.name);
     formData.set("phone", data.phone);
+    formData.set("nickname", data.nickname);
+    formData.set("region", data.region);
+    formData.set("regionLegalDong", data.regionLegalDong);
     startTransition(() => {
       formAction(formData);
     });
@@ -104,6 +190,16 @@ export function useSignupForm() {
     handleSubmit,
     submitToAction,
     state,
-    isPending,
+    isPending: uiState.isPending,
+    submitDisabled: uiState.submitDisabled,
+    showSubmitSpinner: uiState.showSubmitSpinner,
+    isPartialSuccess,
+    partialSuccessMessage: isPartialSuccess
+      ? (state.message ?? SIGNUP_PARTIAL_SUCCESS_MESSAGE)
+      : undefined,
+    autoLoginFailedMessage,
+    autoLoginFailed: uiState.autoLoginFailed,
+    showPartialSuccessMessage: uiState.showPartialSuccessMessage,
+    showAutoLoginFailedMessage: uiState.showAutoLoginFailedMessage,
   };
 }

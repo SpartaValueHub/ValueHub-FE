@@ -6,8 +6,7 @@ import {
   parseSetCookie,
 } from "@/lib/auth/cookies";
 
-/** fetch Response Set-Cookie → Next.js cookie store */
-export async function applyResponseCookies(res: Response) {
+function readSetCookieHeaders(res: Response): string[] {
   const setCookies =
     typeof res.headers.getSetCookie === "function"
       ? res.headers.getSetCookie()
@@ -18,8 +17,34 @@ export async function applyResponseCookies(res: Response) {
     if (single) setCookies.push(single);
   }
 
+  return setCookies;
+}
+
+/** Set-Cookie → Cookie 헤더 문자열 (동일 Server Action 연쇄 호출용) */
+export function extractAuthCookieHeaderFromResponse(
+  res: Response
+): string | undefined {
+  const parts: string[] = [];
+
+  for (const header of readSetCookieHeaders(res)) {
+    const parsed = parseSetCookie(header);
+    if (!parsed) continue;
+
+    if (
+      parsed.name === AUTH_COOKIE_ACCESS ||
+      parsed.name === AUTH_COOKIE_REFRESH
+    ) {
+      parts.push(`${parsed.name}=${parsed.value}`);
+    }
+  }
+
+  return parts.length > 0 ? parts.join("; ") : undefined;
+}
+
+/** fetch Response Set-Cookie → Next.js cookie store */
+export async function applyResponseCookies(res: Response) {
   const store = await cookies();
-  for (const header of setCookies) {
+  for (const header of readSetCookieHeaders(res)) {
     const parsed = parseSetCookie(header);
     if (!parsed) continue;
 

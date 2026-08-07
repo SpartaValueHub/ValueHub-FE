@@ -5,6 +5,15 @@ const LOGIN_ID_PATTERN = /^[a-z0-9]{4,20}$/;
 const PASSWORD_PATTERN =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-+_=])[A-Za-z\d!@#$%^&*()\-+_=]{8,20}$/;
 
+/** 비밀번호 입력란 하단 정적 안내 (짧게) */
+export const PASSWORD_HINT = "8~20자, 영문 대·소문자, 숫자, 특수문자 포함";
+
+/** Zod 검증 실패 시 표시 — auth-service와 동일 규칙, 허용 문자 목록은 UI에 노출하지 않음 */
+export const PASSWORD_VALIDATION_MESSAGE =
+  "비밀번호는 8~20자, 영문 대문자·소문자·숫자·특수문자를 각각 1자 이상 포함해야 합니다.";
+
+const NICKNAME_PATTERN = /^[가-힣]{2,10}$/;
+
 /** auth-service sign-up API 로 전달하는 필드 */
 export type SignupApiInput = {
   requestToken: string;
@@ -20,12 +29,7 @@ const signupFieldsSchema = z.object({
       LOGIN_ID_PATTERN,
       "아이디는 영문 소문자와 숫자 조합 4~20자여야 합니다."
     ),
-  password: z
-    .string()
-    .regex(
-      PASSWORD_PATTERN,
-      "비밀번호는 8~20자, 영문 대문자·소문자·숫자·특수문자(!@#$%^&*()-+_=)를 각각 1자 이상 포함해야 합니다."
-    ),
+  password: z.string().regex(PASSWORD_PATTERN, PASSWORD_VALIDATION_MESSAGE),
   passwordConfirm: z.string().min(1, "비밀번호 확인을 입력해 주세요."),
   email: z
     .email({ error: "올바른 이메일 형식이 아닙니다." })
@@ -74,13 +78,21 @@ export const initialTermsFormValues: TermsFormInput = {
   marketingSms: false,
 };
 
-/** Client RHF resolver — signupSchema + 약관·닉네임·주소(폼 전용) */
+/** Client RHF resolver — signupSchema + 약관·닉네임·주소 */
 export const signupFormSchema = signupFieldsSchema
   .extend({
-    /** UI placeholder — API 미전송 (member-service 연동 예정) */
-    nickname: z.string(),
-    /** UI placeholder — API 미전송 (주소 검색 연동 예정) */
-    region: z.string(),
+    nickname: z
+      .string()
+      .regex(NICKNAME_PATTERN, "닉네임은 한글 2~10자여야 합니다."),
+    region: z
+      .string()
+      .min(1, "주소를 검색해 주세요.")
+      .max(200, "주소는 200자 이하여야 합니다."),
+    /** UI 표시 주소와 별도 — member-service address(법정동) */
+    regionLegalDong: z
+      .string()
+      .min(1, "주소를 검색해 주세요.")
+      .max(100, "주소는 100자 이하여야 합니다."),
     terms: termsFormSchema,
   })
   .refine(
@@ -100,7 +112,31 @@ export const signupFormSchema = signupFieldsSchema
 export type SignupFormInput = z.infer<typeof signupFormSchema>;
 
 export type SignupFieldErrors = Partial<
-  Record<keyof SignupInput, string[] | undefined>
+  Record<
+    keyof SignupInput | "nickname" | "region" | "regionLegalDong",
+    string[] | undefined
+  >
+>;
+
+/** Server Action 검증 — auth 필드 + member 필드 */
+export const signupOrchestrationSchema = signupSchema.and(
+  z.object({
+    nickname: z
+      .string()
+      .regex(NICKNAME_PATTERN, "닉네임은 한글 2~10자여야 합니다."),
+    region: z
+      .string()
+      .min(1, "주소를 검색해 주세요.")
+      .max(200, "주소는 200자 이하여야 합니다."),
+    regionLegalDong: z
+      .string()
+      .min(1, "주소를 검색해 주세요.")
+      .max(100, "주소는 100자 이하여야 합니다."),
+  })
+);
+
+export type SignupOrchestrationInput = z.infer<
+  typeof signupOrchestrationSchema
 >;
 
 export const emptySignupValues: SignupInput = {
@@ -116,5 +152,6 @@ export const emptySignupFormValues: SignupFormInput = {
   ...emptySignupValues,
   nickname: "",
   region: "",
+  regionLegalDong: "",
   terms: initialTermsFormValues,
 };

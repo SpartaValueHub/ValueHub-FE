@@ -1,9 +1,8 @@
-import { apiFetch } from "@/lib/api/client";
+import { apiFetch, apiTimeoutFromEnv } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import type {
   ApiIdentityVerificationConfirmRequest,
   ApiIdentityVerificationConfirmResponse,
-  ApiIdentityVerificationStatusResponse,
 } from "@/types/auth/api";
 
 /** PortOne 본인인증 — confirm 후 requestToken을 sign-up에 사용 */
@@ -17,17 +16,10 @@ export function confirmIdentityVerification(
       method: "POST",
       body,
       cache: { noStore: true },
-    }
-  );
-}
-
-export function getIdentityVerificationStatus(requestToken: string) {
-  return apiFetch<ApiIdentityVerificationStatusResponse>(
-    API_ENDPOINTS.identityVerification.status,
-    {
-      method: "POST",
-      body: { requestToken },
-      cache: { noStore: true },
+      timeoutMillis: apiTimeoutFromEnv(
+        "IDENTITY_CONFIRM_TIMEOUT_MILLIS",
+        12_000
+      ),
     }
   );
 }

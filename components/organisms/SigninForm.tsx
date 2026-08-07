@@ -147,6 +147,12 @@ export function SigninForm({ callbackUrl }: SigninFormProps) {
       noValidate
     >
       <div className="flex flex-col gap-5">
+        {!isPending && message ? (
+          <p className="text-left text-sm text-destructive" role="status">
+            {message}
+          </p>
+        ) : null}
+
         <Controller
           control={control}
           name="logInId"
@@ -215,16 +221,10 @@ export function SigninForm({ callbackUrl }: SigninFormProps) {
 
       <AuthHelperLinks />
 
-      {!isPending && message ? (
-        <p className="text-center text-sm text-destructive" role="status">
-          {message}
-        </p>
-      ) : null}
-
       <Button
         type="submit"
         variant="brand"
-        className="h-12 w-full rounded-sm text-base"
+        className="mt-[100px] h-12 w-full rounded-sm text-base"
         disabled={isPending}
         aria-busy={isPending}
       >

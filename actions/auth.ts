@@ -1,37 +1,47 @@
 "use server";
 
-/**
- * 회원가입 Server Action.
- * zod 검증 후 service 호출 — apiFetch 직접 호출 금지(architecture-flow).
- */
-import { redirect } from "next/navigation";
-
 import { mapActionError } from "@/lib/auth/map-action-error";
+import { mapSignupError } from "@/lib/auth/map-signup-error";
 import {
   checkEmailAvailabilityService,
   checkLoginIdAvailabilityService,
+  resumeSignupService,
   signupService,
 } from "@/services/auth.service";
 import {
-  signupSchema,
+  checkNicknameAvailabilityService,
+  createMemberService,
+} from "@/services/member.service";
+import {
+  signupOrchestrationSchema,
   type SignupFieldErrors,
-  type SignupInput,
+  type SignupOrchestrationInput,
 } from "@/types/auth/signup";
 
 export type SignupActionState = {
   ok: boolean;
+  autoLoginRequired?: boolean;
+  partialSuccess?: boolean;
   message?: string;
   code?: string;
   fieldErrors?: SignupFieldErrors;
-  values?: Pick<SignupInput, "logInId" | "email" | "name" | "phone">;
+  values?: Pick<
+    SignupOrchestrationInput,
+    | "logInId"
+    | "email"
+    | "name"
+    | "phone"
+    | "nickname"
+    | "region"
+    | "regionLegalDong"
+  >;
 };
 
 export async function signupAction(
-  _prevState: SignupActionState,
+  previousState: SignupActionState,
   formData: FormData
 ): Promise<SignupActionState> {
   const requestToken = String(formData.get("requestToken") ?? "").trim();
-
   const values = {
     logInId: String(formData.get("logInId") ?? ""),
     password: String(formData.get("password") ?? ""),
@@ -39,16 +49,30 @@ export async function signupAction(
     email: String(formData.get("email") ?? ""),
     name: String(formData.get("name") ?? ""),
     phone: String(formData.get("phone") ?? ""),
+    nickname: String(formData.get("nickname") ?? ""),
+    region: String(formData.get("region") ?? ""),
+    regionLegalDong: String(formData.get("regionLegalDong") ?? ""),
   };
-
   const preserved = {
     logInId: values.logInId,
     email: values.email,
     name: values.name,
     phone: values.phone,
+    nickname: values.nickname,
+    region: values.region,
+    regionLegalDong: values.regionLegalDong,
   };
-
-  if (!requestToken) {
+  const parsed = signupOrchestrationSchema.safeParse(values);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      partialSuccess: previousState.partialSuccess,
+      message: "입력값을 확인해 주세요.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+      values: preserved,
+    };
+  }
+  if (!previousState.partialSuccess && !requestToken) {
     return {
       ok: false,
       message: "본인인증을 먼저 완료해 주세요.",
@@ -56,39 +80,47 @@ export async function signupAction(
     };
   }
 
-  const parsed = signupSchema.safeParse(values);
-
-  if (!parsed.success) {
-    return {
-      ok: false,
-      message: "입력값을 확인해 주세요.",
-      fieldErrors: parsed.error.flatten().fieldErrors,
-      values: preserved,
-    };
-  }
-
+  let authCreated = Boolean(previousState.partialSuccess);
   try {
-    // name·phone은 UI 검증만 — auth API body에 포함하지 않음
-    const { logInId, password, email } = parsed.data;
-    await signupService({ requestToken, logInId, password, email });
-  } catch (e) {
+    const { logInId, password, email, nickname, regionLegalDong } = parsed.data;
+    const authResult = previousState.partialSuccess
+      ? await resumeSignupService({ logInId, password })
+      : await signupService({ requestToken, logInId, password, email });
+    authCreated = true;
+    if (!authResult.signupCompletionToken) {
+      return {
+        ok: false,
+        partialSuccess: true,
+        code: "SIGNUP_COMPLETION_TOKEN_MISSING",
+        message:
+          "회원가입 처리 구성이 아직 반영되지 않았습니다. 잠시 후 가입을 이어서 완료해 주세요.",
+        values: preserved,
+      };
+    }
+
+    await createMemberService(
+      {
+        memberUuid: authResult.authUuid,
+        nickname,
+        address: regionLegalDong,
+      },
+      { completionToken: authResult.signupCompletionToken }
+    );
+
+    return { ok: true, autoLoginRequired: true };
+  } catch (error) {
     return {
-      ...mapActionError(e, "회원가입에 실패했습니다."),
+      ...mapSignupError(error, { authCreated }, "회원가입에 실패했습니다."),
       values: preserved,
     };
   }
-
-  redirect("/signin");
 }
 
 export async function checkLoginIdAvailabilityAction(loginId: string) {
-  const trimmed = loginId.trim();
-  if (!trimmed) {
-    return { ok: false, message: "아이디를 입력해 주세요." };
-  }
-
+  const value = loginId.trim();
+  if (!value) return { ok: false, message: "아이디를 입력해 주세요." };
   try {
-    const available = await checkLoginIdAvailabilityService(trimmed);
+    const available = await checkLoginIdAvailabilityService(value);
     return {
       ok: true,
       available,
@@ -96,19 +128,16 @@ export async function checkLoginIdAvailabilityAction(loginId: string) {
         ? "사용 가능한 아이디입니다."
         : "이미 사용 중인 아이디입니다.",
     };
-  } catch (e) {
-    return mapActionError(e, "아이디 중복 확인에 실패했습니다.");
+  } catch (error) {
+    return mapActionError(error, "아이디 중복 확인에 실패했습니다.");
   }
 }
 
 export async function checkEmailAvailabilityAction(email: string) {
-  const trimmed = email.trim();
-  if (!trimmed) {
-    return { ok: false, message: "이메일을 입력해 주세요." };
-  }
-
+  const value = email.trim();
+  if (!value) return { ok: false, message: "이메일을 입력해 주세요." };
   try {
-    const available = await checkEmailAvailabilityService(trimmed);
+    const available = await checkEmailAvailabilityService(value);
     return {
       ok: true,
       available,
@@ -116,7 +145,24 @@ export async function checkEmailAvailabilityAction(email: string) {
         ? "사용 가능한 이메일입니다."
         : "이미 사용 중인 이메일입니다.",
     };
-  } catch (e) {
-    return mapActionError(e, "이메일 중복 확인에 실패했습니다.");
+  } catch (error) {
+    return mapActionError(error, "이메일 중복 확인에 실패했습니다.");
+  }
+}
+
+export async function checkNicknameAvailabilityAction(nickname: string) {
+  const value = nickname.trim();
+  if (!value) return { ok: false, message: "닉네임을 입력해 주세요." };
+  try {
+    const available = await checkNicknameAvailabilityService(value);
+    return {
+      ok: true,
+      available,
+      message: available
+        ? "사용 가능한 닉네임입니다."
+        : "이미 사용 중인 닉네임입니다.",
+    };
+  } catch (error) {
+    return mapActionError(error, "닉네임 중복 확인에 실패했습니다.");
   }
 }

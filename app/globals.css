@@ -88,14 +88,16 @@
 
   /* Value Hub — Gold / Bronze */
   --vh-gold-900: #3d3428;
-  --vh-gold-700: #6b5a45;
-  --vh-gold-500: #a28b6a;
-  --vh-gold-300: #c4b49a;
-  --vh-gold-100: #f5f0e8;
+  --vh-gold-700: #c9a85e;
+  --vh-gold-500: #f2ca7b;
+  --vh-gold-300: #f8e3b9;
+  --vh-gold-100: #fdf6e8;
 
   /* Brand assets — logo·슬로건 */
-  --vh-brand-gold: #e8c585;
+  --vh-brand-gold: #f2ca7b;
   --vh-brand-emblem: #333333;
+  --vh-checkbox-checked-bg: #f8e3b9;
+  --vh-checkbox-check: #323232;
   --vh-green-900: #1a3d2e;
   --vh-green-700: #2d6b4f;
   --vh-green-500: #4a9b73;
@@ -135,7 +137,7 @@
   --muted-foreground: var(--vh-gray-700);
   --accent: var(--vh-gold-100);
   --accent-foreground: var(--vh-gold-700);
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: #ff5d31;
   --border: var(--vh-gray-300);
   --input: var(--vh-gray-300);
   --ring: var(--vh-gold-500);
@@ -170,7 +172,7 @@
   --muted-foreground: var(--vh-gray-500);
   --accent: #3a3a3a;
   --accent-foreground: var(--vh-gold-300);
-  --destructive: oklch(0.704 0.191 22.216);
+  --destructive: #ff5d31;
   --border: rgb(255 255 255 / 20%);
   --input: rgb(255 255 255 / 25%);
   --ring: var(--vh-gold-500);
@@ -212,6 +214,23 @@
     border-radius: 9999px;
     background-color: var(--vh-brand-gold);
     color: var(--vh-brand-emblem);
+  }
+
+  .vh-checkbox {
+    appearance: none;
+    display: inline-grid;
+    place-content: center;
+    border: 1px solid var(--vh-gray-100);
+    background-color: transparent;
+  }
+
+  .vh-checkbox:checked {
+    border-color: var(--vh-checkbox-checked-bg);
+    background-color: var(--vh-checkbox-checked-bg);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.5L6.5 11.5L12.5 4.5' stroke='%23323232' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 12px 12px;
   }
 
   .font-serif {

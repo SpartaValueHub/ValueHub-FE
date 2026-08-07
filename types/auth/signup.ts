@@ -57,7 +57,7 @@ export const signupSchema = signupFieldsSchema.refine(
 
 export type SignupInput = z.infer<typeof signupSchema>;
 
-/** 약관 동의 — UI·RHF 전용 (API 미전송) */
+/** 약관 동의 — UI·FormData·createMember 전송 */
 export const termsFormSchema = z.object({
   all: z.boolean(),
   service: z.boolean(),
@@ -77,6 +77,45 @@ export const initialTermsFormValues: TermsFormInput = {
   marketingEmail: false,
   marketingSms: false,
 };
+
+const requiredTermsRefine = (
+  data: { terms: TermsFormInput },
+  ctx: z.RefinementCtx
+) => {
+  if (!data.terms.service || !data.terms.privacy) {
+    ctx.addIssue({
+      code: "custom",
+      message: "필수 약관에 동의해 주세요.",
+      path: ["terms"],
+    });
+  }
+};
+
+/** UI terms → member-service TermCode 목록 (marketing 부모 체크는 전송하지 않음) */
+export function toTermConsents(terms: TermsFormInput) {
+  return [
+    { termCode: "TERMS_OF_SERVICE" as const, agreed: terms.service },
+    { termCode: "PRIVACY_POLICY" as const, agreed: terms.privacy },
+    { termCode: "EMAIL_MARKETING" as const, agreed: terms.marketingEmail },
+    { termCode: "SMS_MARKETING" as const, agreed: terms.marketingSms },
+  ];
+}
+
+export function parseTermsFromFormData(formData: FormData): TermsFormInput {
+  const service = formData.get("termService") === "true";
+  const privacy = formData.get("termPrivacy") === "true";
+  const marketingEmail = formData.get("termEmail") === "true";
+  const marketingSms = formData.get("termSms") === "true";
+  const marketing = marketingEmail || marketingSms;
+  return {
+    all: service && privacy && marketingEmail && marketingSms,
+    service,
+    privacy,
+    marketing,
+    marketingEmail,
+    marketingSms,
+  };
+}
 
 /** Client RHF resolver — signupSchema + 약관·닉네임·주소 */
 export const signupFormSchema = signupFieldsSchema
@@ -99,28 +138,51 @@ export const signupFormSchema = signupFieldsSchema
     (data) => data.password === data.passwordConfirm,
     passwordConfirmRefine
   )
-  .superRefine((data, ctx) => {
-    if (!data.terms.service || !data.terms.privacy) {
-      ctx.addIssue({
-        code: "custom",
-        message: "필수 약관에 동의해 주세요.",
-        path: ["terms"],
-      });
-    }
-  });
+  .superRefine(requiredTermsRefine);
 
 export type SignupFormInput = z.infer<typeof signupFormSchema>;
 
 export type SignupFieldErrors = Partial<
   Record<
-    keyof SignupInput | "nickname" | "region" | "regionLegalDong",
+    keyof SignupInput | "nickname" | "region" | "regionLegalDong" | "terms",
     string[] | undefined
   >
 >;
 
-/** Server Action 검증 — auth 필드 + member 필드 */
-export const signupOrchestrationSchema = signupSchema.and(
-  z.object({
+/** Server Action 검증 — auth 필드 + member 필드 + 약관 */
+export const signupOrchestrationSchema = signupSchema
+  .and(
+    z.object({
+      nickname: z
+        .string()
+        .regex(NICKNAME_PATTERN, "닉네임은 한글 2~10자여야 합니다."),
+      region: z
+        .string()
+        .min(1, "주소를 검색해 주세요.")
+        .max(200, "주소는 200자 이하여야 합니다."),
+      regionLegalDong: z
+        .string()
+        .min(1, "주소를 검색해 주세요.")
+        .max(100, "주소는 100자 이하여야 합니다."),
+      terms: termsFormSchema,
+    })
+  )
+  .superRefine(requiredTermsRefine);
+
+export type SignupOrchestrationInput = z.infer<
+  typeof signupOrchestrationSchema
+>;
+
+/** 고아 계정 복구 — 아이디·비밀번호·닉네임·주소·약관 (본인인증 불필요) */
+export const signupResumeOrchestrationSchema = z
+  .object({
+    logInId: z
+      .string()
+      .regex(
+        LOGIN_ID_PATTERN,
+        "아이디는 영문 소문자와 숫자 조합 4~20자여야 합니다."
+      ),
+    password: z.string().regex(PASSWORD_PATTERN, PASSWORD_VALIDATION_MESSAGE),
     nickname: z
       .string()
       .regex(NICKNAME_PATTERN, "닉네임은 한글 2~10자여야 합니다."),
@@ -132,34 +194,9 @@ export const signupOrchestrationSchema = signupSchema.and(
       .string()
       .min(1, "주소를 검색해 주세요.")
       .max(100, "주소는 100자 이하여야 합니다."),
+    terms: termsFormSchema,
   })
-);
-
-export type SignupOrchestrationInput = z.infer<
-  typeof signupOrchestrationSchema
->;
-
-/** 고아 계정 복구 — 아이디·비밀번호·닉네임·주소만 (본인인증 불필요) */
-export const signupResumeOrchestrationSchema = z.object({
-  logInId: z
-    .string()
-    .regex(
-      LOGIN_ID_PATTERN,
-      "아이디는 영문 소문자와 숫자 조합 4~20자여야 합니다."
-    ),
-  password: z.string().regex(PASSWORD_PATTERN, PASSWORD_VALIDATION_MESSAGE),
-  nickname: z
-    .string()
-    .regex(NICKNAME_PATTERN, "닉네임은 한글 2~10자여야 합니다."),
-  region: z
-    .string()
-    .min(1, "주소를 검색해 주세요.")
-    .max(200, "주소는 200자 이하여야 합니다."),
-  regionLegalDong: z
-    .string()
-    .min(1, "주소를 검색해 주세요.")
-    .max(100, "주소는 100자 이하여야 합니다."),
-});
+  .superRefine(requiredTermsRefine);
 
 export type SignupResumeOrchestrationInput = z.infer<
   typeof signupResumeOrchestrationSchema
@@ -175,6 +212,7 @@ export const emptySignupResumeFormValues: SignupResumeFormInput = {
   nickname: "",
   region: "",
   regionLegalDong: "",
+  terms: initialTermsFormValues,
 };
 
 export const emptySignupValues: SignupInput = {

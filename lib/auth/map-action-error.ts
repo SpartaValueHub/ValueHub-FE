@@ -5,6 +5,7 @@ export type ActionFailure = {
   message: string;
   code?: string;
   partialSuccess?: boolean;
+  retryAfterSeconds?: number;
 };
 
 /** Server Action catch — ApiError·Error를 ActionFailure로 변환 */

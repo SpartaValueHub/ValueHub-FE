@@ -4,7 +4,11 @@ import {
 } from "@/lib/auth/cookie-store";
 import { buildAuthorizeErrorPayload } from "@/lib/auth/signin-errors";
 import { normalizeSignInResponse } from "@/lib/auth/sign-in-response";
-import { getApiUrl } from "@/lib/api/client";
+import {
+  ApiTimeoutError,
+  apiTimeoutFromEnv,
+  getApiUrl,
+} from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import type { ApiErrorResponse, ApiSignInResponse } from "@/types/auth/api";
 
@@ -24,15 +28,30 @@ export async function signInUserForAuthorize(input: AuthorizeSignInInput) {
     body.captchaToken = input.captchaToken;
   }
 
-  const res = await fetch(`${getApiUrl()}${API_ENDPOINTS.auth.signIn}`, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-    cache: "no-store",
-  });
+  const timeoutMillis = apiTimeoutFromEnv("AUTH_SIGNIN_TIMEOUT_MILLIS", 5_000);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMillis);
+
+  let res: Response;
+  try {
+    res = await fetch(`${getApiUrl()}${API_ENDPOINTS.auth.signIn}`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      cache: "no-store",
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new ApiTimeoutError(timeoutMillis);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 
   if (!res.ok) {
     const errorText = await res.text();

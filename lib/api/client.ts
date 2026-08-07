@@ -12,12 +12,19 @@ import { API_ENDPOINTS } from "@/lib/api/endpoints";
 export class ApiError extends Error {
   status: number;
   code?: string;
+  retryAfterSeconds?: number;
 
-  constructor(status: number, message: string, code?: string) {
+  constructor(
+    status: number,
+    message: string,
+    code?: string,
+    retryAfterSeconds?: number
+  ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 
@@ -236,10 +243,19 @@ export async function apiFetch<T>(
           json = null;
         }
       }
-      const body = json as { message?: string; code?: string } | null;
+      const body = json as {
+        message?: string;
+        code?: string;
+        retryAfterSeconds?: number;
+      } | null;
       const message =
         body?.message || text || `API 오류 (${res.status} ${res.statusText})`;
-      throw new ApiError(res.status, message, body?.code);
+      throw new ApiError(
+        res.status,
+        message,
+        body?.code,
+        body?.retryAfterSeconds
+      );
     }
 
     const refreshed = await refreshAuthCookies();
@@ -264,13 +280,19 @@ export async function apiFetch<T>(
       message?: string;
       error?: string;
       code?: string;
+      retryAfterSeconds?: number;
     } | null;
     const message =
       body?.message ||
       body?.error ||
       text ||
       `API 오류 (${res.status} ${res.statusText})`;
-    throw new ApiError(res.status, message, body?.code);
+    throw new ApiError(
+      res.status,
+      message,
+      body?.code,
+      body?.retryAfterSeconds
+    );
   }
 
   return json as T;

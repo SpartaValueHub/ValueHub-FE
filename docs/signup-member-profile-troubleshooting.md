@@ -186,16 +186,17 @@ timeout은 `ApiTimeoutError`로 분리하며, member create는 자동 무한 재
 - [ ] member 최초 요청은 201, 동일 재전송은 200인가?
 - [ ] member 저장 성공 후 NextAuth sign-in이 한 번만 호출되는가?
 
-## 8. 현재 남은 제한 사항
+## 8. 고아 계정 복구 (resume)
 
-신규 가입과 같은 화면에서 즉시 재시도하는 흐름은 복구된다. 하지만 다음 상황은 아직 완전하지 않다.
+auth 계정만 생성되고 member 프로필이 없는 경우:
 
-1. 페이지 새로고침 또는 브라우저 종료 후에는 FO의 `partialSuccess` 상태가 사라진다.
-   과거에 만들어진 고아 계정을 위한 독립적인 resume 진입 화면이나 자동 전환이 필요하다.
-2. resume API는 CAPTCHA 정책을 적용하지만 현재 가입 resume UI는 CAPTCHA token을 전달하지 않는다.
-   실패 횟수가 CAPTCHA 기준에 도달한 계정은 UI에서 복구를 완료할 수 없다.
-3. member-service를 Gateway 외부에서 직접 접근할 수 있으면 공격자가 `X-Member-Uuid`를 위조할 수 있다.
-   배포 환경에서는 Gateway만 member-service에 접근하도록 네트워크를 제한해야 한다.
+1. **같은 세션:** member 저장 실패 후 `partialSuccess` → 화면이 「가입 이어서 완료」로 전환된다  
+   (본인인증·이메일·약관 재요구 없음, `POST /api/v1/auth/sign-up/resume`).
+2. **새로고침·과거 고아 계정:** `/signup?mode=resume` 또는 로그인/가입 화면의 「가입 이어서 완료」 링크.  
+   입력은 아이디·비밀번호·닉네임·주소. completion token으로 member 생성 후 NextAuth 로그인.
+3. **CAPTCHA:** resume는 로그인과 동일한 시도 정책을 쓴다.  
+   `AUTH_CAPTCHA_REQUIRED` 시 reCAPTCHA 표시, token을 resume 요청에 포함.  
+   잠금·CAPTCHA 오류·제공자 장애(`AUTH_CAPTCHA_PROVIDER_UNAVAILABLE`)도 로그인과 동일 안내.
+4. **네트워크:** member-service는 Gateway 경유만 허용하고 `X-Member-Uuid` 위조를 막는다.
 
-따라서 “신규 회원가입 장애”는 해결됐지만, 모든 과거 고아 계정의 영구 복구와 운영 네트워크 격리는
-별도 후속 작업으로 관리해야 한다.
+로그인 ID 중복만으로 resume를 타지 않는다. 신규 가입은 기존처럼 본인인증(`requestToken`)이 필요하다.

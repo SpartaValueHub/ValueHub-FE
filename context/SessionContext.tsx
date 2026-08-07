@@ -2,10 +2,9 @@
 
 import { createContext, useContext } from "react";
 
-/** 클라이언트 노출용 — nickname·role (memberUuid 미포함) */
+/** 클라이언트 노출용 — nickname만 (memberUuid·role 미포함) */
 export type SessionUserSummary = {
   nickname: string;
-  role: string;
 };
 
 interface SessionContextType {

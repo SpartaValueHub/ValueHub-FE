@@ -1,12 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useCallback, useState } from "react";
 import { Controller } from "react-hook-form";
 
 import { Button } from "@/components/atoms/button";
 import { Spinner } from "@/components/atoms/spinner";
 import { GenderToggle } from "@/components/molecules/GenderToggle";
 import { AddressSearchField } from "@/components/molecules/AddressSearchField";
+import {
+  RECAPTCHA_EXPIRED_MESSAGE,
+  RecaptchaWidget,
+} from "@/components/molecules/RecaptchaWidget";
 import { SigninInputField } from "@/components/molecules/SigninInputField";
 import { SignupFieldWithAction } from "@/components/molecules/SignupFieldWithAction";
 import { TermsAgreementSection } from "@/components/organisms/TermsAgreementSection";
@@ -14,8 +19,19 @@ import { useAvailabilityCheck } from "@/hooks/auth/useAvailabilityCheck";
 import { useIdentityVerification } from "@/hooks/auth/useIdentityVerification";
 import { useSignupForm } from "@/hooks/auth/useSignupForm";
 import { SIGNUP_AUTO_LOGIN_FAILED_FOOTER } from "@/lib/auth/signup-auto-login";
+import {
+  isCaptchaRequiredError,
+  parseSignInError,
+  signInErrorMessage,
+} from "@/lib/auth/signin-errors";
 import { cn } from "@/lib/utils";
-import { PASSWORD_HINT, type SignupFormInput } from "@/types/auth/signup";
+import {
+  PASSWORD_HINT,
+  type SignupFormInput,
+  type SignupResumeFormInput,
+} from "@/types/auth/signup";
+
+const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ?? "";
 
 function formatPhoneDisplay(value: string) {
   const digits = value.replace(/\D/g, "");
@@ -26,7 +42,11 @@ function formatPhoneDisplay(value: string) {
   return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`;
 }
 
-export function SignupForm() {
+type SignupFormProps = {
+  resumeMode?: boolean;
+};
+
+export function SignupForm({ resumeMode = false }: SignupFormProps) {
   const {
     control,
     setValue,
@@ -39,11 +59,12 @@ export function SignupForm() {
     submitDisabled,
     showSubmitSpinner,
     isPartialSuccess,
+    isResumeFlow,
     partialSuccessMessage,
     autoLoginFailedMessage,
     showPartialSuccessMessage,
     showAutoLoginFailedMessage,
-  } = useSignupForm();
+  } = useSignupForm({ resumeMode });
 
   const {
     loginIdCheck,
@@ -72,35 +93,126 @@ export function SignupForm() {
     handleIdentityVerification,
     setIdentityMessage,
   } = useIdentityVerification((prefill) => {
-    setValue("name", prefill.name);
-    setValue("phone", prefill.phone);
+    setValue("name" as keyof SignupFormInput, prefill.name);
+    setValue("phone" as keyof SignupFormInput, prefill.phone);
   });
 
-  function onSubmit(data: SignupFormInput) {
-    if (!requestToken && !isPartialSuccess) {
+  const [captchaRequired, setCaptchaRequired] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string>();
+  const [captchaMessage, setCaptchaMessage] = useState<string>();
+  const [captchaExpiredMessage, setCaptchaExpiredMessage] = useState<string>();
+  const [captchaKey, setCaptchaKey] = useState(0);
+  const [trackedCaptchaErrorKey, setTrackedCaptchaErrorKey] = useState("");
+
+  const resumeError = state.code
+    ? parseSignInError(
+        JSON.stringify({
+          code: state.code,
+          message: state.message,
+          retryAfterSeconds: state.retryAfterSeconds,
+        })
+      )
+    : undefined;
+
+  const isLoginPolicyError = Boolean(
+    resumeError &&
+    [
+      "AUTH_UNAUTHORIZED",
+      "AUTH_CAPTCHA_REQUIRED",
+      "AUTH_CAPTCHA_INVALID",
+      "AUTH_CAPTCHA_PROVIDER_UNAVAILABLE",
+      "AUTH_ACCOUNT_LOCKED",
+      "AUTH_RATE_LIMITED",
+      "AUTH_MEMBER_NOT_ACTIVE",
+    ].includes(resumeError.code)
+  );
+
+  // action state 변화에 맞춰 CAPTCHA UI 상태 조정 (render-time adjust)
+  const captchaErrorKey = resumeError
+    ? `${resumeError.code}|${resumeError.retryAfterSeconds ?? ""}|${state.message ?? ""}`
+    : "";
+  if (captchaErrorKey && captchaErrorKey !== trackedCaptchaErrorKey) {
+    setTrackedCaptchaErrorKey(captchaErrorKey);
+    if (resumeError && isCaptchaRequiredError(resumeError)) {
+      setCaptchaRequired(true);
+      setCaptchaMessage(signInErrorMessage(resumeError));
+    } else if (resumeError?.code === "AUTH_CAPTCHA_INVALID") {
+      setCaptchaRequired(true);
+      setCaptchaToken(undefined);
+      setCaptchaExpiredMessage(undefined);
+      setCaptchaKey((key) => key + 1);
+      setCaptchaMessage(signInErrorMessage(resumeError));
+    }
+  }
+
+  const handleCaptchaChange = useCallback((token: string | undefined) => {
+    setCaptchaToken(token);
+    if (token) {
+      setCaptchaExpiredMessage(undefined);
+      setCaptchaMessage(undefined);
+    }
+  }, []);
+
+  const handleCaptchaExpired = useCallback(() => {
+    setCaptchaExpiredMessage(RECAPTCHA_EXPIRED_MESSAGE);
+  }, []);
+
+  const handleCaptchaLoadError = useCallback(() => {
+    setCaptchaMessage(
+      "보안 확인을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."
+    );
+  }, []);
+
+  function onSubmit(data: SignupFormInput | SignupResumeFormInput) {
+    if (!isResumeFlow && !requestToken) {
       setIdentityMessage("본인인증을 먼저 완료해 주세요.");
       return;
     }
 
-    const loginIdError = isPartialSuccess
-      ? undefined
-      : verifyLoginId(data.logInId);
-    const emailError = isPartialSuccess ? undefined : verifyEmail(data.email);
+    if (isResumeFlow && captchaRequired && !captchaToken) {
+      setCaptchaMessage("보안 확인을 완료해 주세요.");
+      return;
+    }
+
+    const loginIdError = isResumeFlow ? undefined : verifyLoginId(data.logInId);
+    const emailError =
+      isResumeFlow || !("email" in data) ? undefined : verifyEmail(data.email);
     const nicknameError = verifyNickname(data.nickname);
 
     if (loginIdError) {
       setError("logInId", { type: "manual", message: loginIdError });
     }
     if (emailError) {
-      setError("email", { type: "manual", message: emailError });
+      setError("email" as keyof SignupFormInput, {
+        type: "manual",
+        message: emailError,
+      });
     }
     if (nicknameError) {
       setError("nickname", { type: "manual", message: nicknameError });
     }
     if (loginIdError || emailError || nicknameError) return;
 
-    submitToAction(data, requestToken);
+    submitToAction(data, {
+      requestToken: isResumeFlow ? undefined : requestToken,
+      captchaToken: isResumeFlow ? captchaToken : undefined,
+    });
   }
+
+  const showResumeBanner =
+    showPartialSuccessMessage && !isLoginPolicyError && partialSuccessMessage;
+  const showLoginPolicyError =
+    !isPending &&
+    isLoginPolicyError &&
+    resumeError &&
+    !isCaptchaRequiredError(resumeError) &&
+    resumeError.code !== "AUTH_CAPTCHA_INVALID";
+  const showGenericError =
+    !isPending &&
+    state.message &&
+    !showResumeBanner &&
+    !isLoginPolicyError &&
+    !showAutoLoginFailedMessage;
 
   return (
     <form
@@ -109,95 +221,99 @@ export function SignupForm() {
       noValidate
     >
       <div className="flex flex-col gap-5">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-end justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <label
-                htmlFor="name"
-                className="text-sm font-medium text-vh-gray-500"
-              >
-                이름
-              </label>
-              <Controller
-                control={control}
-                name="name"
-                render={({ field }) => (
-                  <input
-                    id="name"
-                    value={field.value}
-                    readOnly
-                    placeholder="본인인증 후 자동 입력"
-                    className={cn(
-                      "mt-2 h-10 w-full border-b border-vh-gray-100 bg-transparent text-base text-vh-gray-100 outline-none",
-                      "placeholder:text-vh-gray-700 md:text-sm",
-                      isIdentityVerified && "text-vh-gray-500"
+        {!isResumeFlow ? (
+          <>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-end justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <label
+                    htmlFor="name"
+                    className="text-sm font-medium text-vh-gray-500"
+                  >
+                    이름
+                  </label>
+                  <Controller
+                    control={control}
+                    name={"name" as keyof SignupFormInput}
+                    render={({ field }) => (
+                      <input
+                        id="name"
+                        value={field.value as string}
+                        readOnly
+                        placeholder="본인인증 후 자동 입력"
+                        className={cn(
+                          "mt-2 h-10 w-full border-b border-vh-gray-100 bg-transparent text-base text-vh-gray-100 outline-none",
+                          "placeholder:text-vh-gray-700 md:text-sm",
+                          isIdentityVerified && "text-vh-gray-500"
+                        )}
+                      />
                     )}
                   />
-                )}
-              />
+                </div>
+                <GenderToggle
+                  value={gender}
+                  disabled={submitDisabled}
+                  readOnly
+                  className="pb-2"
+                />
+              </div>
             </div>
-            <GenderToggle
-              value={gender}
-              disabled={submitDisabled}
-              readOnly
-              className="pb-2"
-            />
-          </div>
-        </div>
 
-        <div className="flex flex-col gap-2">
-          <label
-            htmlFor="phone-display"
-            className="text-sm font-medium text-vh-gray-500"
-          >
-            휴대폰
-          </label>
-          <div className="flex items-end gap-3">
-            <div className="min-w-0 flex-1 border-b border-vh-gray-100">
-              <Controller
-                control={control}
-                name="phone"
-                render={({ field }) => (
-                  <input
-                    id="phone-display"
-                    readOnly
-                    value={formatPhoneDisplay(field.value)}
-                    placeholder="010-1234-5678"
-                    className="h-10 min-w-0 w-full bg-transparent py-1 text-base text-vh-gray-100 outline-none placeholder:text-vh-gray-700 md:text-sm"
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="phone-display"
+                className="text-sm font-medium text-vh-gray-500"
+              >
+                휴대폰
+              </label>
+              <div className="flex items-end gap-3">
+                <div className="min-w-0 flex-1 border-b border-vh-gray-100">
+                  <Controller
+                    control={control}
+                    name={"phone" as keyof SignupFormInput}
+                    render={({ field }) => (
+                      <input
+                        id="phone-display"
+                        readOnly
+                        value={formatPhoneDisplay(String(field.value ?? ""))}
+                        placeholder="010-1234-5678"
+                        className="h-10 min-w-0 w-full bg-transparent py-1 text-base text-vh-gray-100 outline-none placeholder:text-vh-gray-700 md:text-sm"
+                      />
+                    )}
                   />
-                )}
-              />
+                </div>
+                <Button
+                  type="button"
+                  variant="brand"
+                  size="sm"
+                  className="mb-1 shrink-0 rounded-sm px-3 py-1 text-xs"
+                  disabled={submitDisabled || isPartialSuccess}
+                  aria-busy={isVerifying}
+                  onClick={handleIdentityVerification}
+                >
+                  {isIdentityVerified || isPartialSuccess ? (
+                    "인증완료"
+                  ) : isVerifying ? (
+                    <Spinner size="sm" label="인증 중" inline />
+                  ) : (
+                    "본인인증"
+                  )}
+                </Button>
+              </div>
+              {identityMessage ? (
+                <p
+                  className={cn(
+                    "text-xs",
+                    isIdentityVerified ? "text-vh-gold-500" : "text-destructive"
+                  )}
+                  role="status"
+                >
+                  {identityMessage}
+                </p>
+              ) : null}
             </div>
-            <Button
-              type="button"
-              variant="brand"
-              size="sm"
-              className="mb-1 shrink-0 rounded-sm px-3 py-1 text-xs"
-              disabled={submitDisabled}
-              aria-busy={isVerifying}
-              onClick={handleIdentityVerification}
-            >
-              {isIdentityVerified ? (
-                "인증완료"
-              ) : isVerifying ? (
-                <Spinner size="sm" label="인증 중" inline />
-              ) : (
-                "본인인증"
-              )}
-            </Button>
-          </div>
-          {identityMessage ? (
-            <p
-              className={cn(
-                "text-xs",
-                isIdentityVerified ? "text-vh-gold-500" : "text-destructive"
-              )}
-              role="status"
-            >
-              {identityMessage}
-            </p>
-          ) : null}
-        </div>
+          </>
+        ) : null}
 
         <Controller
           control={control}
@@ -213,8 +329,9 @@ export function SignupForm() {
               hint="영소문자, 숫자 조합 4~20자리"
               actionLabel="중복확인"
               actionPending={isCheckingLoginId}
-              actionDisabled={!field.value.trim()}
-              actionMessage={loginIdCheck.message}
+              actionDisabled={!field.value.trim() || isResumeFlow}
+              actionHidden={isResumeFlow}
+              actionMessage={isResumeFlow ? undefined : loginIdCheck.message}
               actionTone={loginIdCheck.tone}
               onAction={() => checkLoginId(field.value)}
               onChange={(value) => {
@@ -238,32 +355,34 @@ export function SignupForm() {
               value={field.value}
               disabled={submitDisabled}
               error={getFieldError("password")}
-              autoComplete="new-password"
+              autoComplete={isResumeFlow ? "current-password" : "new-password"}
               onChange={field.onChange}
             />
           )}
         />
-        {!getFieldError("password") ? (
+        {!getFieldError("password") && !isResumeFlow ? (
           <p className="-mt-3 text-xs text-vh-gray-500">{PASSWORD_HINT}</p>
         ) : null}
 
-        <Controller
-          control={control}
-          name="passwordConfirm"
-          render={({ field }) => (
-            <SigninInputField
-              label="비밀번호 확인"
-              name="passwordConfirm"
-              required
-              type="password"
-              value={field.value}
-              disabled={submitDisabled}
-              error={getFieldError("passwordConfirm")}
-              autoComplete="new-password"
-              onChange={field.onChange}
-            />
-          )}
-        />
+        {!isResumeFlow ? (
+          <Controller
+            control={control}
+            name={"passwordConfirm" as keyof SignupFormInput}
+            render={({ field }) => (
+              <SigninInputField
+                label="비밀번호 확인"
+                name="passwordConfirm"
+                required
+                type="password"
+                value={field.value as string}
+                disabled={submitDisabled}
+                error={getFieldError("passwordConfirm")}
+                autoComplete="new-password"
+                onChange={field.onChange}
+              />
+            )}
+          />
+        ) : null}
 
         <Controller
           control={control}
@@ -296,33 +415,35 @@ export function SignupForm() {
           }}
         />
 
-        <Controller
-          control={control}
-          name="email"
-          render={({ field }) => (
-            <SignupFieldWithAction
-              label="이메일"
-              name="email"
-              required
-              type="text"
-              inputMode="email"
-              value={field.value}
-              disabled={submitDisabled}
-              error={getFieldError("email")}
-              actionLabel="중복확인"
-              actionPending={isCheckingEmail}
-              actionDisabled={!field.value.trim()}
-              actionMessage={emailCheck.message}
-              actionTone={emailCheck.tone}
-              onAction={() => checkEmail(field.value)}
-              onChange={(value) => {
-                field.onChange(value);
-                clearEmailCheck();
-              }}
-              autoComplete="off"
-            />
-          )}
-        />
+        {!isResumeFlow ? (
+          <Controller
+            control={control}
+            name={"email" as keyof SignupFormInput}
+            render={({ field }) => (
+              <SignupFieldWithAction
+                label="이메일"
+                name="email"
+                required
+                type="text"
+                inputMode="email"
+                value={field.value as string}
+                disabled={submitDisabled}
+                error={getFieldError("email")}
+                actionLabel="중복확인"
+                actionPending={isCheckingEmail}
+                actionDisabled={!String(field.value ?? "").trim()}
+                actionMessage={emailCheck.message}
+                actionTone={emailCheck.tone}
+                onAction={() => checkEmail(String(field.value ?? ""))}
+                onChange={(value) => {
+                  field.onChange(value);
+                  clearEmailCheck();
+                }}
+                autoComplete="off"
+              />
+            )}
+          />
+        ) : null}
 
         <Controller
           control={control}
@@ -347,25 +468,63 @@ export function SignupForm() {
         />
       </div>
 
-      <Controller
-        control={control}
-        name="terms"
-        render={({ field }) => (
-          <TermsAgreementSection
-            value={field.value}
-            onChange={field.onChange}
-            error={getFieldError("terms")}
-          />
-        )}
-      />
+      {!isResumeFlow ? (
+        <Controller
+          control={control}
+          name={"terms" as keyof SignupFormInput}
+          render={({ field }) => (
+            <TermsAgreementSection
+              value={field.value as SignupFormInput["terms"]}
+              onChange={field.onChange}
+              error={getFieldError("terms")}
+            />
+          )}
+        />
+      ) : null}
 
-      {!isPending && state.message && !showPartialSuccessMessage ? (
+      {isResumeFlow && captchaRequired && recaptchaSiteKey ? (
+        <div className="flex flex-col items-center gap-2">
+          <RecaptchaWidget
+            key={captchaKey}
+            siteKey={recaptchaSiteKey}
+            onChange={handleCaptchaChange}
+            onExpired={handleCaptchaExpired}
+            onLoadError={handleCaptchaLoadError}
+            expiredMessage={captchaExpiredMessage}
+          />
+          {!isPending && captchaMessage ? (
+            <p
+              className="text-center text-sm whitespace-pre-line text-destructive"
+              role="status"
+            >
+              {captchaMessage}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {isResumeFlow && captchaRequired && !recaptchaSiteKey ? (
+        <p className="text-center text-sm text-destructive" role="alert">
+          보안 확인을 표시할 수 없습니다.
+        </p>
+      ) : null}
+
+      {showGenericError ? (
         <p className="text-center text-sm text-destructive" role="status">
           {state.message}
         </p>
       ) : null}
 
-      {showPartialSuccessMessage && partialSuccessMessage ? (
+      {showLoginPolicyError && resumeError ? (
+        <p
+          className="text-center text-sm whitespace-pre-line text-destructive"
+          role="status"
+        >
+          {signInErrorMessage(resumeError)}
+        </p>
+      ) : null}
+
+      {showResumeBanner ? (
         <div className="text-center text-sm text-vh-gray-500" role="status">
           <p>{partialSuccessMessage}</p>
           <p className="mt-2">
@@ -398,7 +557,7 @@ export function SignupForm() {
       >
         {showSubmitSpinner ? (
           <Spinner size="sm" label="가입 중" inline />
-        ) : isPartialSuccess ? (
+        ) : isResumeFlow ? (
           "가입 이어서 완료"
         ) : (
           "회원가입"
@@ -406,13 +565,34 @@ export function SignupForm() {
       </Button>
 
       <p className="text-center text-sm text-vh-gray-500">
-        이미 계정이 있으신가요?{" "}
-        <Link
-          href="/signin"
-          className="text-vh-gold-500 underline-offset-4 hover:underline"
-        >
-          로그인
-        </Link>
+        {resumeMode ? (
+          <>
+            신규 가입이 필요하신가요?{" "}
+            <Link
+              href="/signup"
+              className="text-vh-gold-500 underline-offset-4 hover:underline"
+            >
+              회원가입
+            </Link>
+          </>
+        ) : (
+          <>
+            이미 계정이 있으신가요?{" "}
+            <Link
+              href="/signin"
+              className="text-vh-gold-500 underline-offset-4 hover:underline"
+            >
+              로그인
+            </Link>
+            {" · "}
+            <Link
+              href="/signup?mode=resume"
+              className="text-vh-gold-500 underline-offset-4 hover:underline"
+            >
+              가입 이어서 완료
+            </Link>
+          </>
+        )}
       </p>
     </form>
   );

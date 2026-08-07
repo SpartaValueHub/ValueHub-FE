@@ -2,7 +2,9 @@ import type { NextAuthOptions, User } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 import { signInUserForAuthorize } from "@/lib/api/auth.authorize";
-import { ApiTimeoutError } from "@/lib/api/client";
+import { ApiError, ApiTimeoutError } from "@/lib/api/client";
+import { clearAuthCookies } from "@/lib/auth/cookie-store";
+import { SIGNUP_INCOMPLETE_ERROR_CODE } from "@/lib/auth/signin-errors";
 import { getMyMemberProfileService } from "@/services/member.service";
 
 type AuthorizeCredentials = {
@@ -43,6 +45,18 @@ export async function authorizeCredentials(
       throw new Error(
         JSON.stringify({
           code: "AUTH_REQUEST_TIMEOUT",
+          message: error.message,
+        })
+      );
+    }
+    if (
+      error instanceof ApiError &&
+      error.code === SIGNUP_INCOMPLETE_ERROR_CODE
+    ) {
+      await clearAuthCookies();
+      throw new Error(
+        JSON.stringify({
+          code: SIGNUP_INCOMPLETE_ERROR_CODE,
           message: error.message,
         })
       );

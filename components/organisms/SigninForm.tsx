@@ -10,6 +10,7 @@ import { Button } from "@/components/atoms/button";
 import { Spinner } from "@/components/atoms/spinner";
 import { AuthDivider } from "@/components/molecules/AuthDivider";
 import { AuthHelperLinks } from "@/components/molecules/AuthHelperLinks";
+import { ConfirmModal } from "@/components/molecules/ConfirmModal";
 import {
   RECAPTCHA_EXPIRED_MESSAGE,
   RecaptchaWidget,
@@ -19,7 +20,9 @@ import { SocialLoginGroup } from "@/components/organisms/SocialLoginGroup";
 import { useAppSession } from "@/context/SessionContext";
 import {
   isCaptchaRequiredError,
+  isSignupIncompleteError,
   parseSignInError,
+  SIGNUP_INCOMPLETE_GUIDANCE_MESSAGE,
   signInErrorMessage,
 } from "@/lib/auth/signin-errors";
 import {
@@ -45,6 +48,8 @@ export function SigninForm({ callbackUrl }: SigninFormProps) {
   const [captchaToken, setCaptchaToken] = useState<string>();
   const [captchaExpiredMessage, setCaptchaExpiredMessage] = useState<string>();
   const [captchaKey, setCaptchaKey] = useState(0);
+  const [resumeGuidanceOpen, setResumeGuidanceOpen] = useState(false);
+  const [resumeLoginId, setResumeLoginId] = useState<string>();
 
   const handleCaptchaChange = useCallback((token: string | undefined) => {
     setCaptchaToken(token);
@@ -83,6 +88,23 @@ export function SigninForm({ callbackUrl }: SigninFormProps) {
   function clearFormMessages() {
     setMessage(undefined);
     setCaptchaMessage(undefined);
+    setResumeGuidanceOpen(false);
+  }
+
+  function dismissResumeGuidance() {
+    setResumeGuidanceOpen(false);
+    setResumeLoginId(undefined);
+  }
+
+  function goToSignupResume() {
+    if (!resumeLoginId) return;
+
+    const params = new URLSearchParams({
+      mode: "resume",
+      logInId: resumeLoginId,
+    });
+    setResumeGuidanceOpen(false);
+    router.push(`/signup?${params.toString()}`);
   }
 
   function setSignInError(parsed: ReturnType<typeof parseSignInError>) {
@@ -118,6 +140,13 @@ export function SigninForm({ callbackUrl }: SigninFormProps) {
 
       if (result?.error || !result?.ok) {
         const parsed = parseSignInError(result?.error ?? undefined);
+        if (isSignupIncompleteError(parsed)) {
+          setResumeLoginId(data.logInId.trim());
+          setResumeGuidanceOpen(true);
+          setMessage(undefined);
+          setCaptchaMessage(undefined);
+          return;
+        }
         if (isCaptchaRequiredError(parsed)) {
           setCaptchaRequired(true);
         }
@@ -234,6 +263,17 @@ export function SigninForm({ callbackUrl }: SigninFormProps) {
       <AuthDivider label="다른 방법으로 로그인" />
 
       <SocialLoginGroup />
+
+      <ConfirmModal
+        open={resumeGuidanceOpen}
+        title="회원가입 미완료"
+        message={SIGNUP_INCOMPLETE_GUIDANCE_MESSAGE}
+        confirmLabel="가입 완료하기"
+        cancelLabel="취소"
+        onConfirm={goToSignupResume}
+        onCancel={dismissResumeGuidance}
+        dismissible={false}
+      />
     </form>
   );
 }

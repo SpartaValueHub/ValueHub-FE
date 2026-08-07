@@ -41,9 +41,13 @@ function formatPhoneDisplay(value: string) {
 
 type SignupFormProps = {
   resumeMode?: boolean;
+  initialLoginId?: string;
 };
 
-export function SignupForm({ resumeMode = false }: SignupFormProps) {
+export function SignupForm({
+  resumeMode = false,
+  initialLoginId,
+}: SignupFormProps) {
   const {
     control,
     setValue,
@@ -61,7 +65,7 @@ export function SignupForm({ resumeMode = false }: SignupFormProps) {
     autoLoginFailedMessage,
     showPartialSuccessMessage,
     showAutoLoginFailedMessage,
-  } = useSignupForm({ resumeMode });
+  } = useSignupForm({ resumeMode, initialLoginId });
 
   const {
     loginIdCheck,
@@ -560,13 +564,6 @@ export function SignupForm({ resumeMode = false }: SignupFormProps) {
               className="text-vh-gold-500 underline-offset-4 hover:underline"
             >
               로그인
-            </Link>
-            {" · "}
-            <Link
-              href="/signup?mode=resume"
-              className="text-vh-gold-500 underline-offset-4 hover:underline"
-            >
-              가입 이어서 완료
             </Link>
           </>
         )}

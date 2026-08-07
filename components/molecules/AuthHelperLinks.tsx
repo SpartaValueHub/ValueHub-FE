@@ -40,15 +40,6 @@ export function AuthHelperLinks({ className }: AuthHelperLinksProps) {
       <Link href="/signup" className="transition-colors hover:text-vh-gold-500">
         회원가입
       </Link>
-      <span aria-hidden className="text-vh-gray-700">
-        |
-      </span>
-      <Link
-        href="/signup?mode=resume"
-        className="transition-colors hover:text-vh-gold-500"
-      >
-        가입 이어서 완료
-      </Link>
     </div>
   );
 }

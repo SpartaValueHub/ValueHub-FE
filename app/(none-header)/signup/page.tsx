@@ -1,12 +1,16 @@
 import { SignupTemplate } from "@/components/templates/SignupTemplate";
 
 type SignupPageProps = {
-  searchParams: Promise<{ mode?: string }>;
+  searchParams: Promise<{ mode?: string; logInId?: string }>;
 };
 
 export default async function SignupPage({ searchParams }: SignupPageProps) {
-  const { mode } = await searchParams;
+  const { mode, logInId } = await searchParams;
   const resumeMode = mode === "resume";
+  const initialLoginId =
+    resumeMode && logInId?.trim() ? logInId.trim() : undefined;
 
-  return <SignupTemplate resumeMode={resumeMode} />;
+  return (
+    <SignupTemplate resumeMode={resumeMode} initialLoginId={initialLoginId} />
+  );
 }

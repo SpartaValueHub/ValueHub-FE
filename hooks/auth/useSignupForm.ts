@@ -35,10 +35,12 @@ const initialState: SignupActionState = { ok: false };
 
 type UseSignupFormOptions = {
   resumeMode?: boolean;
+  initialLoginId?: string;
 };
 
 export function useSignupForm(options: UseSignupFormOptions = {}) {
   const resumeMode = Boolean(options.resumeMode);
+  const initialLoginId = options.initialLoginId?.trim();
   const router = useRouter();
   const { refresh } = useAppSession();
   const [state, formAction, actionPending] = useActionState(
@@ -75,7 +77,10 @@ export function useSignupForm(options: UseSignupFormOptions = {}) {
       return zodResolver(schema)(values, context, options);
     },
     defaultValues: resumeMode
-      ? emptySignupResumeFormValues
+      ? {
+          ...emptySignupResumeFormValues,
+          ...(initialLoginId ? { logInId: initialLoginId } : {}),
+        }
       : emptySignupFormValues,
     mode: "onChange",
   });

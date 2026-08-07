@@ -9,7 +9,7 @@ export async function listActiveTerms(): Promise<ApiActiveTerm[]> {
     baseUrl: getMemberApiUrl(),
     skipSessionRecovery: true,
     cache: {
-      tags: ["active-terms"],
+      tags: ["active-terms-v2"],
       revalidate: ACTIVE_TERMS_REVALIDATE_SECONDS,
     },
   });

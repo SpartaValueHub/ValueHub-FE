@@ -20,6 +20,7 @@ export async function POST(request: Request) {
     return Response.json({ message: "Unauthorized" }, { status: 401 });
   }
 
+  revalidateTag("active-terms-v2", "max");
   revalidateTag("active-terms", "max");
   return Response.json({ revalidated: true });
 }

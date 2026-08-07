@@ -22,7 +22,7 @@ export function CategoryNavItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex shrink-0 flex-col items-stretch py-2 transition-colors",
+        "inline-flex shrink-0 flex-col items-stretch py-2 transition-colors group",
         className
       )}
     >
@@ -42,10 +42,10 @@ export function CategoryNavItem({
       <span
         aria-hidden
         className={cn(
-          "mt-4 h-px w-full",
+          "mt-4 h-px w-full transition-colors",
           active
             ? "bg-[linear-gradient(90deg,var(--vh-gold-100)_0%,var(--vh-brand-gold)_42%,var(--vh-gold-500)_100%)]"
-            : "bg-[linear-gradient(90deg,var(--vh-gold-900)_0%,var(--vh-gold-700)_50%,var(--vh-gold-900)_100%)]"
+            : "bg-[linear-gradient(90deg,var(--vh-gold-900)_0%,var(--vh-gold-700)_50%,var(--vh-gold-900)_100%)] group-hover:bg-[linear-gradient(90deg,var(--vh-gold-100)_0%,var(--vh-brand-gold)_42%,var(--vh-gold-500)_100%)]"
         )}
       />
     </button>

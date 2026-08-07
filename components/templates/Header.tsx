@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/atoms/button";
 import { useAppSession } from "@/context/SessionContext";
 
-const headerAuthButtonClassName = "rounded-sm px-5";
+const headerAuthButtonClassName = "h-9 rounded-sm px-5";
 
 export function Header() {
   const { isAuthenticated, isLoading, user, logout } = useAppSession();

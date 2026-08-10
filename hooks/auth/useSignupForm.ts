@@ -90,6 +90,7 @@ export function useSignupForm(options: UseSignupFormOptions = {}) {
     getValues,
     setValue,
     setError,
+    trigger,
     reset,
     handleSubmit,
     formState: { errors, dirtyFields, touchedFields, isSubmitted },
@@ -140,19 +141,21 @@ export function useSignupForm(options: UseSignupFormOptions = {}) {
         return;
       }
 
-      autoLoginPhaseRef.current = "success";
-      setAutoLoginPhase("success");
-
       try {
         await refresh();
       } catch {
         // SessionContext refresh 실패만으로 메인 이동을 막지 않음
       }
 
-      router.replace("/");
-      router.refresh();
+      autoLoginPhaseRef.current = "success";
+      setAutoLoginPhase("success");
     })();
-  }, [state.ok, state.autoLoginRequired, getValues, refresh, router]);
+  }, [state.ok, state.autoLoginRequired, getValues, refresh]);
+
+  function goToMain() {
+    router.replace("/");
+    router.refresh();
+  }
 
   function getFieldError(
     name: keyof SignupFormInput | keyof SignupResumeFormInput
@@ -248,6 +251,7 @@ export function useSignupForm(options: UseSignupFormOptions = {}) {
     getValues,
     setValue,
     setError,
+    trigger,
     getFieldError,
     handleSubmit,
     submitToAction,
@@ -265,5 +269,7 @@ export function useSignupForm(options: UseSignupFormOptions = {}) {
     autoLoginFailed: uiState.autoLoginFailed,
     showPartialSuccessMessage: uiState.showPartialSuccessMessage,
     showAutoLoginFailedMessage: uiState.showAutoLoginFailedMessage,
+    signupCompleted: autoLoginPhase === "success",
+    goToMain,
   };
 }

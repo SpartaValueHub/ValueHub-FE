@@ -1,4 +1,3 @@
-import { BrandLogoIcon } from "@/components/molecules/BrandLogoIcon";
 import { cn } from "@/lib/utils";
 
 interface SignupAuthHeaderProps {
@@ -12,10 +11,8 @@ export function SignupAuthHeader({
   resumeMode = false,
 }: SignupAuthHeaderProps) {
   return (
-    <header className={cn("w-full", className)}>
-      <div className="inline-grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-0.5">
-        <BrandLogoIcon size="lg" className="row-span-2 self-center" />
-
+    <header className={cn("flex w-full justify-center text-center", className)}>
+      <div className="flex flex-col items-center">
         <h1 className="font-serif text-[1.75rem] font-semibold leading-snug tracking-tight text-vh-brand-gold md:text-[1.85rem]">
           Sign up for
         </h1>
@@ -23,11 +20,11 @@ export function SignupAuthHeader({
           Value hub
         </h1>
 
-        <p className="col-start-2 row-start-3 mt-3 font-sans text-sm text-vh-gray-500 md:text-vh-base">
-          {resumeMode
-            ? "이전에 중단된 가입을 이어서 완료해 주세요."
-            : "회원 정보를 입력해주세요."}
-        </p>
+        {resumeMode ? (
+          <p className="mt-3 font-sans text-sm text-vh-gray-500">
+            이전에 중단된 가입을 이어서 완료해 주세요.
+          </p>
+        ) : null}
       </div>
     </header>
   );

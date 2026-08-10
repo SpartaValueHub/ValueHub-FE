@@ -1,3 +1,4 @@
+import { logSafeError } from "@/lib/log/safe-log";
 import { getAuthUser } from "@/lib/session";
 import { toClientSessionUser } from "@/types/auth/session";
 
@@ -9,7 +10,7 @@ export async function GET() {
       user: user ? toClientSessionUser(user) : null,
     });
   } catch (error) {
-    console.error("Auth status check failed:", error);
+    logSafeError("Auth status check failed:", error);
     return Response.json(
       { isAuthenticated: false, user: null },
       { status: 500 }

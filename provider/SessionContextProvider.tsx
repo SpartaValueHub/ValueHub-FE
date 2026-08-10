@@ -8,6 +8,7 @@ import {
   SessionContext,
   type SessionUserSummary,
 } from "@/context/SessionContext";
+import { logSafeError } from "@/lib/log/safe-log";
 
 export type InitialSession = {
   isAuthenticated: boolean;
@@ -50,7 +51,7 @@ export function SessionContextProvider({
       setIsAuthenticated(!!data.isAuthenticated);
       setUser(data.user);
     } catch (error) {
-      console.error("Auth status check failed:", error);
+      logSafeError("Auth status check failed:", error);
       setIsAuthenticated(false);
       setUser(null);
     } finally {
@@ -69,7 +70,7 @@ export function SessionContextProvider({
         credentials: "include",
       });
     } catch (error) {
-      console.error("Backend logout failed:", error);
+      logSafeError("Backend logout failed:", error);
     }
     await signOut({ redirect: false });
     setIsAuthenticated(false);

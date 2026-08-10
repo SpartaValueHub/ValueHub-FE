@@ -5,6 +5,7 @@ import { signInUserForAuthorize } from "@/lib/api/auth.authorize";
 import { ApiError, ApiTimeoutError } from "@/lib/api/client";
 import { clearAuthCookies } from "@/lib/auth/cookie-store";
 import { SIGNUP_INCOMPLETE_ERROR_CODE } from "@/lib/auth/signin-errors";
+import { logSafeError } from "@/lib/log/safe-log";
 import { getMyMemberProfileService } from "@/services/member.service";
 
 type AuthorizeCredentials = {
@@ -64,7 +65,7 @@ export async function authorizeCredentials(
     if (error instanceof Error && error.message.startsWith("{")) {
       throw error;
     }
-    console.error("authorize failed:", error);
+    logSafeError("authorize failed:", error);
     return null;
   }
 }
@@ -87,7 +88,7 @@ export const authOptions: NextAuthOptions = {
           if (error instanceof Error && error.message.startsWith("{")) {
             throw error;
           }
-          console.error("authorize failed:", error);
+          logSafeError("authorize failed:", error);
           return null;
         }
       },

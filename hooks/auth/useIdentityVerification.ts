@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { v4 as uuidv4 } from "uuid";
 
 import { confirmIdentityVerificationAction } from "@/actions/identity-verification";
+import { logSafeError } from "@/lib/log/safe-log";
 import type { GenderOption } from "@/components/molecules/GenderToggle";
 import type { ApiGender } from "@/types/auth/api";
 import type { SignupInput } from "@/types/auth/signup";
@@ -77,7 +78,7 @@ export function useIdentityVerification(
         });
         setIdentityMessage("본인인증이 완료되었습니다.");
       } catch (error) {
-        console.error("Identity verification failed:", error);
+        logSafeError("Identity verification failed:", error);
         setIdentityMessage("본인인증 처리 중 오류가 발생했습니다.");
       }
     });

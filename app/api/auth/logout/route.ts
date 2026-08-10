@@ -1,4 +1,5 @@
 import { clearAuthCookies } from "@/lib/auth/cookie-store";
+import { logSafeError } from "@/lib/log/safe-log";
 import { isIgnorableLogoutFailure } from "@/lib/auth/logout-errors";
 import { clearNextAuthSession } from "@/lib/auth/nextauth-session";
 import { getAuthUser } from "@/lib/session";
@@ -14,7 +15,7 @@ export async function POST() {
     }
   } catch (error) {
     if (!isIgnorableLogoutFailure(error)) {
-      console.error("Backend logout failed:", error);
+      logSafeError("Backend logout failed:", error);
     }
   }
 

@@ -20,11 +20,32 @@ FE(Next.js)를 Vercel에 배포한 구성과, 팀/Gateway 담당과 맞출 URL·
 
 ## 전체 그림
 
+> 아래 다이어그램은 **GitHub**에서 그림으로 렌더됩니다.  
+> Cursor 미리보기·일부 게시판은 Mermaid를 코드로만 보여줄 수 있습니다.  
+> 게시판용: GitHub 문서 페이지에서 렌더된 그림을 캡처해 올리거나, GitHub 링크를 공유하세요.  
+> 문서 파일: `docs/vercel-deploy-team-notice.md`
+
 ```mermaid
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor": "#FFF3B0",
+    "primaryTextColor": "#111",
+    "primaryBorderColor": "#333",
+    "lineColor": "#333",
+    "secondaryColor": "#FFF8DC",
+    "tertiaryColor": "#FFFDE7",
+    "clusterBkg": "#FFF3B0",
+    "clusterBorder": "#333"
+  }
+}}%%
 flowchart TB
   subgraph Org["GitHub org - SpartaValueHub/ValueHub-FE"]
-    FEAT["feature"] -->|PR merge| DEV["develop"]
-    DEV -->|최종 PR merge| MAIN["main"]
+    FEAT["feature"]
+    DEV["develop"]
+    MAIN["main"]
+    FEAT -->|PR merge| DEV
+    DEV -->|최종 PR merge| MAIN
   end
 
   subgraph Fork["Deploy fork - Han-Gyo/ValueHub-FE"]
@@ -40,19 +61,22 @@ flowchart TB
     GW["Gateway"]
   end
 
-  DEV --> SYNC
-  MAIN --> SYNC
+  DEV -->|자동 sync| SYNC
+  MAIN -->|자동 sync| SYNC
   SYNC -->|develop / PR| PREV
   SYNC -->|main| PROD
-  PREV -.->|API| GW
-  PROD -.->|API| GW
+  PREV -.->|API 호출| GW
+  PROD -.->|API 호출| GW
+
+  classDef node fill:#FFFDE7,stroke:#333,color:#111;
+  class FEAT,DEV,MAIN,SYNC,PREV,PROD,GW node;
 ```
 
 포인트:
 - 일상 개발은 **org 레포** 기준
 - Vercel Git은 **개인 fork**에 연결
 - org merge → fork sync → Vercel Preview / Production 반영
-
+- Preview / Production 모두 런타임에 Gateway API 호출 (점선)
 ---
 
 ## Production URL이 예전에 보였던 이유
@@ -61,10 +85,13 @@ Git Production Branch를 `main`으로 걸어둬도, **예전에 CLI로 올린 de
 `main`에 push/merge가 일어나야 Production이 main 코드로 갱신된다.
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#FFF3B0","primaryBorderColor":"#333","lineColor":"#333","clusterBkg":"#FFF3B0"}}}%%
 flowchart LR
   A["CLI develop 스냅샷 배포"] --> B["운영 URL에 잔존 가능"]
   C["Git Production = main 설정"] -.->|연결만으로는 즉시 교체 안 됨| B
   D["main push / merge"] --> E["Production이 main으로 갱신"]
+  classDef node fill:#FFFDE7,stroke:#333,color:#111;
+  class A,B,C,D,E node;
 ```
 
 | 질문 | 답 |
@@ -78,6 +105,7 @@ flowchart LR
 ## 코드 배포 흐름 (FE)
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#FFF3B0","primaryBorderColor":"#333","lineColor":"#333","clusterBkg":"#FFF3B0"}}}%%
 flowchart LR
   subgraph Dev["개발"]
     A1["feature PR"] --> A2["org develop merge"]
@@ -89,8 +117,10 @@ flowchart LR
     B1["develop → main merge"] --> B2["fork sync"]
     B2 --> B3["Vercel Production"]
   end
-```
 
+  classDef node fill:#FFFDE7,stroke:#333,color:#111;
+  class A1,A2,A3,A4,B1,B2,B3 node;
+```
 | 무엇을 했나 | 결과 |
 | --- | --- |
 | org `develop` / PR merge | Preview URL 생성 (Deployments에서 확인) |

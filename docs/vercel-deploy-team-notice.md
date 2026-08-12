@@ -203,6 +203,73 @@ AUTH_TRUSTED_ORIGIN=https://valuehub-fe.vercel.app
 
 ---
 
+## CI/CD 동작 중 로그 보는 법 (진행 상황)
+
+`main`(또는 `develop`)에 push / merge 되면 **GitHub Actions → fork sync → Vercel 배포** 순으로 돌아간다.  
+오류가 아니어도 **돌아가는 중**인 로그를 아래 페이지에서 볼 수 있다.
+
+```mermaid
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#FFF3B0","primaryBorderColor":"#333","lineColor":"#333","clusterBkg":"#FFF3B0"}}}%%
+flowchart LR
+  A["org main/develop<br/>push · merge"] --> B["GitHub Actions"]
+  B --> C["fork sync"]
+  C --> D["Vercel Deployments<br/>Building → Ready"]
+  classDef node fill:#FFFDE7,stroke:#333,color:#111;
+  class A,B,C,D node;
+```
+
+### 1) GitHub Actions (org → fork sync 등)
+
+| 어디서 | URL |
+| --- | --- |
+| org Actions | https://github.com/SpartaValueHub/ValueHub-FE/actions |
+| fork Actions (sync) | https://github.com/Han-Gyo/ValueHub-FE/actions |
+
+보는 방법:
+
+1. 위 Actions 페이지 접속  
+2. 가장 위(최신) **workflow run** 클릭  
+   - org: `Notify deploy fork to sync` 등  
+   - fork: `Sync from upstream`  
+3. 왼쪽 job 클릭 → 오른쪽에서 **실시간 step 로그** 확인  
+4. 상태: `Queued` → `In progress` (노란 점) → `Success` / `Failure`
+
+`main` merge 직후면 org Actions가 먼저 돌고, 이어서 fork Actions가 돌아야 정상이다.
+
+### 2) Vercel 배포 진행 (Building 중)
+
+오류가 아니어도 **빌드·배포가 도는 중**이면 여기서 본다.
+
+| 어디서 | URL |
+| --- | --- |
+| Deployments 목록 | https://vercel.com/ggyyoo/valuehub-fe/deployments |
+| 프로젝트 홈 | https://vercel.com/ggyyoo/valuehub-fe |
+
+보는 방법:
+
+1. **Deployments** 탭 열기  
+2. 맨 위 배포 카드 확인  
+   - Environment: `Production` (`main`) / `Preview` (`develop`·PR)  
+   - Status: `Building` → `Ready` (또는 `Error`)  
+3. 해당 배포 **클릭**  
+4. 상단/타임라인에서 **Building** 구간 로그 펼치기  
+   - `pnpm install` / `pnpm build` 출력이 실시간으로 이어짐  
+5. 끝나면 Status가 **Ready** → **Visit**으로 접속
+
+요약:
+
+| 보고 싶은 것 | Vercel 페이지 |
+| --- | --- |
+| 지금 배포가 도는지 | **Deployments** 목록의 최신 행 Status |
+| 빌드 로그 전문 | 배포 상세 → **Building** |
+| 배포 끝난 뒤 요청 로그 | **Logs** (Runtime) — 접속·API 호출 시 |
+| Git sync CI | GitHub **Actions** (위 링크) |
+
+> **Deployments** = CI/CD처럼 “지금 빌드/배포 중”  
+> **Logs** = 사이트가 떠 있는 뒤 “요청이 들어올 때” 런타임 로그  
+
+---
+
 ## 오류 시 프론트 로그
 
 ```mermaid

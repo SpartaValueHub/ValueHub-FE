@@ -1,0 +1,26 @@
+name: Notify deploy fork to sync
+
+on:
+  push:
+    branches: [develop, main]
+
+jobs:
+  dispatch-fork-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Han-Gyo/ValueHub-FE sync
+        env:
+          GH_TOKEN: ${{ secrets.FORK_SYNC_DISPATCH_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "Missing secret FORK_SYNC_DISPATCH_TOKEN on SpartaValueHub/ValueHub-FE"
+            echo "Ask a repo admin to add a classic PAT (repo scope) that can dispatch to Han-Gyo/ValueHub-FE."
+            exit 1
+          fi
+          gh api --method POST repos/Han-Gyo/ValueHub-FE/dispatches \
+            -f event_type='upstream-sync' \
+            -f "client_payload[branch]=${GITHUB_REF_NAME}" \
+            -f "client_payload[sha]=${GITHUB_SHA}" \
+            -f "client_payload[repo]=${GITHUB_REPOSITORY}"
+          echo "Dispatched upstream-sync for branch=${GITHUB_REF_NAME}"

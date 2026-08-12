@@ -1,11 +1,11 @@
-import { Suspense } from "react";
-
 import { SigninTemplate } from "@/components/templates/SigninTemplate";
 
-export default function SigninPage() {
-  return (
-    <Suspense fallback={<div className="p-8 text-center text-sm">로딩 중...</div>}>
-      <SigninTemplate />
-    </Suspense>
-  );
+type SigninPageProps = {
+  searchParams: Promise<{ callbackUrl?: string }>;
+};
+
+export default async function SigninPage({ searchParams }: SigninPageProps) {
+  const { callbackUrl } = await searchParams;
+
+  return <SigninTemplate callbackUrl={callbackUrl ?? "/"} />;
 }

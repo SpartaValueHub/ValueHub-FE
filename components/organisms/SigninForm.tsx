@@ -1,132 +1,159 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
 
 import { Button } from "@/components/atoms/button";
-import { FormField } from "@/components/molecules/FormField";
-import { useSession } from "@/context/SessionContext";
+import { Spinner } from "@/components/atoms/spinner";
+import { AuthDivider } from "@/components/molecules/AuthDivider";
+import { AuthHelperLinks } from "@/components/molecules/AuthHelperLinks";
+import { ConfirmModal } from "@/components/molecules/ConfirmModal";
+import { RecaptchaWidget } from "@/components/molecules/RecaptchaWidget";
+import { SigninInputField } from "@/components/molecules/SigninInputField";
+import { SocialLoginGroup } from "@/components/organisms/SocialLoginGroup";
+import { useSigninCaptcha } from "@/hooks/auth/useSigninCaptcha";
+import { useSigninFlow } from "@/hooks/auth/useSigninFlow";
+import { SIGNUP_INCOMPLETE_GUIDANCE_MESSAGE } from "@/lib/auth/signin-errors";
 import {
   emptySigninValues,
-  getSigninFieldErrors,
   signinSchema,
-  type SigninFieldErrors,
   type SigninInput,
 } from "@/types/auth/signin";
 
-type TouchedFields = Partial<Record<keyof SigninInput, boolean>>;
+const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ?? "";
 
-export function SigninForm() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { refresh } = useSession();
-  const callbackUrl = searchParams.get("callbackUrl") || "/chat";
+type SigninFormProps = {
+  callbackUrl: string;
+};
 
-  const [isPending, startTransition] = useTransition();
-  const [values, setValues] = useState<SigninInput>(emptySigninValues);
-  const [touched, setTouched] = useState<TouchedFields>({});
-  const [submitAttempted, setSubmitAttempted] = useState(false);
-  const [message, setMessage] = useState<string>();
+export function SigninForm({ callbackUrl }: SigninFormProps) {
+  const captcha = useSigninCaptcha();
+  const signin = useSigninFlow({ callbackUrl, captcha });
 
-  const realtimeErrors = useMemo(
-    () => getSigninFieldErrors(values),
-    [values]
-  );
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, touchedFields, isSubmitted },
+  } = useForm<SigninInput>({
+    resolver: zodResolver(signinSchema),
+    defaultValues: emptySigninValues,
+    mode: "onChange",
+  });
 
-  const fieldErrors = useMemo(() => {
-    const next: SigninFieldErrors = {};
-    (Object.keys(values) as (keyof SigninInput)[]).forEach((key) => {
-      if (submitAttempted || touched[key]) {
-        next[key] = realtimeErrors[key];
-      }
-    });
-    return next;
-  }, [realtimeErrors, submitAttempted, touched, values]);
-
-  function updateField(name: keyof SigninInput, value: string) {
-    setValues((prev) => ({ ...prev, [name]: value }));
-    setTouched((prev) => ({ ...prev, [name]: true }));
-    setMessage(undefined);
-  }
-
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSubmitAttempted(true);
-
-    const parsed = signinSchema.safeParse(values);
-    if (!parsed.success) {
-      setMessage("입력값을 확인해 주세요.");
-      return;
-    }
-
-    startTransition(async () => {
-      const result = await signIn("credentials", {
-        logInId: parsed.data.logInId,
-        password: parsed.data.password,
-        redirect: false,
-      });
-
-      if (result?.error || !result?.ok) {
-        setMessage("아이디 또는 비밀번호가 올바르지 않습니다.");
-        return;
-      }
-
-      await refresh();
-      router.replace(callbackUrl);
-      router.refresh();
-    });
+  function getFieldError(name: keyof SigninInput): string | undefined {
+    if (!touchedFields[name] && !isSubmitted) return undefined;
+    return errors[name]?.message;
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-      <FormField
-        label="아이디"
-        name="logInId"
-        type="text"
-        autoComplete="username"
-        placeholder="user01"
-        value={values.logInId}
-        onChange={(e) => updateField("logInId", e.target.value)}
-        error={fieldErrors.logInId?.[0]}
-        disabled={isPending}
-      />
-      <FormField
-        label="비밀번호"
-        name="password"
-        type="password"
-        autoComplete="current-password"
-        placeholder="비밀번호"
-        value={values.password}
-        onChange={(e) => updateField("password", e.target.value)}
-        error={fieldErrors.password?.[0]}
-        disabled={isPending}
-      />
+    <form
+      onSubmit={handleSubmit(signin.submit, signin.handleInvalid)}
+      className="flex w-full flex-col gap-6"
+      noValidate
+    >
+      <div className="flex flex-col gap-5">
+        {!signin.isPending && signin.message ? (
+          <p className="text-left text-sm text-destructive" role="status">
+            {signin.message}
+          </p>
+        ) : null}
 
-      {isPending ? (
-        <p className="text-sm text-primary" role="status">
-          로그인 중...
-        </p>
-      ) : message ? (
-        <p className="text-sm text-destructive" role="status">
-          {message}
+        <Controller
+          control={control}
+          name="logInId"
+          render={({ field }) => (
+            <SigninInputField
+              label="아이디"
+              name="logInId"
+              value={field.value}
+              autoComplete="username"
+              disabled={signin.isPending}
+              error={getFieldError("logInId")}
+              onChange={(value) => {
+                field.onChange(value);
+                signin.clearMessages();
+              }}
+            />
+          )}
+        />
+        <Controller
+          control={control}
+          name="password"
+          render={({ field }) => (
+            <SigninInputField
+              label="비밀번호"
+              name="password"
+              type="password"
+              value={field.value}
+              autoComplete="current-password"
+              disabled={signin.isPending}
+              error={getFieldError("password")}
+              onChange={(value) => {
+                field.onChange(value);
+                signin.clearMessages();
+              }}
+            />
+          )}
+        />
+      </div>
+
+      {captcha.required && recaptchaSiteKey ? (
+        <div className="flex flex-col items-center gap-2">
+          <RecaptchaWidget
+            key={captcha.resetKey}
+            siteKey={recaptchaSiteKey}
+            onChange={captcha.handleChange}
+            onExpired={captcha.handleExpired}
+            onLoadError={signin.handleCaptchaLoadError}
+            expiredMessage={captcha.expiredMessage}
+          />
+          {!signin.isPending && captcha.message ? (
+            <p
+              className="text-center text-sm whitespace-pre-line text-destructive"
+              role="status"
+            >
+              {captcha.message}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {captcha.required && !recaptchaSiteKey ? (
+        <p className="text-center text-sm text-destructive" role="alert">
+          보안 확인을 표시할 수 없습니다.
         </p>
       ) : null}
 
-      <Button type="submit" className="w-full" disabled={isPending}>
-        {isPending ? "로그인 중..." : "로그인"}
+      <AuthHelperLinks />
+
+      <Button
+        type="submit"
+        variant="brand"
+        className="mt-[100px] h-12 w-full rounded-sm text-base"
+        disabled={signin.isPending}
+        aria-busy={signin.isPending}
+      >
+        {signin.isPending ? (
+          <Spinner size="sm" label="로그인 중" inline />
+        ) : (
+          "로그인"
+        )}
       </Button>
 
-      <p className="text-center text-sm text-muted-foreground">
-        계정이 없으신가요?{" "}
-        <Link
-          href="/signup"
-          className="text-primary underline-offset-4 hover:underline"
-        >
-          회원가입
-        </Link>
-      </p>
+      <AuthDivider label="다른 방법으로 로그인" />
+
+      <SocialLoginGroup />
+
+      <ConfirmModal
+        open={signin.resumeGuidanceOpen}
+        title="회원가입 미완료"
+        message={SIGNUP_INCOMPLETE_GUIDANCE_MESSAGE}
+        confirmLabel="가입 완료하기"
+        cancelLabel="취소"
+        onConfirm={signin.goToSignupResume}
+        onCancel={signin.dismissResumeGuidance}
+        dismissible={false}
+      />
     </form>
   );
 }

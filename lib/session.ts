@@ -1,68 +1,57 @@
-import { getServerSession } from "next-auth";
+import { cookies } from "next/headers";
+import { getToken } from "next-auth/jwt";
 import { redirect } from "next/navigation";
 
-import { authOptions } from "@/lib/auth";
+import type { SessionUser } from "@/types/auth/session";
 
-export async function getAuthSession() {
-  return getServerSession(authOptions);
-}
+export type AuthUser = SessionUser;
 
-export type AuthUser = {
-  accessToken: string;
-  refreshToken?: string;
-  uuid: string;
-  logInId: string;
-  name: string;
-};
-
-/** 서버 로그용 — NextAuth session + AuthUser 상세 출력 */
-export async function logAuthSessionDetail(label: string) {
-  const session = await getAuthSession();
-  const user = session?.user;
-
-  const detail = {
-    label,
-    at: new Date().toISOString(),
-    hasSession: Boolean(session),
-    expires: session?.expires ?? null,
-    sessionUser: user
-      ? {
-          name: user.name ?? null,
-          email: user.email ?? null,
-          image: user.image ?? null,
-          uuid: user.uuid ?? null,
-          logInId: user.logInId ?? null,
-          accessToken: user.accessToken ?? null,
-          accessTokenLength: user.accessToken?.length ?? 0,
-          refreshToken: user.refreshToken ?? null,
-          refreshTokenLength: user.refreshToken?.length ?? 0,
-        }
-      : null,
-    rawSession: session,
-  };
-
-  console.log(`[session] ${label}\n`, JSON.stringify(detail, null, 2));
-}
-
+/**
+ * 서버 전용 세션 사용자.
+ * memberUuid·role은 JWT token에만 두고 /api/auth/session에는 노출하지 않으므로
+ * getServerSession 대신 getToken으로 읽는다.
+ */
 export async function getAuthUser(): Promise<AuthUser | null> {
-  const session = await getAuthSession();
-  const user = session?.user;
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore
+    .getAll()
+    .map((cookie) => `${cookie.name}=${cookie.value}`)
+    .join("; ");
 
-  if (!user?.accessToken || !user.uuid) {
+  if (!cookieHeader) {
+    return null;
+  }
+
+  const token = await getToken({
+    req: {
+      headers: {
+        cookie: cookieHeader,
+      },
+    } as Parameters<typeof getToken>[0]["req"],
+    secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+  });
+
+  const memberUuid =
+    typeof token?.memberUuid === "string" ? token.memberUuid.trim() : "";
+  const nickname =
+    typeof token?.nickname === "string" ? token.nickname.trim() : "";
+
+  if (!memberUuid || !nickname) {
     return null;
   }
 
   return {
-    accessToken: user.accessToken,
-    refreshToken: user.refreshToken,
-    uuid: user.uuid,
-    logInId: user.logInId,
-    name: user.name,
+    memberUuid,
+    nickname,
+    role:
+      typeof token?.role === "string" && token.role.trim()
+        ? token.role.trim()
+        : "USER",
   };
 }
 
 /** RSC/페이지용 — 미로그인 시 /signin 리다이렉트 */
-export async function requireAuth(callbackUrl = "/chat") {
+export async function requireAuth(callbackUrl = "/") {
   const user = await getAuthUser();
   if (!user) {
     redirect(`/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);

@@ -8,22 +8,37 @@ import {
   SessionContext,
   type SessionUserSummary,
 } from "@/context/SessionContext";
+import { logSafeError } from "@/lib/log/safe-log";
+
+export type InitialSession = {
+  isAuthenticated: boolean;
+  user: SessionUserSummary | null;
+};
 
 interface SessionContextProviderProps {
   children: React.ReactNode;
+  initialSession: InitialSession;
 }
 
 export function SessionContextProvider({
   children,
+  initialSession,
 }: SessionContextProviderProps) {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState<SessionUserSummary | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    initialSession.isAuthenticated
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState<SessionUserSummary | null>(
+    initialSession.user
+  );
 
   const refresh = useCallback(async () => {
     try {
-      const response = await fetch("/api/auth/status", { cache: "no-store" });
+      const response = await fetch("/api/auth/status", {
+        cache: "no-store",
+        credentials: "include",
+      });
       if (!response.ok) {
         setIsAuthenticated(false);
         setUser(null);
@@ -36,7 +51,7 @@ export function SessionContextProvider({
       setIsAuthenticated(!!data.isAuthenticated);
       setUser(data.user);
     } catch (error) {
-      console.error("Auth status check failed:", error);
+      logSafeError("Auth status check failed:", error);
       setIsAuthenticated(false);
       setUser(null);
     } finally {
@@ -49,6 +64,14 @@ export function SessionContextProvider({
   };
 
   const logout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      logSafeError("Backend logout failed:", error);
+    }
     await signOut({ redirect: false });
     setIsAuthenticated(false);
     setUser(null);
@@ -57,7 +80,10 @@ export function SessionContextProvider({
   };
 
   useEffect(() => {
-    void refresh();
+    const timer = window.setTimeout(() => {
+      void refresh();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [refresh]);
 
   return (

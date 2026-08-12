@@ -7,28 +7,7 @@
 
 ## 0. 먼저 읽을 것 (Production 화면에 대한 오해)
 
-```mermaid
-flowchart TB
-  subgraph Past["예전에 한 일"]
-    CLI["CLI로 develop 스냅샷 배포"]
-  end
-
-  subgraph Now["지금 설정"]
-    GIT["Git 연결 + Production Branch = main"]
-  end
-
-  subgraph Live["지금 valuehub-fo.vercel.app"]
-    OLD["아직 CLI develop 스냅샷이<br/>Production에 남아 있을 수 있음"]
-  end
-
-  subgraph Next["main에 push/merge 되면"]
-    NEW["그때부터 Production이<br/>main 코드로 갱신됨"]
-  end
-
-  CLI --> OLD
-  GIT -.->|"연결만으로는 즉시 교체 안 됨"| OLD
-  GIT --> NEW
-```
+![Production URL이 지금 보이는 이유](./assets/vercel-flow-production-explain.png)
 
 | 질문 | 답 |
 |------|----|
@@ -41,33 +20,7 @@ flowchart TB
 
 ## 1. 한눈에 보는 배포 흐름
 
-```mermaid
-flowchart TB
-  subgraph Org["Organization: SpartaValueHub/ValueHub-FE"]
-    FEAT["feature 브랜치"] -->|PR merge| DEV["develop"]
-    DEV -->|최종 테스트 후 PR merge| MAIN["main"]
-  end
-
-  subgraph Fork["Deploy fork: Han-Gyo/ValueHub-FE"]
-    SYNC["org push 시 자동 sync<br/>(거의 실시간)"]
-  end
-
-  subgraph Vercel["Vercel: valuehub-fo"]
-    PREV["Preview URL<br/>개발/테스트용"]
-    PROD["Production URL<br/>https://valuehub-fo.vercel.app"]
-  end
-
-  subgraph EC2["EC2"]
-    GW["Gateway API"]
-  end
-
-  DEV --> SYNC
-  MAIN --> SYNC
-  SYNC -->|develop / PR| PREV
-  SYNC -->|main| PROD
-  PREV -.->|API| GW
-  PROD -.->|API| GW
-```
+![ValueHub FE 배포 전체 흐름](./assets/vercel-flow-deploy-overview.png)
 
 | 구분 | 브랜치 | URL | 용도 |
 |------|--------|-----|------|
@@ -114,19 +67,11 @@ AUTH_TRUSTED_ORIGIN=https://valuehub-fo.vercel.app
 
 ## 4. 역할 / 순서
 
-```mermaid
-sequenceDiagram
-  participant FE as FE 담당
-  participant V as Vercel
-  participant GW as Gateway 담당
-  participant EC2 as EC2 Gateway
-
-  FE->>GW: Production URL + Preview 규칙 공유
-  GW->>EC2: CORS에 Vercel 도메인 등록
-  GW->>FE: Gateway 공개 URL 전달
-  FE->>V: API_URL 등 env 설정
-  Note over FE,EC2: Preview/Production ↔ Gateway 연동 테스트
-```
+1. FE → Gateway 담당: Production URL + Preview 규칙 공유  
+2. Gateway 담당 → EC2: CORS에 Vercel 도메인 등록  
+3. Gateway 담당 → FE: Gateway 공개 URL 전달  
+4. FE → Vercel: `API_URL` 등 env 설정  
+5. Preview / Production ↔ Gateway 연동 테스트  
 
 | 담당 | 할 일 | 상태 |
 |------|--------|------|
@@ -140,14 +85,7 @@ sequenceDiagram
 
 ## 5. 개발자가 테스트하는 방법
 
-```mermaid
-flowchart LR
-  A["1. develop PR merge"] --> B["2. fork 자동 sync"]
-  B --> C["3. Preview URL 접속"]
-  C --> D["4. Gateway API 연동 확인"]
-  D --> E["5. develop → main merge"]
-  E --> F["6. Production 갱신"]
-```
+![개발 테스트 6단계](./assets/vercel-flow-dev-test-steps.png)
 
 ```text
 [개발] develop → Preview URL

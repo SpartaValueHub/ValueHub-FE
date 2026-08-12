@@ -2,7 +2,7 @@ name: Notify deploy fork to sync
 
 on:
   push:
-    branches: [develop, main]
+    branches: [main]
 
 jobs:
   dispatch-fork-sync:

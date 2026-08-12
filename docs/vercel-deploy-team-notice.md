@@ -1,192 +1,225 @@
-# ValueHub FE — Vercel 배포 공유
+# ValueHub FE — Vercel 배포 안내
 
-> FE 담당 → 팀 / Gateway 담당 공유용  
-> 작성일: 2026-08-12  
-> ※ 게시판 복붙용: 외부 이미지 없이 텍스트 다이어그램만 사용
+FE(Next.js)를 Vercel에 배포한 구성과, 팀/Gateway 담당과 맞출 URL·테스트·로그 확인 방법을 정리한다.  
+실비밀값(`.env` 실값, PAT 등)은 git에 올리지 않는다.
 
 ---
 
-## 0. Production 화면이 보이는 이유
+## 한 줄 요약
 
-```text
-[예전] CLI로 develop 스냅샷 배포
-              │
-              ▼
-[지금] Git 연결 + Production Branch = main
-              │
-              │  ← 연결만으로는 사이트가 즉시 안 바뀜
-              ▼
-[현재 운영 URL]
-valuehub-fo.vercel.app
-→ 예전 CLI develop 스냅샷이 남아 있을 수 있음
-              │
-              │  main 에 push / merge 발생
-              ▼
-[이후] Production 이 main 코드로 갱신
+| 구분 | 내용 |
+| --- | --- |
+| 운영 URL | https://valuehub-fe.vercel.app |
+| Production Branch | `main` |
+| 개발 테스트 | `develop` / PR → Vercel **Preview** URL |
+| Git 연결 대상 | Hobby 제약으로 org private 직접 연결 불가 → 개인 fork `Han-Gyo/ValueHub-FE` |
+| org → fork | `develop` / `main` push 시 자동 sync |
+| Gateway CORS | Gateway 담당(팀장) 정책으로 관리. Preview는 **구체 URL**을 필요할 때 전달 |
+
+---
+
+## 전체 그림
+
+```mermaid
+flowchart TB
+  subgraph Org["GitHub org - SpartaValueHub/ValueHub-FE"]
+    FEAT["feature"] -->|PR merge| DEV["develop"]
+    DEV -->|최종 PR merge| MAIN["main"]
+  end
+
+  subgraph Fork["Deploy fork - Han-Gyo/ValueHub-FE"]
+    SYNC["org push 시 자동 sync"]
+  end
+
+  subgraph Vercel["Vercel - valuehub-fe"]
+    PREV["Preview URL<br/>개발/테스트"]
+    PROD["Production<br/>valuehub-fe.vercel.app"]
+  end
+
+  subgraph EC2["Apps EC2"]
+    GW["Gateway"]
+  end
+
+  DEV --> SYNC
+  MAIN --> SYNC
+  SYNC -->|develop / PR| PREV
+  SYNC -->|main| PROD
+  PREV -.->|API| GW
+  PROD -.->|API| GW
+```
+
+포인트:
+- 일상 개발은 **org 레포** 기준
+- Vercel Git은 **개인 fork**에 연결
+- org merge → fork sync → Vercel Preview / Production 반영
+
+---
+
+## Production URL이 예전에 보였던 이유
+
+Git Production Branch를 `main`으로 걸어둬도, **예전에 CLI로 올린 develop 스냅샷**이 Production에 남아 있으면 그 화면이 계속 보일 수 있다.  
+`main`에 push/merge가 일어나야 Production이 main 코드로 갱신된다.
+
+```mermaid
+flowchart LR
+  A["CLI develop 스냅샷 배포"] --> B["운영 URL에 잔존 가능"]
+  C["Git Production = main 설정"] -.->|연결만으로는 즉시 교체 안 됨| B
+  D["main push / merge"] --> E["Production이 main으로 갱신"]
 ```
 
 | 질문 | 답 |
-|------|----|
-| Production Branch = `main`? | **예** |
-| `main`에 코드 없음? | **아니요** (develop보다 예전 버전) |
-| 지금 화면이 왜 보이나? | **예전 CLI develop 스냅샷**이 Production에 남아 있을 수 있음 |
-| 언제 main으로 바뀌나? | **`main` push/merge 시** |
+| --- | --- |
+| Production Branch = `main`? | O |
+| `main`에 코드가 없나? | X (develop보다 예전일 수 있음) |
+| 언제 main 코드로 바뀌나? | `main` push / merge 시 |
 
 ---
 
-## 1. 배포 흐름
+## 코드 배포 흐름 (FE)
 
-```text
-[Organization: SpartaValueHub/ValueHub-FE]
-  feature ──PR──► develop ──PR──► main
-                     │              │
-                     └──────┬───────┘
-                            │ org push 시 자동 sync
-                            ▼
-              [Fork: Han-Gyo/ValueHub-FE]
-                            │
-              ┌─────────────┴─────────────┐
-              ▼                           ▼
-     develop / PR                      main
-              │                           │
-              ▼                           ▼
-     Vercel Preview                 Vercel Production
-     (테스트 URL)              https://valuehub-fo.vercel.app
-              │                           │
-              └────────────┬──────────────┘
-                           ▼
-                    EC2 Gateway API
+```mermaid
+flowchart LR
+  subgraph Dev["개발"]
+    A1["feature PR"] --> A2["org develop merge"]
+    A2 --> A3["fork sync"]
+    A3 --> A4["Vercel Preview"]
+  end
+
+  subgraph Prod["운영"]
+    B1["develop → main merge"] --> B2["fork sync"]
+    B2 --> B3["Vercel Production"]
+  end
 ```
 
-| 구분 | 브랜치 | URL | 용도 |
-|------|--------|-----|------|
-| **운영** | `main` | https://valuehub-fo.vercel.app | 실제 서비스 |
-| **테스트** | `develop` / PR | Deployments에 생기는 Preview URL | 개발 검증 |
-
-### 관련 링크
-
-| 항목 | 링크 |
-|------|------|
-| Vercel 프로젝트 | https://vercel.com/ggyyoo/valuehub-fo |
-| Production | https://valuehub-fo.vercel.app |
-| org FE 레포 | https://github.com/SpartaValueHub/ValueHub-FE |
-| 배포용 fork | https://github.com/Han-Gyo/ValueHub-FE |
+| 무엇을 했나 | 결과 |
+| --- | --- |
+| org `develop` / PR merge | Preview URL 생성 (Deployments에서 확인) |
+| org `main` merge | https://valuehub-fe.vercel.app 갱신 |
 
 ---
 
-## 2. FE → Gateway 담당(팀장) 공유 URL
+## URL / 링크
+
+| 항목 | 값 |
+| --- | --- |
+| Production | https://valuehub-fe.vercel.app |
+| Vercel 프로젝트 | https://vercel.com/ggyyoo/valuehub-fe |
+| org FE 레포 | https://github.com/SpartaValueHub/ValueHub-FE |
+| 배포용 fork | https://github.com/Han-Gyo/ValueHub-FE |
+| fork sync Actions | https://github.com/Han-Gyo/ValueHub-FE/actions |
+
+Preview URL은 배포마다 달라진다.  
+**Vercel → valuehub-fe → Deployments** 에서 Environment=`Preview` 항목의 URL을 사용한다.
+
+---
+
+## Gateway와 맞추는 방법
+
+```mermaid
+sequenceDiagram
+  participant FE as FE 담당
+  participant V as Vercel
+  participant GW as Gateway 담당
+  participant EC2 as Apps EC2 Gateway
+
+  FE->>GW: Production URL 공유
+  Note over FE,GW: Preview가 필요하면 Deployments의 구체 URL을 전달
+  GW->>EC2: CORS / Origin 정책 반영
+  GW->>FE: Gateway 공개 Base URL 전달
+  FE->>V: API_URL 등 env 설정
+  Note over FE,EC2: Preview / Production 연동 테스트
+```
+
+### FE → Gateway 담당에 주는 것
 
 | 환경 | URL |
-|------|-----|
-| Production | `https://valuehub-fo.vercel.app` |
+| --- | --- |
+| Production | `https://valuehub-fe.vercel.app` |
+| Preview | Deployments에서 확인한 **구체 URL** (필요할 때) |
 
-Preview URL은 배포마다 새로 생깁니다.  
-필요한 Preview Origin은 **Deployments에서 확인한 구체 URL**을 그때 전달합니다.  
-CORS 허용 범위는 **Gateway 팀장 정책**으로 관리합니다.
-
-### Gateway → FE (나중에)
+### Gateway → FE에 주시면 되는 것
 
 ```text
 API_URL={GATEWAY}/auth-service
 MEMBER_API_URL={GATEWAY}/member-service
 CATEGORY_API_URL={GATEWAY}/category-service
-AUTH_TRUSTED_ORIGIN=https://valuehub-fo.vercel.app
+AUTH_TRUSTED_ORIGIN=https://valuehub-fe.vercel.app
 ```
 
 ---
 
-## 3. Vercel 테스트 방법
+## Vercel 테스트 절차
 
-```text
-1) org develop(또는 feature) PR merge
-2) fork 자동 sync 확인 (GitHub Actions)
-3) Vercel → valuehub-fo → Deployments
-4) Preview 배포 Visit / URL 접속
-5) (연동 필요 시) Preview URL을 Gateway 담당에 전달 후 API 테스트
-6) 최종: develop → main merge → Production 확인
-```
+### Preview (develop / feature)
 
-```text
-[개발] develop / PR  →  Preview URL
-[운영] main          →  https://valuehub-fo.vercel.app
-```
+1. org `SpartaValueHub/ValueHub-FE`에 PR merge  
+2. fork sync 확인: Actions  
+3. https://vercel.com/ggyyoo/valuehub-fe → **Deployments**  
+4. Preview 배포 **Visit**  
+5. Gateway 연동 필요 시 해당 Preview URL을 Gateway 담당에 전달 후 API 테스트  
 
-### Preview URL 찾는 법
+### Production (main)
 
-1. https://vercel.com/ggyyoo/valuehub-fo  
-2. **Deployments**  
-3. Environment = **Preview** 인 항목 클릭  
-4. **Visit** 또는 배포 도메인 복사  
+1. `develop` → `main` merge  
+2. Deployments에서 Production Ready 확인  
+3. https://valuehub-fe.vercel.app 접속  
 
-### Production 확인
-
-1. `main` merge 후 Deployments에서 Production Ready 확인  
-2. https://valuehub-fo.vercel.app  
-
-### 빠른 체크
+### 체크
 
 - [ ] 배포 Status = Ready  
-- [ ] Preview / Production 헷갈리지 않았는지  
-- [ ] env가 해당 Environment에 있는지  
+- [ ] Preview / Production 혼동 없음  
+- [ ] 해당 Environment env 존재  
 - [ ] 시크릿 창 / Hard Refresh로 캐시 배제  
 
 ---
 
-## 4. 오류 시 프론트 로그 보는 법
+## 오류 시 프론트 로그
 
-```text
-배포 실패? ──► Deployments → 해당 배포 → Building 로그
-서버 API 오류? ──► 프로젝트 Logs (Runtime) / Preview·Production 필터
-버튼만 깨짐? ──► 브라우저 F12 → Console / Network
-CLI? ──► npx vercel logs --follow --scope ggyyoo
+```mermaid
+flowchart TD
+  A[증상] --> B{배포 실패?}
+  B -->|Yes| C[Deployments → Building 로그]
+  B -->|No| D{서버/API 오류?}
+  D -->|Yes| E[프로젝트 Logs Runtime]
+  D -->|No| F[브라우저 F12 Console / Network]
 ```
 
 | 증상 | 보는 곳 |
-|------|---------|
-| Build Failed | Deployments → **Building** 로그 |
-| 접속 중 서버 에러 | 프로젝트 → **Logs** (Runtime) |
-| 클라이언트 UI 에러 | 브라우저 **Console / Network** |
+| --- | --- |
+| Build Failed | Deployments → 해당 배포 → **Building** |
+| 접속 중 서버 에러 | 프로젝트 → **Logs** (Preview/Production 필터) |
+| 클라이언트 UI만 깨짐 | 브라우저 **Console / Network** |
+| CLI | `npx vercel logs --follow --scope ggyyoo` |
 
-### 빌드 로그
-
-1. Deployments → Failed 배포  
-2. Building 로그에서 `pnpm build` / TS 에러 확인  
-
-### 런타임 로그
-
-1. 좌측 **Logs**  
-2. Environment: Preview / Production  
-3. `4xx`/`5xx`, path로 필터  
-
-> `'use client'` 로그 → 브라우저 Console  
-> Server Actions / Route Handlers → Vercel Logs  
+- `'use client'` 로그 → 브라우저 Console  
+- Server Actions / Route Handlers → Vercel Logs  
 
 ---
 
-## 5. 역할 분담
+## 역할 분담
 
-| 담당 | 할 일 | 상태 |
-|------|--------|------|
-| FE | Vercel, Production=`main`, fork sync | 완료 |
-| FE | Production URL / 테스트·로그 가이드 공유 | 이 문서 |
-| Gateway | CORS 정책·설정 | 팀장 |
-| Gateway | Gateway 공개 URL 전달 | 대기 |
-| FE | API env + 연동 테스트 | URL 수신 후 |
+| 누가 | 하는 일 |
+| --- | --- |
+| FE | Vercel 배포, fork sync, URL/테스트/로그 가이드 공유, Gateway URL 수신 후 env 설정 |
+| Gateway / 인프라 | CORS·Origin 정책, Gateway 공개 URL 전달 |
 
 ---
 
-## 6. 왜 개인 fork인가?
+## 경로 / 이름 정리
 
-- Vercel Hobby = org private Git 연결 불가  
-- 배포 Git = `Han-Gyo/ValueHub-FE`  
-- org merge → fork 자동 sync  
-- 일상 개발 = org 레포 기준  
+| 항목 | 값 |
+| --- | --- |
+| Vercel Project Name | `valuehub-fe` |
+| Production Domain | `valuehub-fe.vercel.app` |
+| org 레포 | `SpartaValueHub/ValueHub-FE` |
+| fork 레포 | `Han-Gyo/ValueHub-FE` |
+| Production Branch | `main` |
 
 ---
 
-## 7. 체크리스트
+## 체크리스트
 
-- [x] Production URL  
+- [x] Vercel 프로젝트 / Production URL (`valuehub-fe`)  
 - [x] Production Branch = `main`  
 - [x] org → fork 자동 sync  
 - [ ] Gateway CORS (팀장)  
@@ -201,11 +234,11 @@ CLI? ──► npx vercel logs --follow --scope ggyyoo
 FE Vercel 배포 URL 공유드립니다.
 
 [운영 Production]
-https://valuehub-fo.vercel.app
+https://valuehub-fe.vercel.app
 
 [테스트 Preview]
 develop/PR 배포마다 Vercel Deployments에 Preview URL이 생성됩니다.
-- 확인: Vercel → valuehub-fo → Deployments
+- 확인: Vercel → valuehub-fe → Deployments
 - 필요한 Preview Origin은 배포 URL 확인 후 전달드리겠습니다.
 
 Gateway 공개 URL 주시면 FE env에 연결하겠습니다.

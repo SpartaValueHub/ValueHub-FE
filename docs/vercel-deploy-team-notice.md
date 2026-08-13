@@ -14,7 +14,7 @@ FE(Next.js)를 Vercel에 배포한 구성과, 팀/Gateway 담당과 맞출 URL·
 
 | 구분 | 내용 |
 | --- | --- |
-| 운영 URL | https://valuehub-fe.vercel.app |
+| 운영 URL | https://www.valuehub.art (`valuehub.art` → www 리다이렉트) |
 | Production Branch | `main` |
 | org 작업 | `develop`에서 feature PR/merge |
 | 테스트 | **org `develop`** 기준으로 **localhost:3000** + EC2 Gateway |
@@ -23,7 +23,7 @@ FE(Next.js)를 Vercel에 배포한 구성과, 팀/Gateway 담당과 맞출 URL·
 | org → fork | org `main` push / merge 시 **main만** 자동 sync |
 | 재배포 | fork `main`이 바뀌면 Vercel **Production** 자동 배포 |
 | fork develop | 최신화 안 함. Vercel Preview도 없음 |
-| Gateway CORS | `https://valuehub-fe.vercel.app`, `http://localhost:3000` |
+| Gateway CORS | `https://www.valuehub.art`, `https://valuehub.art`, `http://localhost:3000` |
 
 ---
 
@@ -64,7 +64,7 @@ flowchart TB
   end
 
   subgraph Vercel["Vercel - valuehub-fe"]
-    PROD["Production<br/>valuehub-fe.vercel.app"]
+    PROD["Production<br/>www.valuehub.art"]
   end
 
   subgraph EC2["Apps EC2"]
@@ -86,6 +86,7 @@ flowchart TB
 - 통과하면 org `develop` → `main` merge
 - 개인 fork / Vercel은 **`main`만** 봄. fork `develop`은 sync 안 함
 - org `develop` merge만으로는 Production URL이 안 바뀜
+- Production URL은 **https://www.valuehub.art** (`valuehub.art`는 www로 이동)
 - Production / localhost 모두 같은 EC2 Gateway 호출 (점선)
 
 ---
@@ -132,7 +133,7 @@ flowchart LR
 | --- | --- |
 | org `develop` PR/merge | 코드 통합. Vercel은 안 움직임 |
 | org `develop`에서 `pnpm dev` | **localhost:3000** 으로 EC2 연동 테스트 |
-| org `main` merge | fork `main` sync → https://valuehub-fe.vercel.app 갱신 |
+| org `main` merge | fork `main` sync → https://www.valuehub.art 갱신 |
 
 참고:
 - Vercel / 개인 fork는 **`main`만** 연결됨
@@ -171,7 +172,9 @@ pnpm dev
 
 | 항목 | 값 |
 | --- | --- |
-| Production | https://valuehub-fe.vercel.app |
+| Production | https://www.valuehub.art |
+| 루트 도메인 | https://valuehub.art → www로 리다이렉트 |
+| Vercel 기본 도메인 | https://valuehub-fe.vercel.app (백업) |
 | Vercel 프로젝트 | https://vercel.com/ggyyoo/valuehub-fe |
 | org FE 레포 | https://github.com/SpartaValueHub/ValueHub-FE |
 | 배포용 fork | https://github.com/Han-Gyo/ValueHub-FE |
@@ -200,7 +203,8 @@ sequenceDiagram
 
 | 환경 | Origin |
 | --- | --- |
-| Production | `https://valuehub-fe.vercel.app` |
+| Production | `https://www.valuehub.art` |
+| 루트 도메인 | `https://valuehub.art` |
 | develop 로컬 테스트 | `http://localhost:3000` |
 
 ### Gateway → FE에 주시면 되는 것
@@ -209,7 +213,7 @@ sequenceDiagram
 API_URL={GATEWAY}/auth-service
 MEMBER_API_URL={GATEWAY}/member-service
 CATEGORY_API_URL={GATEWAY}/category-service
-AUTH_TRUSTED_ORIGIN=https://valuehub-fe.vercel.app
+AUTH_TRUSTED_ORIGIN=https://www.valuehub.art
 # 로컬 테스트는 .env 에 같은 Gateway URL + CORS localhost:3000
 ```
 
@@ -231,7 +235,7 @@ AUTH_TRUSTED_ORIGIN=https://valuehub-fe.vercel.app
 2. org Actions에서 `Notify deploy fork to sync` 확인  
 3. fork Actions에서 `Sync from upstream` 확인  
 4. https://vercel.com/ggyyoo/valuehub-fe → **Deployments**  
-5. Production Ready 확인 후 https://valuehub-fe.vercel.app 접속  
+5. Production Ready 확인 후 https://www.valuehub.art 접속  
 
 ### 체크
 
@@ -352,7 +356,7 @@ flowchart TD
 | 항목 | 값 |
 | --- | --- |
 | Vercel Project Name | `valuehub-fe` |
-| Production Domain | `valuehub-fe.vercel.app` |
+| Production Domain | `www.valuehub.art` |
 | org 레포 | `SpartaValueHub/ValueHub-FE` |
 | fork 레포 | `Han-Gyo/ValueHub-FE` |
 | org 작업 브랜치 | `develop` |
@@ -363,7 +367,8 @@ flowchart TD
 
 ## 체크리스트
 
-- [x] Vercel 프로젝트 / Production URL (`valuehub-fe`)  
+- [x] Vercel 프로젝트 / Production URL (`www.valuehub.art`)  
+- [ ] 가비아 DNS Valid (팀원 DNS 반영 후)  
 - [x] Production Branch = `main`  
 - [x] org `main` → fork `main` 자동 sync (develop는 fork에 안 맞춤)  
 - [ ] Gateway CORS: Production + `http://localhost:3000`  
@@ -379,7 +384,8 @@ flowchart TD
 FE Vercel 배포 URL 공유드립니다.
 
 [운영 Production]
-https://valuehub-fe.vercel.app
+https://www.valuehub.art
+(valuehub.art 는 www로 리다이렉트)
 
 org에서는 develop에서 작업하고 localhost:3000 + EC2로 테스트합니다.
 테스트 통과 후 develop → main merge 하면 fork main sync → Vercel Production이 갱신됩니다.
@@ -387,6 +393,7 @@ org에서는 develop에서 작업하고 localhost:3000 + EC2로 테스트합니�
 
 Gateway 공개 URL 주시면 FE env에 연결하겠습니다.
 CORS 허용 Origin:
-- https://valuehub-fe.vercel.app
+- https://www.valuehub.art
+- https://valuehub.art
 - http://localhost:3000
 ```

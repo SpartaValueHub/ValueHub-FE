@@ -1,5 +1,5 @@
 /**
- * API path 통합 관리 — base URL은 getApiUrl() (Gateway auth-service prefix).
+ * API path 통합 관리 — base URL은 서비스별 get*ApiUrl() (Gateway prefix).
  * 경로 하드코딩은 lib/api/* 에서 금지.
  */
 export const API_ENDPOINTS = {
@@ -22,5 +22,15 @@ export const API_ENDPOINTS = {
     me: "/api/v1/members/me",
     checkNickname: (nickname: string) =>
       `/api/v1/members/check/nickname?nickname=${encodeURIComponent(nickname)}`,
+  },
+  categories: {
+    children: (parentUuid?: string) => {
+      if (!parentUuid) return "/api/v1/categories";
+      return `/api/v1/categories?parentUuid=${encodeURIComponent(parentUuid)}`;
+    },
+    leaves: (parentUuid?: string) => {
+      if (!parentUuid) return "/api/v1/categories/leaves";
+      return `/api/v1/categories/leaves?parentUuid=${encodeURIComponent(parentUuid)}`;
+    },
   },
 } as const;

@@ -207,6 +207,19 @@
     color: var(--vh-brand-gold);
   }
 
+  /* Listing SiteHeader — 활성 카테고리 (포인트 #F2CA7B) */
+  .vh-text-category-active {
+    background-image: linear-gradient(
+      90deg,
+      #f8e3b9 0%,
+      #f2ca7b 45%,
+      #c9a05e 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
   .vh-brand-logo-icon {
     display: flex;
     align-items: center;

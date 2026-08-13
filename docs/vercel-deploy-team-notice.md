@@ -15,10 +15,12 @@ FE(Next.js)를 Vercel에 배포한 구성과, 팀/Gateway 담당과 맞출 URL·
 | 운영 URL | https://valuehub-fe.vercel.app |
 | Production Branch | `main` |
 | 작업 방식 | `main`에서 feature 브랜치 → `main`으로 PR |
+| merge 전 테스트 | **localhost:3000** + EC2 Gateway |
 | Git 연결 대상 | Hobby 제약으로 org private 직접 연결 불가 → 개인 fork `Han-Gyo/ValueHub-FE` |
-| org → fork | org `main` push / merge 시 자동 sync |
+| org → fork | org `main` push / merge 시 **main만** 자동 sync |
 | 재배포 | fork `main`이 바뀌면 Vercel **Production** 자동 배포 |
-| Gateway CORS | Gateway 담당(팀장) 정책으로 관리 |
+| develop Preview | 없음. develop merge는 Production URL을 안 바꿈 |
+| Gateway CORS | `https://valuehub-fe.vercel.app`, `http://localhost:3000` |
 
 ---
 
@@ -46,12 +48,14 @@ FE(Next.js)를 Vercel에 배포한 구성과, 팀/Gateway 담당과 맞출 URL·
 flowchart TB
   subgraph Org["GitHub org - SpartaValueHub/ValueHub-FE"]
     FEAT["feature"]
+    LOCAL["localhost:3000<br/>merge 전 테스트"]
     MAIN["main"]
-    FEAT -->|PR merge| MAIN
+    FEAT --> LOCAL
+    LOCAL -->|확인 후 PR merge| MAIN
   end
 
   subgraph Fork["Deploy fork - Han-Gyo/ValueHub-FE"]
-    SYNC["org main push 시<br/>자동 sync"]
+    SYNC["org main push 시만<br/>자동 sync"]
   end
 
   subgraph Vercel["Vercel - valuehub-fe"]
@@ -62,20 +66,22 @@ flowchart TB
     GW["Gateway"]
   end
 
+  LOCAL -.->|API 호출| GW
   MAIN -->|자동 sync| SYNC
   SYNC -->|main| PROD
   PROD -.->|API 호출| GW
 
   classDef node fill:#FFFDE7,stroke:#333,color:#111;
-  class FEAT,MAIN,SYNC,PROD,GW node;
+  class FEAT,LOCAL,MAIN,SYNC,PROD,GW node;
 ```
 
 포인트:
 - 일상 개발은 **org 레포** 기준 (`main` → feature → `main` PR)
-- Vercel Git은 **개인 fork `main`** 에 연결
-- org `main` merge → fork sync → Vercel Production 반영
-- Production이 런타임에 Gateway API 호출 (점선)
-- `develop` 단계는 없음
+- **merge 전 화면/API 테스트는 localhost:3000** (EC2 Gateway에 붙임)
+- Vercel Git은 **개인 fork `main`만** 연결. `develop` sync / Preview 없음
+- org `main` merge → fork sync → `valuehub-fe.vercel.app` 갱신
+- Production / localhost 모두 같은 EC2 Gateway 호출 (점선)
+- develop에만 merge해서 Production URL로 테스트하는 방법은 **없음**
 
 ---
 
@@ -106,24 +112,50 @@ flowchart LR
 ```mermaid
 %%{init: {"theme":"base","themeVariables":{"primaryColor":"#FFF3B0","primaryBorderColor":"#333","lineColor":"#333","clusterBkg":"#FFF3B0"}}}%%
 flowchart LR
-  A1["main에서 feature 브랜치"] --> A2["org main으로 PR"]
-  A2 --> A3["org CI<br/>lint / test / build"]
-  A3 --> A4["main merge"]
-  A4 --> A5["fork main sync"]
-  A5 --> A6["Vercel Production"]
+  A1["main에서 feature 브랜치"] --> A2["localhost:3000<br/>+ EC2 테스트"]
+  A2 --> A3["org main으로 PR"]
+  A3 --> A4["org CI<br/>lint / test / build"]
+  A4 --> A5["main merge"]
+  A5 --> A6["fork main sync"]
+  A6 --> A7["Vercel Production"]
 
   classDef node fill:#FFFDE7,stroke:#333,color:#111;
-  class A1,A2,A3,A4,A5,A6 node;
+  class A1,A2,A3,A4,A5,A6,A7 node;
 ```
 
 | 무엇을 했나 | 결과 |
 | --- | --- |
+| feature / develop에서 작업 | **localhost:3000** 으로 EC2 연동 테스트 |
 | org `main`으로 PR | org Actions에서 lint / test / build |
 | org `main` merge | fork `main` sync → https://valuehub-fe.vercel.app 갱신 |
 
-참고: Vercel은 **fork**에 연결되어 있다.  
-org feature 브랜치 PR만으로는 Vercel Preview가 자동으로 안 뜬다.  
-팀 공용 확인 URL은 **Production**이다.
+참고:
+- Vercel은 **fork `main`** 에만 연결됨
+- org `develop` merge는 fork/Vercel을 안 건드림
+- develop용 Preview URL을 Production URL이랑 같게 만드는 방법은 **없음**
+- 팀 공용 배포 URL은 Production 하나뿐
+
+---
+
+## merge 전 테스트 (localhost)
+
+`main` merge 전에 화면/API를 보려면 **로컬 FE + EC2** 가 맞다.
+
+```text
+pnpm dev
+→ http://localhost:3000
+→ EC2 Gateway API 호출
+```
+
+| 단계 | 하는 일 |
+| --- | --- |
+| 1 | `.env`에 EC2 Gateway URL (`API_URL` 등) |
+| 2 | Gateway CORS에 `http://localhost:3000` 허용 |
+| 3 | `pnpm dev` 후 브라우저에서 확인 |
+| 4 | 통과하면 org `main`으로 PR |
+
+로컬로 안 잡히는 것: Vercel env 누락, Production 빌드 이슈  
+→ 보완은 org Actions CI + `main` merge 후 Production URL
 
 ---
 
@@ -149,18 +181,19 @@ sequenceDiagram
   participant GW as Gateway 담당
   participant EC2 as Apps EC2 Gateway
 
-  FE->>GW: Production URL 공유
+  FE->>GW: Production URL + localhost Origin 공유
   GW->>EC2: CORS / Origin 정책 반영
   GW->>FE: Gateway 공개 Base URL 전달
   FE->>V: API_URL 등 env 설정
-  Note over FE,EC2: Production 연동 테스트
+  Note over FE,EC2: localhost로 먼저 테스트 후 Production 확인
 ```
 
 ### FE → Gateway 담당에 주는 것
 
-| 환경 | URL |
+| 환경 | Origin |
 | --- | --- |
 | Production | `https://valuehub-fe.vercel.app` |
+| 로컬 테스트 | `http://localhost:3000` |
 
 ### Gateway → FE에 주시면 되는 것
 
@@ -169,20 +202,27 @@ API_URL={GATEWAY}/auth-service
 MEMBER_API_URL={GATEWAY}/member-service
 CATEGORY_API_URL={GATEWAY}/category-service
 AUTH_TRUSTED_ORIGIN=https://valuehub-fe.vercel.app
+# 로컬 테스트는 .env 에 같은 Gateway URL + CORS localhost:3000
 ```
 
 ---
 
-## Vercel 테스트 절차
+## 테스트 절차
 
-### Production (main)
+### merge 전 (localhost)
 
-1. org `SpartaValueHub/ValueHub-FE`에서 `main` 기준 feature PR merge  
+1. feature 브랜치에서 `pnpm dev`  
+2. http://localhost:3000 접속  
+3. EC2 Gateway 연동 확인 (로그인/API)  
+4. 문제 없으면 org `main`으로 PR  
+
+### Production (main merge 후)
+
+1. org `SpartaValueHub/ValueHub-FE`에서 `main` PR merge  
 2. org Actions에서 `CI` / `Notify deploy fork to sync` 확인  
 3. fork Actions에서 `Sync from upstream` 확인  
 4. https://vercel.com/ggyyoo/valuehub-fe → **Deployments**  
 5. Production Ready 확인 후 https://valuehub-fe.vercel.app 접속  
-6. Gateway 연동 필요 시 Production URL로 API 테스트  
 
 ### 체크
 
@@ -294,7 +334,7 @@ flowchart TD
 
 | 누가 | 하는 일 |
 | --- | --- |
-| 팀원 | `main`에서 feature 따서 `main` PR, org Actions CI 로그 확인 |
+| 팀원 | `main`에서 feature 따서 localhost:3000 테스트 후 `main` PR, org Actions CI 로그 확인 |
 | FE 배포 담당 | Vercel 배포, fork sync, URL/테스트/로그 가이드 공유, Gateway URL 수신 후 env 설정 |
 | Gateway / 인프라 | CORS·Origin 정책, Gateway 공개 URL 전달 |
 
@@ -309,7 +349,8 @@ flowchart TD
 | org 레포 | `SpartaValueHub/ValueHub-FE` |
 | fork 레포 | `Han-Gyo/ValueHub-FE` |
 | Production Branch | `main` |
-| 브랜치 전략 | `main` → feature → `main` PR (develop 없음) |
+| 브랜치 전략 | `main` → feature → localhost 테스트 → `main` PR |
+| fork sync | **main만** (`develop` 최신화 안 함) |
 
 ---
 
@@ -318,8 +359,9 @@ flowchart TD
 - [x] Vercel 프로젝트 / Production URL (`valuehub-fe`)  
 - [x] Production Branch = `main`  
 - [x] org `main` → fork `main` 자동 sync  
-- [ ] Gateway CORS (팀장)  
-- [ ] Gateway URL → FE env  
+- [ ] Gateway CORS: Production + `http://localhost:3000`  
+- [ ] Gateway URL → FE env / 로컬 `.env`  
+- [ ] localhost ↔ Gateway 스모크 테스트  
 - [ ] Production ↔ Gateway 스모크 테스트  
 
 ---
@@ -333,8 +375,12 @@ FE Vercel 배포 URL 공유드립니다.
 https://valuehub-fe.vercel.app
 
 현재 FE는 main에서 작업 브랜치를 따고 main으로 PR/merge 합니다.
+merge 전 테스트는 localhost:3000 + EC2 입니다.
 org main merge 후 fork sync → Vercel Production이 갱신됩니다.
+develop merge는 Production URL을 바꾸지 않습니다.
 
 Gateway 공개 URL 주시면 FE env에 연결하겠습니다.
-CORS 허용 Origin은 https://valuehub-fe.vercel.app 부탁드립니다.
+CORS 허용 Origin:
+- https://valuehub-fe.vercel.app
+- http://localhost:3000
 ```

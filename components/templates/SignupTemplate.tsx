@@ -1,12 +1,20 @@
 import { SignupAuthHeader } from "@/components/molecules/SignupAuthHeader";
 import { SignupForm } from "@/components/organisms/SignupForm";
 
-export function SignupTemplate() {
+type SignupTemplateProps = {
+  resumeMode?: boolean;
+  initialLoginId?: string;
+};
+
+export function SignupTemplate({
+  resumeMode = false,
+  initialLoginId,
+}: SignupTemplateProps) {
   return (
-    <main className="flex flex-1 flex-col items-start px-4 py-10 md:items-center md:py-12">
-      <div className="flex w-full max-w-lg flex-col gap-10">
-        <SignupAuthHeader />
-        <SignupForm />
+    <main className="flex flex-1 flex-col items-center justify-center px-5 py-10 md:py-12">
+      <div className="mx-auto flex w-full max-w-[480px] flex-col items-center gap-10">
+        <SignupAuthHeader resumeMode={resumeMode} />
+        <SignupForm resumeMode={resumeMode} initialLoginId={initialLoginId} />
       </div>
     </main>
   );

@@ -23,6 +23,9 @@ export const API_ENDPOINTS = {
     checkNickname: (nickname: string) =>
       `/api/v1/members/check/nickname?nickname=${encodeURIComponent(nickname)}`,
   },
+  terms: {
+    active: "/api/v1/terms/active",
+  },
   categories: {
     children: (parentUuid?: string) => {
       if (!parentUuid) return "/api/v1/categories";

@@ -6,8 +6,11 @@
 Browser (localhost:3000)
   │ signIn("credentials")
   ▼
-Next.js Auth.js (session: memberUuid, nickname, role)
-  │ authorize → POST /auth/sign-in (server-side)
+Next.js Auth.js
+  │ session(/api/auth/session): nickname only
+  │ JWT token(server/getToken): memberUuid, nickname, role
+  │ maxAge: 14일 (refresh token TTL과 정렬)
+  │ authorize → POST /auth/sign-in (AbortController 5s timeout)
   ▼
 Gateway (localhost:8000) → auth-service
   │ Set-Cookie: vh_access_token, vh_refresh_token

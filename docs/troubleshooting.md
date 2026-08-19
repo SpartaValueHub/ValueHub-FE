@@ -11,7 +11,7 @@ Gateway·auth-service 쪽 403/500은 [auth-service/docs/troubleshooting.md](../.
 
 - **원인:** Gateway JWT on + public path 미매칭 (POST sign-up·identity confirm)
 - **조치:** Gateway **재기동**, `AuthPublicPathMatcher` 반영 확인
-- **임시:** Gateway `SECURITY_JWT_ENABLED=false`
+- **주의:** `SECURITY_JWT_ENABLED=false`로 우회하지 않는다. JWT off는 local/test 전용이며, prod에서는 기동이 실패한다.
 
 터미널 예:
 

@@ -11,6 +11,8 @@ export type ConfirmModalProps = {
   message: string;
   confirmLabel: string;
   onConfirm: () => void;
+  cancelLabel?: string;
+  onCancel?: () => void;
   /** false — backdrop·ESC·닫기 버튼 비활성 (blocking modal) */
   dismissible?: boolean;
   confirmPending?: boolean;
@@ -27,10 +29,13 @@ export function ConfirmModal({
   message,
   confirmLabel,
   onConfirm,
+  cancelLabel,
+  onCancel,
   dismissible = true,
   confirmPending = false,
   className,
 }: ConfirmModalProps) {
+  const showCancel = Boolean(cancelLabel && onCancel);
   useEffect(() => {
     if (!open || dismissible) return;
 
@@ -75,16 +80,34 @@ export function ConfirmModal({
         >
           {message}
         </p>
-        <Button
-          type="button"
-          variant="brand-solid"
-          className="mt-8 w-full"
-          disabled={confirmPending}
-          aria-busy={confirmPending}
-          onClick={onConfirm}
+        <div
+          className={cn(
+            "mt-8 flex w-full gap-3",
+            showCancel ? "flex-row" : "flex-col"
+          )}
         >
-          {confirmLabel}
-        </Button>
+          {showCancel ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              disabled={confirmPending}
+              onClick={onCancel}
+            >
+              {cancelLabel}
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            variant="brand-solid"
+            className={showCancel ? "flex-1" : "w-full"}
+            disabled={confirmPending}
+            aria-busy={confirmPending}
+            onClick={onConfirm}
+          >
+            {confirmLabel}
+          </Button>
+        </div>
       </div>
     </div>
   );

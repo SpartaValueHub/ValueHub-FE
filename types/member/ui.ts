@@ -1,5 +1,7 @@
 /** member UI 모델 — Server Action·Service 경계 */
 
+import type { ApiTermConsentItem } from "@/types/member/api";
+
 export type UiMemberProfile = {
   memberUuid: string;
   nickname: string;
@@ -13,4 +15,5 @@ export type CreateMemberInput = {
   nickname: string;
   profileImageUrl?: string;
   address?: string;
+  termConsents: ApiTermConsentItem[];
 };

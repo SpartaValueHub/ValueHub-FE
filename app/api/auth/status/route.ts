@@ -1,13 +1,14 @@
 import { logSafeError } from "@/lib/log/safe-log";
-import { getAuthUser } from "@/lib/session";
-import { toClientSessionUser } from "@/types/auth/session";
+import { getClientSessionUser } from "@/lib/session";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const user = await getAuthUser();
+    const user = await getClientSessionUser();
     return Response.json({
       isAuthenticated: !!user,
-      user: user ? toClientSessionUser(user) : null,
+      user,
     });
   } catch (error) {
     logSafeError("Auth status check failed:", error);

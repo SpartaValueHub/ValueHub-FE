@@ -33,11 +33,6 @@ export function SessionContextProvider({
     initialSession.user
   );
 
-  useEffect(() => {
-    setIsAuthenticated(initialSession.isAuthenticated);
-    setUser(initialSession.user);
-  }, [initialSession.isAuthenticated, initialSession.user]);
-
   const refresh = useCallback(async () => {
     try {
       const response = await fetch("/api/auth/status", {

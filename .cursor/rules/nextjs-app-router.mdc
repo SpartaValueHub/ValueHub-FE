@@ -8,10 +8,11 @@ alwaysApply: false
 
 - **스택:** Next.js 16 App Router, React 19, TypeScript, Tailwind CSS v4, shadcn/ui.
 - **최상위 폴더:** `app/`, `components/`, `actions/`, `services/`, `hooks/`, `context/`, `provider/`, `lib/`, `types/`.
-- **라우팅:** 라우트 세그먼트와 레이아웃은 `app/` 하위. 전역 미들웨어는 루트 `middleware.ts`.
+- **라우팅:** 라우트 세그먼트와 레이아웃은 `app/` 하위. Route group: `(header)` / `(none-header)`.
+- **라우트 보호:** `middleware.ts` **(미구현)**. `proxy.ts` **(미구현·스켈레톤, matcher `[]`)**.
 - **렌더링 (SSR 우선):** 기본은 Server Component(RSC/SSR). Page·Template·정적 UI는 서버에서 렌더; `"use client"`는 브라우저 API, 폼/상태, SSE, NextAuth `signIn` 등 **상호작용이 필요할 때만**.
-- **CSR 최소화:** 데이터 fetch는 RSC Page의 `*Service` 호출로 처리하고 props로 전달. 클라이언트에서 `services/`·`lib/api/` import 금지 — Server Action만 사용.
+- **CSR 최소화:** 데이터 fetch는 RSC Page의 `*Service` 호출로 처리하고 props로 전달. 클라이언트에서 `services/`·`lib/api/` import 금지 — **Server Action 또는 `app/api/*` BFF Route** 사용.
 - **정적 데이터 캐싱:** 변경 빈도 낮은 RSC 조회는 `apiFetch`의 `cache: { tags, revalidate }` 활용. 실시간·세션 의존 데이터는 `noStore`. 세그먼트 `export const revalidate`와 Action 후 `revalidateTag` 병행.
 - **컴포넌트:** 표현·기능 UI는 `components/` 하위 (아토믹 디자인). 클라이언트 경계는 가능한 **organism**에만.
-- **인증:** NextAuth v4 — 세션 설정은 `lib/auth.ts`, `lib/session.ts`, `provider/`.
+- **인증:** NextAuth **v4 유지** — 설정은 `lib/auth/`, `lib/session.ts`, `provider/`. v5 마이그레이션은 급하지 않음.
 - **Next.js 16:** 이전 Next 버전과 API가 다를 수 있음 — 불확실하면 `node_modules/next/dist/docs/` 확인.

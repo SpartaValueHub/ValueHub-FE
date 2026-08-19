@@ -41,7 +41,7 @@ Gateway CORS는 `localhost:3000`, `127.0.0.1:3000`, `192.168.10.45:3000` 허용.
 - **pre-commit:** [lint-staged](https://github.com/lint-staged/lint-staged) runs on staged files only:
   - `*.{js,jsx,ts,tsx,mjs}` → `eslint --fix`, then `prettier --write`
   - `*.{json,md,css,yml,yaml}` → `prettier --write`
-- There is **no pre-push build** hook (Next build is too slow for every push). Run `pnpm build` before opening a PR when you change routing or build-sensitive code.
+- **pre-push:** `pnpm lint` → `pnpm build` (전체 ESLint + 타입·production build). 실패 시 push 중단. 급할 때만 `git push --no-verify` (팀 남용 금지).
 
 ## Workflow
 
@@ -50,3 +50,5 @@ Issue → branch `{type}/{issue#}-slug` → PR to `develop`. See [CONTRIBUTING.m
 ## Cursor / AI rules
 
 Project rules live in `.cursor/rules/` (App Router structure, Gateway data layer, git/pnpm/Husky). They complement [AGENTS.md](../AGENTS.md), not replace it.
+
+See also [fe-team-onboarding.md](./fe-team-onboarding.md) (팀 온보딩 · Notion용), [project-overview.md](./project-overview.md) (현재 구현 상태), [frontend-priority-and-ui-backlog.md](./frontend-priority-and-ui-backlog.md) (작업 우선순위), and [cursor-team-guide.md](./cursor-team-guide.md) (Cursor로 UI 작업 — BE 개발자용).

@@ -5,8 +5,8 @@ alwaysApply: true
 
 # ValueHub-FO 아키텍처 & 플로우
 
-Next.js 16 App Router + React 19 + TypeScript + Tailwind v4 + NextAuth v4.
-상세 API 규칙은 [AGENTS.md](../../AGENTS.md), Git/린트는 [project-conventions.mdc](./project-conventions.mdc) 참고.
+Next.js 16 App Router + React 19 + TypeScript + Tailwind v4 + **NextAuth v4.
+상세 API 규칙은 [AGENTS.md](../../AGENTS.md), Git/린트는 [project-conventions.mdc](./project-conventions.mdc), 현황·백로그는 [docs/project-overview.md](../../docs/project-overview.md) · [docs/frontend-priority-and-ui-backlog.md](../../docs/frontend-priority-and-ui-backlog.md) 참고.
 
 ## 디렉터리 역할
 
@@ -16,13 +16,14 @@ Next.js 16 App Router + React 19 + TypeScript + Tailwind v4 + NextAuth v4.
 | `actions/` | Server Actions — 인증·검증·`ActionResult` |
 | `services/` | 오케스트레이션, `Api*` → `Ui*` 매핑 |
 | `lib/api/` | **유일한 HTTP 레이어** (`apiFetch`) |
-| `lib/auth.ts`, `lib/session.ts` | NextAuth 설정, `requireAuth` / `requireActionAuth` |
-| `lib/chat/` | SSE URL, 메시지/방 매핑 유틸 |
+| `lib/auth/`, `lib/session.ts` | NextAuth 설정, 쿠키, `requireAuth` / `requireActionAuth` |
+| `lib/chat/` **(미구현)** | SSE URL, 메시지/방 매핑 유틸 (채팅 추가 시) |
 | `components/` | 아토믹 디자인 (`atoms` → `molecules` → `organisms` → `templates`) |
 | `types/<domain>/` | `api.ts`(BE DTO), `ui.ts`(UI 모델), zod 스키마 |
-| `hooks/` | 클라이언트 전용 (채팅 SSE 등) |
+| `hooks/` | 클라이언트 전용 (`hooks/auth/*`, `hooks/terms/*` 등) |
 | `context/`, `provider/` | 클라이언트 세션 컨텍스트 |
-| `middleware.ts` | `/chat/*`, `/api/chat/rooms` 보호 |
+| `middleware.ts` **(미구현)** | `/chat/*`, `/api/chat/rooms` 보호 (예정) |
+| `proxy.ts` **(미구현·스켈레톤)** | 라우트 보호 스켈레톤 — matcher 현재 `[]` |
 
 ## 3-Layer 데이터 플로우 (단방향)
 
@@ -46,26 +47,41 @@ UI (RSC / 클라이언트)
 ### 호출 규칙
 
 1. **`fetch(API_URL)`은 `lib/api/*`에서만.** 경로는 `API_ENDPOINTS`만 사용.
-2. **클라이언트 컴포넌트** → Server Action만. `services/`, `lib/api/` import 금지.
+2. **클라이언트 컴포넌트** → `services/`, `lib/api/` import 금지. 서버 위임은 **Server Action** 또는 **`app/api/*` BFF Route** (예: `GET /api/terms/active`, `GET /api/auth/status`).
 3. **RSC Page** → 읽기는 `*Service` 직접 호출 가능; **변경(쓰기)은 Action** 경유.
 4. **타입 분리:** `types/<domain>/api.ts`(BE), `ui.ts`(UI). zod 스키마는 `types/<domain>/`에 함께 배치.
 
 ## 라우팅 구조
 
+### 구현됨
+
 ```
 app/
-├── layout.tsx                    # SessionContextProvider, Footer
-├── (header)/                     # Header 포함
-│   ├── page.tsx                  # /
-│   └── feeds/                    # /feeds, /feeds/[postId]
-├── (none-header)/                # Header 없음
-│   ├── signin/, signup/
-│   └── chat/, chat/[chatRoomUuid]
+├── layout.tsx                          # SessionContextProvider, Footer
+├── (header)/                           # Header 포함
+│   ├── layout.tsx
+│   └── page.tsx                        # GET /
+├── (none-header)/                      # Header 없음
+│   ├── layout.tsx
+│   ├── signin/page.tsx                 # GET /signin
+│   └── signup/page.tsx                 # GET /signup
 └── api/
-    ├── auth/[...nextauth]/       # NextAuth
-    ├── auth/status/              # 클라이언트용 { name }만 노출
-    └── chat/rooms/               # BFF (middleware 보호)
+    ├── auth/[...nextauth]/             # NextAuth
+    ├── auth/status/                    # 클라이언트 세션 요약 (nickname)
+    ├── auth/logout/                    # POST 로그아웃
+    ├── terms/active/                   # GET 활성 약관 BFF
+    └── revalidate/terms/               # POST 약관 캐시 무효화
 ```
+
+### 미구현 (계획 — rules·문서에 유지)
+
+| 경로·파일 | 비고 |
+|-----------|------|
+| `(header)/feeds/`, `/feeds/[postId]` | 게시글 데모 |
+| `(none-header)/chat/`, `/chat/[uuid]` | 채팅 |
+| `api/chat/rooms/` | 채팅 BFF |
+| `middleware.ts` | 라우트 보호 |
+| `proxy.ts` | 스켈레톤 (matcher `[]`) |
 
 ## 아토믹 디자인 (컴포넌트 계층)
 
@@ -138,27 +154,25 @@ templates → organisms → molecules → atoms
 
 ### 도메인별 예시
 
-**Posts**
-```
-feeds/page (RSC) → listPostsService → HomeTemplate(posts)
-  → PostList(organism) → PostCard(molecule) × N → card/link(atom)
-```
-
-**Auth**
+**Auth (구현됨)**
 ```
 signin/page → SigninTemplate → SigninForm(클라이언트 organism)
-  → FormField(molecule) → Input + Label(atom)
+  → SigninInputField(molecule) → button(atom)
   → signIn("credentials") / zod 검증
 signup/page → SignupTemplate → SignupForm(클라이언트) → signupAction
 ```
 
-**Chat**
+**Posts (미구현)**
+```
+feeds/page (RSC) → listPostsService → HomeTemplate(posts)
+  → PostList(organism) → PostCard(molecule) × N
+```
+
+**Chat (미구현)**
 ```
 chat/page (RSC) → ChatListTemplate(rooms) → ChatRoomList(클라이언트, SSE 미리보기)
-  → ChatRoomItem(molecule)
 chat/[uuid] → ChatRoomTemplate → ChatMessageStream(클라이언트, SSE)
-                              → ChatMessageForm(클라이언트, sendChatMessageAction)
-  → ChatList(organism) → ChatListItem(molecule)
+  → ChatMessageForm(클라이언트, sendChatMessageAction)
 ```
 
 ## 렌더링 전략 (SSR 우선)
@@ -193,20 +207,20 @@ RSC에서 `*Service` → `lib/api` → `apiFetch` 호출 시 Next.js Data Cache�
            → POST /api/v1/auth/sign-in → JWT session (accessToken, uuid)
            → SessionContextProvider → GET /api/auth/status ({ name }만)
 
-[보호]     middleware: /chat/*, /api/chat/rooms → JWT accessToken + uuid 확인
+[보호]     middleware (미구현) / proxy.ts (미구현·스켈레톤): /chat/*, /api/chat/rooms 예정
            RSC: requireAuth() | Action: requireActionAuth()
 ```
 
 - 클라이언트에는 `uuid`, `accessToken`, `logInId` **노출 금지** (`SessionContext`는 `{ name }`만).
 - LAN 접속: `AUTH_TRUST_HOST=true`, `next dev --hostname 0.0.0.0`. `NEXTAUTH_URL` 고정 금지.
 
-### Posts (데모)
+### Posts (미구현)
 
 ```
 /feeds (RSC) → listPostsService → listPosts → POSTS_API_URL/posts → mapPost → HomeTemplate
 ```
 
-### Chat
+### Chat (미구현)
 
 ```
 [방 목록 RSC]  /chat → listChatRoomsService → GET CHAT_API_URL/rooms → ChatListTemplate
@@ -218,11 +232,11 @@ RSC에서 `*Service` → `lib/api` → `apiFetch` 호출 시 Next.js Data Cache�
 
 [SSE 예외]     EventSource는 Authorization 헤더 불가 → accessToken을 query param으로 전달
                URL: NEXT_PUBLIC_CHAT_API_URL + /api/v1/chat/reactive/{uuid}
-               LAN: lib/chat/sse.ts가 localhost → 현재 페이지 hostname으로 치환
+               LAN: lib/chat/sse.ts (미구현)가 localhost → 현재 페이지 hostname으로 치환
 ```
 
-- SSE는 Next 프록시 없이 **브라우저 → Chat BE 직접** (`lib/chat/sse.ts`).
-- BFF `/api/chat/rooms`는 REST 프록시용 (middleware 보호).
+- SSE는 Next 프록시 없이 **브라우저 → Chat BE 직접** (`lib/chat/sse.ts` — 미구현).
+- BFF `/api/chat/rooms`는 REST 프록시용 (미구현, middleware 보호 예정).
 
 ## ActionResult 패턴
 
@@ -270,4 +284,4 @@ type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string }
 6. RSC page에서 `*Service` 조회(캐시 정책 포함) → Template에 `Ui*` props 전달; mutation은 Action
 7. `components/` — SSR 우선, `"use client"`는 organism 상호작용 경계에만; atom → molecule → organism → template 순 추가
 8. 정적·준정적 GET — `lib/api/*`에 `apiFetch` `cache.tags`·`revalidate` 지정; 실시간/개인화는 `noStore`
-9. 클라이언트에서 BE 직접 호출 필요 시 — SSE/chat 패턴처럼 예외를 문서화하고 `lib/`에 격리
+9. 클라이언트에서 BE 직접 호출 필요 시 — SSE/chat 패턴처럼 예외를 문서화하고 `lib/`에 격리 (chat/SSE는 **미구현**)

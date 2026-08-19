@@ -1,7 +1,8 @@
 import { SiteHeader } from "@/components/templates/SiteHeader";
 import { loadHeaderCategoryNavService } from "@/services/categories.service";
 
-export default async function HomeLayout({
+/** FO 공통 헤더 — 대분류는 category-service GET /categories */
+export default async function SiteHeaderLayout({
   children,
 }: {
   children: React.ReactNode;

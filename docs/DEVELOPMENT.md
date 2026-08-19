@@ -50,3 +50,5 @@ Issue → branch `{type}/{issue#}-slug` → PR to `develop`. See [CONTRIBUTING.m
 ## Cursor / AI rules
 
 Project rules live in `.cursor/rules/` (App Router structure, Gateway data layer, git/pnpm/Husky). They complement [AGENTS.md](../AGENTS.md), not replace it.
+
+See also [fe-team-onboarding.md](./fe-team-onboarding.md) (팀 온보딩 · Notion용), [project-overview.md](./project-overview.md) (현재 구현 상태), [frontend-priority-and-ui-backlog.md](./frontend-priority-and-ui-backlog.md) (작업 우선순위), and [cursor-team-guide.md](./cursor-team-guide.md) (Cursor로 UI 작업 — BE 개발자용).

@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 
 import { authOptions } from "@/lib/auth/options";
 
-function isSecureNextAuthCookieEnv(): boolean {
+export function isSecureNextAuthCookieEnv(): boolean {
   return authOptions.useSecureCookies ?? process.env.NODE_ENV === "production";
 }
 

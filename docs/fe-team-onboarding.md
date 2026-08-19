@@ -182,23 +182,6 @@ pnpm build
 5. **pre-commit:** staged 파일 ESLint(`--fix`) + Prettier — 실패 시 커밋 차단
 6. **pre-push:** `pnpm lint` → `pnpm build` — 실패 시 push 차단 (급할 때만 `git push --no-verify`, 남용 금지)
 
-### CI vs 배포 (헷갈리기 쉬움)
-
-|                       | 브랜치            | 하는 일                             |
-| --------------------- | ----------------- | ----------------------------------- |
-| **GitHub Actions CI** | `main` PR/push    | lint · test · build (배포 **아님**) |
-| **Vercel Production** | fork **`main`만** | 운영 URL 배포                       |
-| **팀 작업·테스트**    | **`develop`**     | localhost:3000 + EC2 Gateway        |
-
----
-
-## 🤖 Cursor로 UI 작업 (BE 위주 팀원)
-
-API 연동 규칙은 [AGENTS.md](../AGENTS.md). **퍼블리싱만** Cursor에 시킬 때:
-
-- [cursor-team-guide.md](./cursor-team-guide.md) — `@` 파일 첨부, UI 프롬프트 예시, 토큰 절약
-- mock 데이터로 UI 먼저 → API 연동은 별 PR
-
 ---
 
 ## 🔁 주요 기능 플로우

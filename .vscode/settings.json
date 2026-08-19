@@ -1,0 +1,6 @@
+{
+  "files.associations": {
+    ".husky/pre-commit": "shellscript",
+    ".husky/pre-push": "shellscript"
+  }
+}

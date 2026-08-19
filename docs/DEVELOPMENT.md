@@ -41,7 +41,7 @@ Gateway CORS는 `localhost:3000`, `127.0.0.1:3000`, `192.168.10.45:3000` 허용.
 - **pre-commit:** [lint-staged](https://github.com/lint-staged/lint-staged) runs on staged files only:
   - `*.{js,jsx,ts,tsx,mjs}` → `eslint --fix`, then `prettier --write`
   - `*.{json,md,css,yml,yaml}` → `prettier --write`
-- There is **no pre-push build** hook (Next build is too slow for every push). Run `pnpm build` before opening a PR when you change routing or build-sensitive code.
+- **pre-push:** `pnpm lint` → `pnpm build` (전체 ESLint + 타입·production build). 실패 시 push 중단. 급할 때만 `git push --no-verify` (팀 남용 금지).
 
 ## Workflow
 

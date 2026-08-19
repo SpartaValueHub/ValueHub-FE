@@ -9,4 +9,5 @@ alwaysApply: true
 - **Git 워크플로:** [CONTRIBUTING.md](../../CONTRIBUTING.md) 참고. GitHub Issue를 먼저 생성한 뒤 `{type}/{issue#}-slug` 브랜치 생성 (예: `chore/1-husky-setup`). PR은 `develop` 대상.
 - **커밋:** 한국어 메시지 + 접두사 — `feat:`, `fix:`, `docs:`, `chore:`, `refactor:` (상세 규칙은 CONTRIBUTING.md).
 - **Pre-commit:** Husky가 staged 파일에 `lint-staged` 실행 (ESLint `--fix` 후 Prettier). auto-fix 후에도 lint 실패 시 커밋 차단.
+- **Pre-push:** `pnpm lint` → `pnpm build`. lint·타입·빌드 실패 시 push 차단.
 - **Lint / 포맷:** `pnpm lint`, `pnpm format`, `pnpm format:check`. 설정: `eslint.config.mjs`, `.prettierrc`.

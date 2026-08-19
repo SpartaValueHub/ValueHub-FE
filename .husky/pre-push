@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+set -e
+
+pnpm lint
+
+# CI와 동일 — .env.local 없어도 로컬 pre-push build가 통과하도록 placeholder 사용
+export AUTH_SECRET="${AUTH_SECRET:-ci-build-placeholder-secret-do-not-use}"
+export NEXTAUTH_SECRET="${NEXTAUTH_SECRET:-ci-build-placeholder-secret-do-not-use}"
+export AUTH_TRUST_HOST="${AUTH_TRUST_HOST:-true}"
+pnpm build

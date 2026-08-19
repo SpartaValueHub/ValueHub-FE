@@ -14,6 +14,7 @@ import type {
 import {
   ALL_CATEGORY_NAV_ID,
   ALL_CATEGORY_NAV_LABEL,
+  HEADER_ROOT_CATEGORY_FALLBACK,
 } from "@/constants/categories";
 
 export function mapCategorySummary(
@@ -69,4 +70,19 @@ export function buildHeaderCategoryNavItems(
     }));
 
   return [allItem, ...categoryItems];
+}
+
+export async function loadHeaderCategoryNavService(): Promise<
+  UiCategoryNavItem[]
+> {
+  try {
+    const roots = await listRootCategoriesService();
+    const items = buildHeaderCategoryNavItems(roots);
+    if (items.length <= 1) {
+      return HEADER_ROOT_CATEGORY_FALLBACK;
+    }
+    return items;
+  } catch {
+    return HEADER_ROOT_CATEGORY_FALLBACK;
+  }
 }

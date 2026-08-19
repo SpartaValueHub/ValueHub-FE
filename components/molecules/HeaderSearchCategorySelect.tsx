@@ -4,6 +4,7 @@ import { ChevronDown } from "lucide-react";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import { ALL_CATEGORY_NAV_ID } from "@/constants/categories";
+import { HEADER_SEARCH_CATEGORY_LABEL } from "@/constants/search";
 import { cn } from "@/lib/utils";
 import type { UiCategoryNavItem } from "@/types/categories/ui";
 
@@ -14,7 +15,7 @@ interface HeaderSearchCategorySelectProps {
   className?: string;
 }
 
-/** 검색바 왼쪽: All + 대분류 (Category API). 상품 검색 제출은 Listing 이후 */
+/** 검색바 왼쪽 카테고리 드롭다운 — 값은 categoryUuid, 검색 API는 미연동 */
 export function HeaderSearchCategorySelect({
   items,
   value,
@@ -23,10 +24,11 @@ export function HeaderSearchCategorySelect({
 }: HeaderSearchCategorySelectProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-  const selected =
-    items.find((item) => item.id === value) ??
-    items.find((item) => item.id === ALL_CATEGORY_NAV_ID) ??
-    items[0];
+  const selected = items.find((item) => item.id === value);
+  const buttonLabel =
+    !selected || selected.id === ALL_CATEGORY_NAV_ID
+      ? HEADER_SEARCH_CATEGORY_LABEL
+      : selected.label;
 
   const onDocumentPointerDown = useEffectEvent((event: MouseEvent) => {
     if (!open) return;
@@ -47,16 +49,14 @@ export function HeaderSearchCategorySelect({
     <div ref={rootRef} className={cn("relative shrink-0", className)}>
       <button
         type="button"
-        className="flex items-center gap-1 font-sans text-sm text-vh-gray-300 transition-colors hover:text-[#F2CA7B]"
+        className="flex items-center gap-1 font-sans text-[12px] text-vh-gray-300 transition-colors hover:text-[#F2CA7B]"
         aria-label="검색 카테고리"
         aria-expanded={open}
         aria-haspopup="listbox"
         onClick={() => setOpen((prev) => !prev)}
       >
-        <span className="max-w-[7rem] truncate">
-          {selected?.label ?? "카테고리"}
-        </span>
-        <ChevronDown className="size-4 shrink-0" strokeWidth={1.5} />
+        <span className="max-w-[7rem] truncate">{buttonLabel}</span>
+        <ChevronDown className="size-3.5 shrink-0" strokeWidth={1.5} />
       </button>
 
       {open ? (

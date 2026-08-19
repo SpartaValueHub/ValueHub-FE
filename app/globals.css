@@ -207,17 +207,21 @@
     color: var(--vh-brand-gold);
   }
 
-  /* Listing SiteHeader — 활성 카테고리 (포인트 #F2CA7B) */
-  .vh-text-category-active {
-    background-image: linear-gradient(
-      90deg,
+  /* SiteHeader — 선택된 카테고리 우상단 점 (시안) */
+  .vh-category-active-dot {
+    position: absolute;
+    right: -0.42rem;
+    top: -0.34rem;
+    width: 0.34rem;
+    height: 0.34rem;
+    border-radius: 9999px;
+    background: radial-gradient(
+      circle,
       #f8e3b9 0%,
-      #f2ca7b 45%,
+      #f2ca7b 58%,
       #c9a05e 100%
     );
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    box-shadow: 0 0 5px rgba(242, 202, 123, 0.9);
   }
 
   .vh-brand-logo-icon {

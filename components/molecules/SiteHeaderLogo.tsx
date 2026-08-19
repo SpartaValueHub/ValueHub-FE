@@ -1,36 +1,19 @@
-import Image from "next/image";
-
 import { cn } from "@/lib/utils";
 
-type SiteHeaderLogoSize = "md" | "lg";
-
-const sizeClass: Record<SiteHeaderLogoSize, string> = {
-  md: "size-9 md:size-10",
-  lg: "size-12",
-};
-
 interface SiteHeaderLogoProps {
-  size?: SiteHeaderLogoSize;
   className?: string;
 }
 
-/** Listing SiteHeader 전용 로고 — 메인 BrandLogoIcon과 분리 */
-export function SiteHeaderLogo({
-  size = "md",
-  className,
-}: SiteHeaderLogoProps) {
+/** 시안 워드마크 — serif + 포인트골드 */
+export function SiteHeaderLogo({ className }: SiteHeaderLogoProps) {
   return (
     <span
-      className={cn("relative inline-block shrink-0", sizeClass[size], className)}
+      className={cn(
+        "font-serif text-[1.6rem] leading-none tracking-tight text-[#F2CA7B] md:text-[1.8rem]",
+        className
+      )}
     >
-      <Image
-        src="/brand/logo-mark.png"
-        alt="Value Hub"
-        fill
-        className="object-contain"
-        sizes="40px"
-        priority
-      />
+      Value hub
     </span>
   );
 }

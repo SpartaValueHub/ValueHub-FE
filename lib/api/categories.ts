@@ -1,3 +1,4 @@
+import { CATEGORIES_CACHE_TAG } from "@/constants/cache-tags";
 import { apiFetch, getCategoryApiUrl } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import type { ApiCategorySummary } from "@/types/categories/api";
@@ -8,7 +9,7 @@ function categoryFetch<T>(path: string) {
   return apiFetch<T>(path, {
     method: "GET",
     baseUrl: getCategoryApiUrl(),
-    cache: { noStore: true },
+    cache: { tags: [CATEGORIES_CACHE_TAG], revalidate: 300 },
     skipSessionRecovery: true,
   });
 }

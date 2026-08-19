@@ -11,6 +11,7 @@ import {
   listLeafCategoriesService,
   listRootCategoriesService,
 } from "@/services/categories.service";
+import { HEADER_ROOT_CATEGORY_FALLBACK } from "@/constants/categories";
 import type {
   UiCategoryNavItem,
   UiCategorySummary,
@@ -45,12 +46,13 @@ export async function listHeaderCategoryNavAction(): Promise<
 > {
   try {
     const roots = await listRootCategoriesService();
-    return { ok: true, data: buildHeaderCategoryNavItems(roots) };
+    const data = buildHeaderCategoryNavItems(roots);
+    if (data.length <= 1) {
+      return { ok: true, data: HEADER_ROOT_CATEGORY_FALLBACK };
+    }
+    return { ok: true, data };
   } catch (e) {
-    return {
-      ok: false,
-      message: toErrorMessage(e, "카테고리를 불러오지 못했습니다."),
-    };
+    return { ok: true, data: HEADER_ROOT_CATEGORY_FALLBACK };
   }
 }
 

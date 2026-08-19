@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
-import { CategoryLabel } from "@/components/atoms/typography";
 import { ALL_CATEGORY_NAV_ID } from "@/constants/categories";
+import {
+  PRODUCT_POSTS_PATH,
+  productPostsHref,
+} from "@/constants/product-posts";
 import { cn } from "@/lib/utils";
 import type { UiCategoryNavItem } from "@/types/categories/ui";
 
@@ -13,48 +16,64 @@ interface HeaderCategoryNavProps {
   className?: string;
 }
 
-/** Listing 헤더용. All → /listings, 그 외 → /listings?category={categoryUuid} */
-export function categoryNavHref(id: string) {
-  if (id === ALL_CATEGORY_NAV_ID) return "/listings";
-  return `/listings?category=${encodeURIComponent(id)}`;
+export function categoryNavHref(item: UiCategoryNavItem) {
+  if (item.id === ALL_CATEGORY_NAV_ID) {
+    return productPostsHref();
+  }
+  return productPostsHref(item.categoryUuid ?? item.id);
 }
 
 export function HeaderCategoryNav({
   items,
   className,
 }: HeaderCategoryNavProps) {
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const raw = searchParams.get("category")?.trim();
-  const selected =
-    !raw || raw === ALL_CATEGORY_NAV_ID ? ALL_CATEGORY_NAV_ID : raw;
+
+  /** 홈(/)은 카테고리 진입 전 — 선택 점 없음. product-posts에서만 활성 표시 */
+  const selected = (() => {
+    if (pathname !== PRODUCT_POSTS_PATH) {
+      return null;
+    }
+    if (!raw || raw === ALL_CATEGORY_NAV_ID) {
+      return ALL_CATEGORY_NAV_ID;
+    }
+    return raw;
+  })();
 
   return (
     <ul
       className={cn(
-        "flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-2 md:gap-x-8",
+        "flex min-w-0 flex-1 flex-wrap items-center gap-x-8 gap-y-2",
         className
       )}
     >
       {items.map((item) => {
-        const active = selected === item.id;
+        const active = selected !== null && selected === item.id;
         return (
           <li key={item.id}>
             <Link
-              href={categoryNavHref(item.id)}
+              href={categoryNavHref(item)}
               className="inline-flex"
               aria-current={active ? "page" : undefined}
             >
-              <CategoryLabel
-                size="sm"
+              <span
                 className={cn(
-                  "md:text-[15px] transition-colors",
+                  "relative inline-flex font-sans text-[20px] leading-none transition-colors",
                   active
-                    ? "vh-text-category-active"
-                    : "text-vh-gray-500 hover:text-[#F2CA7B]"
+                    ? "text-vh-gray-300"
+                    : "text-vh-gray-300 hover:text-[#F2CA7B]"
                 )}
               >
                 {item.label}
-              </CategoryLabel>
+                {active ? (
+                  <span
+                    aria-hidden
+                    className="vh-category-active-dot"
+                  />
+                ) : null}
+              </span>
             </Link>
           </li>
         );

@@ -6,26 +6,27 @@ import { useState } from "react";
 import { listRootCategoriesAction } from "@/actions/categories";
 import { CategoryNavItem } from "@/components/molecules/CategoryNavItem";
 import { MAIN_CATEGORY_ROWS } from "@/constants/main-page";
+import { productPostsHref } from "@/constants/product-posts";
 import { cn } from "@/lib/utils";
 
 interface MainCategoryNavProps {
   className?: string;
 }
 
-/** 메인 타일 → listings. All은 쿼리 없음, 나머지는 categoryUuid */
-async function listingsHrefForMainCategory(id: string, title: string) {
-  if (id === "all") return "/listings";
+/** 메인 타일 → product-posts. All은 쿼리 없음, 나머지는 categoryUuid */
+async function productPostsHrefForMainCategory(id: string, title: string) {
+  if (id === "all") return productPostsHref();
 
   const result = await listRootCategoriesAction();
-  if (!result.ok) return "/listings";
+  if (!result.ok) return productPostsHref();
 
   const matched = result.data.find(
     (category) =>
       category.categoryName.toLowerCase() === title.toLowerCase()
   );
 
-  if (!matched) return "/listings";
-  return `/listings?category=${encodeURIComponent(matched.categoryUuid)}`;
+  if (!matched) return productPostsHref();
+  return productPostsHref(matched.categoryUuid);
 }
 
 /** 메인 카테고리 — 1행 2개 / 2행 3개, 행별 space-around */
@@ -36,7 +37,7 @@ export function MainCategoryNav({ className }: MainCategoryNavProps) {
 
   const onSelect = async (id: string, title: string) => {
     setActiveId(id);
-    const href = await listingsHrefForMainCategory(id, title);
+    const href = await productPostsHrefForMainCategory(id, title);
     router.push(href);
   };
 

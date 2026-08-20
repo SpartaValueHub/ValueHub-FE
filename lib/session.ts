@@ -45,7 +45,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
   const token = await getToken({
     req: {
       cookies: cookieStore,
-    } as Parameters<typeof getToken>[0]["req"],
+    } as unknown as Parameters<typeof getToken>[0]["req"],
     secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
     secureCookie: isSecureNextAuthCookieEnv(),
   });

@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { MAIN_HEADER_NAV } from "@/constants/main-page";
+import { headerCategoryNavHref } from "@/constants/product-posts";
 import { cn } from "@/lib/utils";
 
 type HeaderCategoryNavSize = "sm" | "md";
@@ -41,7 +42,7 @@ export function HeaderCategoryNav({
         return (
           <Link
             key={item.id}
-            href="#"
+            href={headerCategoryNavHref(item.id)}
             onClick={() => onNavigate?.(item.id)}
             className={cn(
               "shrink-0 transition-colors hover:text-vh-brand-gold",

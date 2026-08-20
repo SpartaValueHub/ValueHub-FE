@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { Header } from "@/components/templates/layout/Header";
 
 export default function HomeLayout({
@@ -7,7 +9,9 @@ export default function HomeLayout({
 }) {
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-[#323232]">
-      <Header />
+      <Suspense fallback={null}>
+        <Header />
+      </Suspense>
       {children}
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { Icon } from "@/components/atoms/icons";
@@ -12,14 +12,22 @@ import {
   HeaderUtilityIcons,
 } from "@/components/organisms/header/HeaderSearchPanel";
 import { useAppSession } from "@/context/SessionContext";
+import {
+  PRODUCT_POSTS_PATH,
+  headerCategoryNavIdFromUuid,
+} from "@/constants/product-posts";
 import { cn } from "@/lib/utils";
 
 export function Header() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { isAuthenticated, isLoading, logout } = useAppSession();
   const [searchOpen, setSearchOpen] = useState(false);
-  const [activeCategoryId, setActiveCategoryId] = useState("all");
   const isHome = pathname === "/";
+  const activeCategoryId =
+    pathname === PRODUCT_POSTS_PATH
+      ? headerCategoryNavIdFromUuid(searchParams.get("category"))
+      : "all";
 
   return (
     <header
@@ -81,14 +89,12 @@ export function Header() {
           <div className="flex items-center justify-between gap-4">
             <HeaderCategoryNav
               activeId={activeCategoryId}
-              onNavigate={setActiveCategoryId}
               size="sm"
               className="flex flex-1 justify-between overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden"
             />
 
             <HeaderCategoryNav
               activeId={activeCategoryId}
-              onNavigate={setActiveCategoryId}
               className="hidden flex-1 md:flex"
             />
 
@@ -101,10 +107,7 @@ export function Header() {
           </div>
         ) : (
           <div className="hidden items-center justify-between md:flex">
-            <HeaderCategoryNav
-              activeId={activeCategoryId}
-              onNavigate={setActiveCategoryId}
-            />
+            <HeaderCategoryNav activeId={activeCategoryId} />
             <HeaderAuthLinks
               isAuthenticated={isAuthenticated}
               isLoading={isLoading}

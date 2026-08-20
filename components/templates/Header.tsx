@@ -1,67 +1,110 @@
 "use client";
 
-import Link from "next/link";
+import { useState } from "react";
 
-import { Button } from "@/components/atoms/button";
+import { Icon } from "@/components/atoms/icons";
+import { BrandWordmark } from "@/components/molecules/BrandWordmark";
+import { HeaderAuthLinks } from "@/components/molecules/HeaderAuthLinks";
+import { HeaderCategoryNav } from "@/components/molecules/HeaderCategoryNav";
+import {
+  HeaderSearchPanel,
+  HeaderUtilityIcons,
+} from "@/components/organisms/HeaderSearchPanel";
 import { useAppSession } from "@/context/SessionContext";
-
-const headerAuthButtonClassName = "h-9 rounded-sm px-5";
+import { cn } from "@/lib/utils";
 
 export function Header() {
-  const { isAuthenticated, isLoading, user, logout } = useAppSession();
+  const { isAuthenticated, isLoading, logout } = useAppSession();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [activeCategoryId, setActiveCategoryId] = useState("all");
 
   return (
-    <header className="w-full shrink-0">
-      <nav className="flex w-full items-center justify-end gap-4 px-5 pt-5 sm:px-8 md:gap-5 md:px-10 md:pt-8">
-        {isLoading ? (
-          <>
-            <span
-              aria-hidden
-              className="inline-block h-7 min-w-20 rounded-sm"
+    <header className="fixed inset-x-0 top-0 z-50 w-full bg-[#323232]">
+      <div className="relative mx-auto flex w-full max-w-[1440px] flex-col gap-5 px-5 py-5 md:px-10">
+        <div className="flex min-h-[52px] items-center justify-between">
+          <button
+            type="button"
+            aria-label="메뉴 열기"
+            className="flex size-6 items-center justify-center text-vh-gray-100 md:hidden"
+          >
+            <Icon name="menu" size={24} />
+          </button>
+
+          <BrandWordmark size="md" className="hidden md:inline-flex" />
+
+          <BrandWordmark
+            size="sm"
+            className={cn("md:hidden", searchOpen && "hidden")}
+          />
+
+          {searchOpen ? (
+            <div className="absolute inset-x-10 top-5 z-10 hidden justify-center md:flex">
+              <HeaderSearchPanel onClose={() => setSearchOpen(false)} />
+            </div>
+          ) : null}
+
+          <HeaderUtilityIcons
+            isAuthenticated={isAuthenticated}
+            onSearchClick={() => setSearchOpen(true)}
+            showSearch={!searchOpen}
+            showInboxIcons={isAuthenticated}
+            className="hidden md:flex"
+          />
+
+          {!searchOpen ? (
+            <HeaderUtilityIcons
+              isAuthenticated={isAuthenticated}
+              onSearchClick={() => setSearchOpen(true)}
+              showInboxIcons={false}
+              className="md:hidden"
             />
-            <span
-              aria-hidden
-              className="inline-block h-7 min-w-20 rounded-sm"
-            />
-          </>
-        ) : isAuthenticated ? (
-          <>
-            <span className="text-sm text-vh-gray-100">
-              {user?.nickname || "회원"}
-            </span>
-            <Button
-              type="button"
-              variant="brand"
+          ) : (
+            <span className="size-6 md:hidden" aria-hidden />
+          )}
+        </div>
+
+        {searchOpen ? (
+          <div className="md:hidden">
+            <HeaderSearchPanel onClose={() => setSearchOpen(false)} />
+          </div>
+        ) : null}
+
+        {!searchOpen ? (
+          <div className="flex items-center justify-between gap-4">
+            <HeaderCategoryNav
+              activeId={activeCategoryId}
+              onNavigate={setActiveCategoryId}
               size="sm"
-              className={headerAuthButtonClassName}
-              onClick={logout}
-            >
-              로그아웃
-            </Button>
-          </>
+              className="flex flex-1 justify-between overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden"
+            />
+
+            <HeaderCategoryNav
+              activeId={activeCategoryId}
+              onNavigate={setActiveCategoryId}
+              className="hidden flex-1 md:flex"
+            />
+
+            <HeaderAuthLinks
+              isAuthenticated={isAuthenticated}
+              isLoading={isLoading}
+              onLogout={logout}
+              className="hidden shrink-0 md:flex"
+            />
+          </div>
         ) : (
-          <>
-            <Link href="/signup">
-              <Button
-                variant="brand"
-                size="sm"
-                className={headerAuthButtonClassName}
-              >
-                회원가입
-              </Button>
-            </Link>
-            <Link href="/signin">
-              <Button
-                variant="brand"
-                size="sm"
-                className={headerAuthButtonClassName}
-              >
-                로그인
-              </Button>
-            </Link>
-          </>
+          <div className="hidden items-center justify-between md:flex">
+            <HeaderCategoryNav
+              activeId={activeCategoryId}
+              onNavigate={setActiveCategoryId}
+            />
+            <HeaderAuthLinks
+              isAuthenticated={isAuthenticated}
+              isLoading={isLoading}
+              onLogout={logout}
+            />
+          </div>
         )}
-      </nav>
+      </div>
     </header>
   );
 }

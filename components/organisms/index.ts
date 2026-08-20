@@ -1,4 +1,9 @@
+export { HeaderSearchPanel, HeaderUtilityIcons } from "./HeaderSearchPanel";
+export { MainBottomNav } from "./MainBottomNav";
 export { MainCategoryNav } from "./MainCategoryNav";
+export { MainCategorySection } from "./MainCategorySection";
+export { MainHeroSection } from "./MainHeroSection";
+export { MainRecommendedProducts } from "./MainRecommendedProducts";
 export { MainSearchBar } from "./MainSearchBar";
 export { SigninForm } from "./SigninForm";
 export { SignupForm } from "./SignupForm";

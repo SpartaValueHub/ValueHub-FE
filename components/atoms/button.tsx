@@ -4,45 +4,48 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 cursor-pointer items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 cursor-pointer items-center justify-center border bg-clip-padding font-sans font-normal whitespace-nowrap transition-all outline-none select-none focus-visible:ring-2 focus-visible:ring-vh-brand-gold/40 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/80",
+        default:
+          "rounded-lg border-transparent bg-primary text-primary-foreground hover:bg-primary/80 disabled:opacity-50",
         outline:
-          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+          "rounded-lg border-border bg-background hover:bg-muted hover:text-foreground disabled:opacity-50 dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+          "rounded-lg border-transparent bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] disabled:opacity-50",
         ghost:
-          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
+          "rounded-none border-transparent bg-transparent hover:bg-muted hover:text-foreground disabled:opacity-50 dark:hover:bg-muted/50",
         destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
-        link: "text-primary underline-offset-4 hover:underline",
-        /** Value Hub ghost — white border, gold hover (dark bg) */
+          "rounded-lg border-transparent bg-destructive/10 text-destructive hover:bg-destructive/20 disabled:opacity-50",
+        link: "rounded-none border-transparent bg-transparent text-primary underline-offset-4 hover:underline disabled:opacity-50",
+        /** Figma default/inactive · default hover · disabled */
         brand:
-          "rounded-none border-foreground bg-transparent text-foreground hover:border-vh-gold-500 hover:text-vh-gold-500 hover:bg-transparent dark:border-vh-gray-100 dark:text-vh-gray-100 dark:hover:border-vh-gold-500 dark:hover:text-vh-gold-500",
-        /** Value Hub filled — gold gradient tone */
+          "rounded-none border-[#868686] bg-transparent text-[#f5f5f5] hover:border-[#868686] hover:bg-[rgba(134,134,134,0.3)] hover:text-white disabled:border-[#606060] disabled:bg-transparent disabled:text-[#606060] disabled:opacity-100 disabled:hover:bg-transparent",
+        /** Figma active · active hover · disabled */
         "brand-solid":
-          "rounded-none border-vh-gold-500 bg-vh-gold-500 text-vh-gray-100 hover:border-vh-gold-700 hover:bg-vh-gold-700",
-        /** Value Hub green secondary */
+          "rounded-none border-transparent bg-[#f2ca7b] text-[#323232] hover:border-transparent hover:bg-white hover:text-[#323232] disabled:border-[#606060] disabled:bg-transparent disabled:text-[#606060] disabled:opacity-100 disabled:hover:bg-transparent",
         "brand-green":
-          "rounded-none border-vh-green-500 bg-transparent text-vh-green-500 hover:bg-vh-green-500 hover:text-vh-gray-100",
-        /** Value Hub purple secondary */
+          "rounded-none border-vh-green-500 bg-transparent text-vh-green-500 hover:bg-vh-green-500 hover:text-vh-gray-100 disabled:opacity-50",
         "brand-purple":
-          "rounded-none border-vh-purple-500 bg-transparent text-vh-purple-500 hover:bg-vh-purple-500 hover:text-vh-gray-100",
+          "rounded-none border-vh-purple-500 bg-transparent text-vh-purple-500 hover:bg-vh-purple-500 hover:text-vh-gray-100 disabled:opacity-50",
+        /** Figma 모달 버튼 — 흰 배경 + #d0d0d0 보더 */
+        modal:
+          "rounded-[4px] border-[#d0d0d0] bg-white text-[#323232] hover:bg-[#f5f5f5] disabled:opacity-50",
+        /** Figma 모달 확인(채워짐) — #f5f5f5 */
+        "modal-filled":
+          "rounded-[4px] border-[#d0d0d0] bg-[#f5f5f5] text-[#323232] hover:bg-[#ebebeb] disabled:opacity-50",
       },
       size: {
-        default:
-          "h-10 gap-1.5 px-6 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        icon: "size-8",
-        "icon-xs":
-          "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm":
-          "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
-        "icon-lg": "size-9",
+        default: "h-auto gap-1.5 px-8 py-4 text-xl",
+        xs: "h-6 gap-1 px-2 text-xs",
+        sm: "h-7 gap-1 px-2.5 text-sm",
+        lg: "h-12 gap-1.5 px-8 text-base",
+        modal: "h-[57px] gap-1 px-2.5 text-lg",
+        icon: "size-8 p-0",
+        "icon-xs": "size-6 p-0",
+        "icon-sm": "size-7 p-0",
+        "icon-lg": "size-9 p-0",
       },
     },
     defaultVariants: {

@@ -276,6 +276,39 @@
     background-size: 13px 10px;
   }
 
+  .vh-price-range {
+    appearance: none;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(
+      to right,
+      #f8e3b9 0%,
+      #f8e3b9 var(--vh-price-pct, 100%),
+      #e0e0e0 var(--vh-price-pct, 100%),
+      #e0e0e0 100%
+    );
+    outline: none;
+  }
+
+  .vh-price-range::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: #f8e3b9;
+    border: none;
+    cursor: pointer;
+  }
+
+  .vh-price-range::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: #f8e3b9;
+    border: none;
+    cursor: pointer;
+  }
+
   .font-serif {
     font-family: var(--font-serif), "Noto Serif KR", serif;
   }

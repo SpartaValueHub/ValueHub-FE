@@ -72,6 +72,34 @@ export function buildHeaderCategoryNavItems(
   return [allItem, ...categoryItems];
 }
 
+/**
+ * categoryUuid로 카테고리 경로 문자열 생성.
+ * 리프이면 "대분류 > 리프명", 대분류이면 "대분류명".
+ * API 실패 시 UUID 그대로 반환.
+ */
+export async function getCategoryPathService(
+  categoryUuid: string
+): Promise<string> {
+  try {
+    const roots = await listRootCategoriesService();
+    const rootMatch = roots.find((r) => r.categoryUuid === categoryUuid);
+    if (rootMatch) return rootMatch.categoryName;
+
+    for (const root of roots) {
+      const children = await listChildCategoriesService(root.categoryUuid);
+      const childMatch = children.find(
+        (c) => c.categoryUuid === categoryUuid
+      );
+      if (childMatch) {
+        return `${root.categoryName} > ${childMatch.categoryName}`;
+      }
+    }
+    return categoryUuid;
+  } catch {
+    return categoryUuid;
+  }
+}
+
 export async function loadHeaderCategoryNavService(): Promise<
   UiCategoryNavItem[]
 > {

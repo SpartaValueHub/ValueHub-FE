@@ -36,4 +36,18 @@ export const API_ENDPOINTS = {
       return `/api/v1/categories/leaves?parentUuid=${encodeURIComponent(parentUuid)}`;
     },
   },
+  productPosts: {
+    detail: (uuid: string) => `/api/v1/product-posts/${encodeURIComponent(uuid)}`,
+    list: (params?: Record<string, string | string[]>) => {
+      const base = "/api/v1/product-posts";
+      if (!params) return base;
+      const sp = new URLSearchParams();
+      for (const [k, v] of Object.entries(params)) {
+        if (Array.isArray(v)) v.forEach((item) => sp.append(k, item));
+        else sp.append(k, v);
+      }
+      const qs = sp.toString();
+      return qs ? `${base}?${qs}` : base;
+    },
+  },
 } as const;

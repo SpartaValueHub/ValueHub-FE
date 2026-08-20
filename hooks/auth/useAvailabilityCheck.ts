@@ -78,7 +78,7 @@ export function useAvailabilityCheck() {
   function verifyLoginId(currentValue: string): string | undefined {
     const trimmed = currentValue.trim();
     if (loginIdCheck.tone !== "success" || !loginIdCheck.checkedValue) {
-      return "아이디 중복 확인을 해주세요.";
+      return "아이디 중복확인을 해주세요.";
     }
     if (trimmed !== loginIdCheck.checkedValue) {
       return "아이디가 변경되었습니다. 다시 중복 확인해 주세요.";
@@ -89,7 +89,7 @@ export function useAvailabilityCheck() {
   function verifyEmail(currentValue: string): string | undefined {
     const trimmed = currentValue.trim();
     if (emailCheck.tone !== "success" || !emailCheck.checkedValue) {
-      return "이메일 중복 확인을 해주세요.";
+      return "이메일 중복확인을 해주세요.";
     }
     if (trimmed !== emailCheck.checkedValue) {
       return "이메일이 변경되었습니다. 다시 중복 확인해 주세요.";
@@ -100,7 +100,7 @@ export function useAvailabilityCheck() {
   function verifyNickname(currentValue: string): string | undefined {
     const trimmed = currentValue.trim();
     if (nicknameCheck.tone !== "success" || !nicknameCheck.checkedValue) {
-      return "닉네임 중복 확인을 해주세요.";
+      return "닉네임 중복확인을 해주세요.";
     }
     if (trimmed !== nicknameCheck.checkedValue) {
       return "닉네임이 변경되었습니다. 다시 중복 확인해 주세요.";

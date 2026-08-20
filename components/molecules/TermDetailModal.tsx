@@ -4,6 +4,11 @@ import { useEffect, useId, useRef } from "react";
 
 import { Button } from "@/components/atoms/button";
 import { Spinner } from "@/components/atoms/spinner";
+import {
+  Dialog,
+  DialogCloseButton,
+  DialogTitle,
+} from "@/components/molecules/Dialog";
 import { cn } from "@/lib/utils";
 
 export type TermDetailSection = {
@@ -26,7 +31,7 @@ const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
- * 약관 본문 모달 — Esc·포커스 트랩·닫을 때 트리거로 포커스 복귀.
+ * 약관 본문 모달 — Figma 다이얼로그 크롬 + Esc·포커스 트랩.
  */
 export function TermDetailModal({
   open,
@@ -101,41 +106,34 @@ export function TermDetailModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
-      onPointerDown={(event) => {
-        if (event.target === event.currentTarget) {
-          event.preventDefault();
-        }
-      }}
+    <Dialog
+      open={open}
+      onOpenChange={(next) => !next && onClose()}
+      className={cn("max-w-lg", className)}
     >
       <div
         ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
-        className={cn(
-          "flex max-h-[min(80vh,640px)] w-full max-w-lg flex-col bg-vh-gray-900 shadow-xl",
-          className
-        )}
-        onPointerDown={(event) => event.stopPropagation()}
+        className="relative flex max-h-[min(80vh,640px)] flex-col overflow-hidden rounded-[10px] bg-white text-[#323232] shadow-vh"
       >
-        <div className="border-b border-vh-gray-700/60 px-6 py-4">
-          <h2 id={titleId} className="text-lg font-semibold text-vh-gray-100">
-            {title}
-          </h2>
+        <DialogCloseButton onClose={onClose} />
+        <div className="px-8 pt-[50px] pb-4 sm:px-[70px]">
+          <DialogTitle id={titleId}>{title}</DialogTitle>
         </div>
 
-        <div id={descriptionId} className="flex-1 overflow-y-auto px-6 py-4">
+        <div
+          id={descriptionId}
+          className="flex-1 overflow-y-auto px-8 py-2 sm:px-[70px]"
+        >
           {isLoading ? (
             <div className="flex justify-center py-10">
-              <Spinner className="size-6 text-vh-gray-500" />
+              <Spinner className="size-6 text-[#868686]" />
             </div>
           ) : error ? (
             <p className="text-sm text-destructive">{error}</p>
           ) : sections.length === 0 ? (
-            <p className="text-sm text-vh-gray-500">
+            <p className="text-sm text-[#868686]">
               표시할 약관 내용이 없습니다.
             </p>
           ) : (
@@ -143,11 +141,11 @@ export function TermDetailModal({
               {sections.map((section) => (
                 <section key={section.title}>
                   {sections.length > 1 ? (
-                    <h3 className="mb-2 text-sm font-semibold text-vh-gray-100">
+                    <h3 className="mb-2 text-sm font-medium text-[#323232]">
                       {section.title}
                     </h3>
                   ) : null}
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed text-vh-gray-500">
+                  <div className="whitespace-pre-wrap text-sm leading-relaxed text-[#606060]">
                     {section.content}
                   </div>
                 </section>
@@ -156,17 +154,18 @@ export function TermDetailModal({
           )}
         </div>
 
-        <div className="border-t border-vh-gray-700/60 px-6 py-4">
+        <div className="px-8 py-6 sm:px-[70px]">
           <Button
             type="button"
-            variant="brand"
-            className="h-12 w-full rounded-sm text-base"
+            variant="modal"
+            size="modal"
+            className="w-full"
             onClick={onClose}
           >
             {confirmLabel}
           </Button>
         </div>
       </div>
-    </div>
+    </Dialog>
   );
 }

@@ -8,6 +8,8 @@ import { Spinner } from "@/components/atoms/spinner";
 import { AuthDivider } from "@/components/molecules/AuthDivider";
 import { AuthHelperLinks } from "@/components/molecules/AuthHelperLinks";
 import { ConfirmModal } from "@/components/molecules/ConfirmModal";
+import { LoginLimitDialog } from "@/components/molecules/LoginLimitDialog";
+import { FormField } from "@/components/molecules/FormField";
 import { RecaptchaWidget } from "@/components/molecules/RecaptchaWidget";
 import { SigninInputField } from "@/components/molecules/SigninInputField";
 import { SocialLoginGroup } from "@/components/organisms/SocialLoginGroup";
@@ -62,18 +64,30 @@ export function SigninForm({ callbackUrl }: SigninFormProps) {
           control={control}
           name="logInId"
           render={({ field }) => (
-            <SigninInputField
+            <FormField
               label="아이디"
               name="logInId"
-              value={field.value}
-              autoComplete="username"
               disabled={signin.isPending}
               error={getFieldError("logInId")}
-              onChange={(value) => {
-                field.onChange(value);
-                signin.clearMessages();
-              }}
-            />
+            >
+              <input
+                id="logInId"
+                name="logInId"
+                type="text"
+                value={field.value}
+                autoComplete="username"
+                disabled={signin.isPending}
+                aria-invalid={!!getFieldError("logInId")}
+                aria-describedby={
+                  getFieldError("logInId") ? "logInId-error" : undefined
+                }
+                onChange={(event) => {
+                  field.onChange(event.target.value);
+                  signin.clearMessages();
+                }}
+                className="h-10 min-w-0 flex-1 bg-transparent py-1 text-base text-vh-gray-100 outline-none placeholder:text-vh-gray-700 md:text-sm disabled:cursor-not-allowed disabled:text-vh-gray-700"
+              />
+            </FormField>
           )}
         />
         <Controller
@@ -128,8 +142,8 @@ export function SigninForm({ callbackUrl }: SigninFormProps) {
 
       <Button
         type="submit"
-        variant="brand"
-        className="mt-[100px] h-12 w-full rounded-sm text-base"
+        variant="brand-solid"
+        className="mt-[100px] h-12 w-full text-base"
         disabled={signin.isPending}
         aria-busy={signin.isPending}
       >
@@ -144,6 +158,14 @@ export function SigninForm({ callbackUrl }: SigninFormProps) {
 
       <SocialLoginGroup />
 
+      <LoginLimitDialog
+        key={signin.lockSeconds}
+        open={signin.lockOpen}
+        initialSeconds={signin.lockSeconds}
+        onOpenChange={(next) => {
+          if (!next) signin.dismissLock();
+        }}
+      />
       <ConfirmModal
         open={signin.resumeGuidanceOpen}
         title="회원가입 미완료"

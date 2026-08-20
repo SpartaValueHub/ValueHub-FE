@@ -7,6 +7,7 @@ import { Controller } from "react-hook-form";
 import { Button } from "@/components/atoms/button";
 import { Spinner } from "@/components/atoms/spinner";
 import { AddressSearchField } from "@/components/molecules/AddressSearchField";
+import { AlertDialog } from "@/components/molecules/AlertDialog";
 import { RecaptchaWidget } from "@/components/molecules/RecaptchaWidget";
 import { SigninInputField } from "@/components/molecules/SigninInputField";
 import { SignupFieldWithAction } from "@/components/molecules/SignupFieldWithAction";
@@ -52,6 +53,9 @@ export function SignupForm({
 }: SignupFormProps) {
   const [currentStep, setCurrentStep] = useState(resumeMode ? 2 : 1);
   const [termsStepError, setTermsStepError] = useState<string>();
+  const [availabilityAlert, setAvailabilityAlert] = useState<string | null>(
+    null
+  );
   const {
     control,
     getValues,
@@ -177,7 +181,10 @@ export function SignupForm({
       });
     if (nicknameError)
       setError("nickname", { type: "manual", message: nicknameError });
-    if (loginIdError || emailError || nicknameError) return;
+    if (loginIdError || emailError || nicknameError) {
+      setAvailabilityAlert(loginIdError ?? emailError ?? nicknameError ?? null);
+      return;
+    }
 
     submitToAction(data, {
       requestToken: isResumeFlow ? undefined : identity.requestToken,
@@ -505,6 +512,19 @@ export function SignupForm({
           </Button>
         </section>
       ) : null}
+
+      <AlertDialog
+        open={availabilityAlert !== null}
+        onOpenChange={(next) => {
+          if (!next) setAvailabilityAlert(null);
+        }}
+        primaryLabel="확인"
+        onPrimary={() => setAvailabilityAlert(null)}
+        secondaryLabel="취소"
+        onSecondary={() => setAvailabilityAlert(null)}
+      >
+        {availabilityAlert ?? ""}
+      </AlertDialog>
     </form>
   );
 }

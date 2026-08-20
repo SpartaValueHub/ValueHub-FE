@@ -4,14 +4,14 @@ import { useState } from "react";
 import { CalendarDays, Clock3, MapPin } from "lucide-react";
 
 import { Button } from "@/components/atoms/button";
-import { Popover } from "@/components/molecules/Popover";
+import { Popover } from "@/components/molecules/overlay/Popover";
 import { AppointmentFieldRow } from "@/components/molecules/chat/appointment/AppointmentFieldRow";
 import { AppointmentMapPreview } from "@/components/molecules/chat/appointment/AppointmentMapPreview";
 import { AppointmentNotificationSection } from "@/components/molecules/chat/appointment/AppointmentNotificationSection";
 import { DatePickerPanel } from "@/components/molecules/chat/appointment/DatePickerPanel";
 import { LocationPickerPanel } from "@/components/molecules/chat/appointment/LocationPickerPanel";
 import { TimePickerPanel } from "@/components/molecules/chat/appointment/TimePickerPanel";
-import { Dialog, DialogContent } from "@/components/molecules/Dialog";
+import { Dialog, DialogContent } from "@/components/molecules/overlay/Dialog";
 import {
   formatAppointmentDate,
   formatAppointmentTime,

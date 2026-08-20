@@ -1,4 +1,4 @@
-import { SigninTemplate } from "@/components/templates/SigninTemplate";
+import { SigninTemplate } from "@/components/templates/auth/SigninTemplate";
 
 type SigninPageProps = {
   searchParams: Promise<{ callbackUrl?: string }>;

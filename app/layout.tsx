@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Ephesis, Geist_Mono, Noto_Serif_KR } from "next/font/google";
 
-import { Footer } from "@/components/templates/Footer";
+import { Footer } from "@/components/templates/layout/Footer";
 import { getClientSessionUser } from "@/lib/session";
 import { AuthSessionProvider } from "@/provider/AuthSessionProvider";
 import { SessionContextProvider } from "@/provider/SessionContextProvider";

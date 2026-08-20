@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-import { DialogCloseButton } from "@/components/molecules/Dialog";
+import { DialogCloseButton } from "@/components/molecules/overlay/Dialog";
 import { cn } from "@/lib/utils";
 
 interface AppointmentSubDialogProps {

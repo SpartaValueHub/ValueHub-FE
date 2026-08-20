@@ -1,4 +1,4 @@
-import { Header } from "@/components/templates/Header";
+import { Header } from "@/components/templates/layout/Header";
 
 export default function HomeLayout({
   children,

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { Dialog, DialogContent } from "@/components/molecules/Dialog";
+import { Dialog, DialogContent } from "@/components/molecules/overlay/Dialog";
 import { AppointmentMainForm } from "@/components/molecules/chat/appointment/AppointmentMainForm";
 import { AppointmentSubDialog } from "@/components/molecules/chat/appointment/AppointmentSubDialog";
 import { DatePickerPanel } from "@/components/molecules/chat/appointment/DatePickerPanel";

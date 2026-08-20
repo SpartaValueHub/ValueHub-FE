@@ -14,9 +14,19 @@
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-noto-serif);
   --color-vh-gold-900: var(--vh-gold-900);
+  --color-vh-gold-800: var(--vh-gold-800);
   --color-vh-gold-700: var(--vh-gold-700);
+  --color-vh-gold-600: var(--vh-gold-600);
   --color-vh-gold-500: var(--vh-gold-500);
   --color-vh-gold-300: var(--vh-gold-300);
+  --color-vh-gold-100: var(--vh-gold-100);
+  --color-vh-tan-900: var(--vh-tan-900);
+  --color-vh-tan-700: var(--vh-tan-700);
+  --color-vh-tan-500: var(--vh-tan-500);
+  --color-vh-tan-400: var(--vh-tan-400);
+  --color-vh-tan-300: var(--vh-tan-300);
+  --color-vh-tan-200: var(--vh-tan-200);
+  --color-vh-tan-100: var(--vh-tan-100);
   --color-vh-brand-gold: var(--vh-brand-gold);
   --color-vh-brand-emblem: var(--vh-brand-emblem);
   --color-vh-green-900: var(--vh-green-900);
@@ -86,17 +96,29 @@
   --font-pretendard:
     "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 
-  /* Value Hub — Gold / Bronze */
-  --vh-gold-900: #3d3428;
-  --vh-gold-700: #c9a85e;
+  /* Value Hub — Gold (Figma 7:1169) */
+  --vh-gold-900: #4c3b1b;
+  --vh-gold-800: #775d2a;
+  --vh-gold-700: #b89041;
+  --vh-gold-600: #efbb55;
   --vh-gold-500: #f2ca7b;
   --vh-gold-300: #f8e3b9;
-  --vh-gold-100: #fdf6e8;
+  --vh-gold-100: #fbefd8;
+
+  /* Value Hub — Tan */
+  --vh-tan-900: #563d1f;
+  --vh-tan-700: #7d582d;
+  --vh-tan-500: #a4733b;
+  --vh-tan-400: #d4954d;
+  --vh-tan-300: #e5c096;
+  --vh-tan-200: #f1ddc6;
+  --vh-tan-100: #f9f0e6;
 
   /* Brand assets — logo·슬로건 */
   --vh-brand-gold: #f2ca7b;
   --vh-brand-emblem: #333333;
   --vh-checkbox-checked-bg: #f8e3b9;
+  --vh-checkbox-border: #f8e3b9;
   --vh-checkbox-check: #323232;
   --vh-green-900: #1a3d2e;
   --vh-green-700: #2d6b4f;
@@ -215,12 +237,7 @@
     width: 0.34rem;
     height: 0.34rem;
     border-radius: 9999px;
-    background: radial-gradient(
-      circle,
-      #f8e3b9 0%,
-      #f2ca7b 58%,
-      #c9a05e 100%
-    );
+    background: radial-gradient(circle, #f8e3b9 0%, #f2ca7b 58%, #c9a05e 100%);
     box-shadow: 0 0 5px rgba(242, 202, 123, 0.9);
   }
 
@@ -237,17 +254,26 @@
     appearance: none;
     display: inline-grid;
     place-content: center;
-    border: 1px solid var(--vh-gray-100);
+    border: 1px solid var(--vh-checkbox-border);
     background-color: transparent;
+  }
+
+  .vh-nav-active {
+    background-image:
+      linear-gradient(90deg, #e0e0e0 0%, #e0e0e0 100%),
+      linear-gradient(95.68deg, #f8e3b9 2.79%, #7d582d 95%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 
   .vh-checkbox:checked {
     border-color: var(--vh-checkbox-checked-bg);
     background-color: var(--vh-checkbox-checked-bg);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.5L6.5 11.5L12.5 4.5' stroke='%23323232' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-image: url("/icons/checkbox-check.svg");
     background-repeat: no-repeat;
     background-position: center;
-    background-size: 12px 12px;
+    background-size: 13px 10px;
   }
 
   .font-serif {

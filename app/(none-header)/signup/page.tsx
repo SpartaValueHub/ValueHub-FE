@@ -1,4 +1,4 @@
-import { SignupTemplate } from "@/components/templates/SignupTemplate";
+import { SignupTemplate } from "@/components/templates/auth/SignupTemplate";
 
 type SignupPageProps = {
   searchParams: Promise<{ mode?: string; logInId?: string }>;

@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import { confirmIdentityVerificationAction } from "@/actions/identity-verification";
 import { logSafeError } from "@/lib/log/safe-log";
-import type { GenderOption } from "@/components/molecules/GenderToggle";
+import type { GenderOption } from "@/components/molecules/auth/GenderToggle";
 import type { ApiGender } from "@/types/auth/api";
 import type { SignupInput } from "@/types/auth/signup";
 

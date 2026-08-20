@@ -136,21 +136,27 @@ templates → organisms → molecules → atoms
 
 ### 네이밍 & 파일 배치
 
-- 경로: `components/{atoms|molecules|organisms|templates}/ComponentName.tsx`
 - **PascalCase** 파일·export명. atoms shadcn 파일은 소문자 허용 (`button.tsx`).
 - Props 타입: `{ComponentName}Props`. UI 모델은 `Ui*` (`types/<domain>/ui.ts`).
 - Template props = Page가 조회한 `Ui*` 데이터 + 세션에서 필요한 최소 필드.
+- 경로: `components/{계층}/<domain>/ComponentName.tsx`. atoms는 primitive라 루트(+ `icons/`)에 둔다. molecules·organisms·templates는 도메인 폴더로 나눈다.
+
+| 계층 | 도메인 폴더 |
+|------|-------------|
+| molecules | `auth`, `brand`, `chat`, `form`, `header`, `footer`, `listing`, `main`, `overlay` |
+| organisms | `auth`, `header`, `main` |
+| templates | `auth`, `design-system`, `layout`, `main` |
 
 ### 계층 선택 가이드
 
 | 상황 | 배치 |
 |------|------|
 | shadcn primitive 1개 | `atoms/` |
-| atom 2~3개 고정 조합 (label+input+error) | `molecules/` |
-| 도메인 데이터 1건 표시 (PostCard, ChatRoomItem) | `molecules/` |
-| 리스트·폼·실시간 스트림 등 기능 블록 | `organisms/` |
-| 페이지 섹션 배치, 히어로/레이아웃 | `templates/` |
-| 여러 페이지 공유 헤더/푸터 | `templates/` |
+| atom 2~3개 고정 조합 (label+input+error) | `molecules/form` 등 |
+| 도메인 데이터 1건 표시 (PostCard, ChatRoomItem) | `molecules/listing`, `molecules/chat` |
+| 리스트·폼·실시간 스트림 등 기능 블록 | `organisms/<domain>/` |
+| 페이지 섹션 배치, 히어로 | `templates/main/` |
+| 여러 페이지 공유 헤더/푸터 | `templates/layout/` |
 
 ### 도메인별 예시
 

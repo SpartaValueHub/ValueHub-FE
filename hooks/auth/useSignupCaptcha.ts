@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { RECAPTCHA_EXPIRED_MESSAGE } from "@/components/molecules/RecaptchaWidget";
+import { RECAPTCHA_EXPIRED_MESSAGE } from "@/components/molecules/auth/RecaptchaWidget";
 import {
   isCaptchaRequiredError,
   parseSignInError,

@@ -142,32 +142,39 @@ function PcHeaderPreview({
   const isAuthenticated = variant !== "guest";
 
   return (
-    <div
-      className={cn(
-        "relative bg-[#323232] px-10 py-5",
-        searchOpen ? "min-h-[280px]" : "overflow-x-auto"
-      )}
-    >
-      <div className="flex min-w-[960px] flex-col gap-5">
-        <div className="relative flex min-h-[52px] items-center justify-between">
-          <BrandWordmark size="lg" className="text-[36px]" />
-          {searchOpen ? (
-            <div className="absolute inset-x-0 z-10 flex justify-center">
-              <HeaderSearchPanel />
-            </div>
-          ) : null}
-          <HeaderUtilityIcons
-            isAuthenticated={isAuthenticated}
-            showSearch={!searchOpen}
-            showInboxIcons={isAuthenticated}
-          />
-        </div>
-        <div className="flex items-center justify-between">
-          <HeaderCategoryNav activeId="all" />
-          <HeaderAuthLinks
-            isAuthenticated={isAuthenticated}
-            onLogout={() => undefined}
-          />
+    <div className="relative overflow-hidden">
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: "url('/main/hero.png')" }}
+      />
+      <div
+        className={cn(
+          "relative bg-[#323232]/70 px-10 py-5",
+          searchOpen ? "min-h-[280px]" : "overflow-x-auto"
+        )}
+      >
+        <div className="flex min-w-[960px] flex-col gap-5">
+          <div className="relative flex min-h-[52px] items-center justify-between">
+            <BrandWordmark size="lg" className="text-[36px]" />
+            {searchOpen ? (
+              <div className="absolute inset-x-0 z-10 flex justify-center">
+                <HeaderSearchPanel />
+              </div>
+            ) : null}
+            <HeaderUtilityIcons
+              isAuthenticated={isAuthenticated}
+              showSearch={!searchOpen}
+              showInboxIcons={isAuthenticated}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <HeaderCategoryNav activeId="all" />
+            <HeaderAuthLinks
+              isAuthenticated={isAuthenticated}
+              onLogout={() => undefined}
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -176,23 +183,33 @@ function PcHeaderPreview({
 
 function MobileHeaderPreview({ variant }: { variant: "default" | "back" }) {
   return (
-    <div className="w-[375px] bg-[#323232] px-[18px] py-2.5">
-      <div className="grid grid-cols-[24px_1fr_26px] items-center">
-        <span className="flex size-6 items-center justify-center">
-          <Icon name={variant === "back" ? "chevron-left" : "menu"} size={24} />
-        </span>
-        <BrandWordmark size="sm" className="justify-self-center" />
-        <span className="flex size-[26px] items-center justify-center">
-          <Icon name="search" size={26} />
-        </span>
+    <div className="relative w-[375px] overflow-hidden">
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: "url('/main/hero.png')" }}
+      />
+      <div className="relative bg-[#323232]/70 px-[18px] py-2.5">
+        <div className="grid grid-cols-[24px_1fr_26px] items-center">
+          <span className="flex size-6 items-center justify-center">
+            <Icon
+              name={variant === "back" ? "chevron-left" : "menu"}
+              size={24}
+            />
+          </span>
+          <BrandWordmark size="sm" className="justify-self-center" />
+          <span className="flex size-[26px] items-center justify-center">
+            <Icon name="search" size={26} />
+          </span>
+        </div>
+        {variant === "default" ? (
+          <HeaderCategoryNav
+            size="sm"
+            activeId="all"
+            className="mt-2.5 justify-between"
+          />
+        ) : null}
       </div>
-      {variant === "default" ? (
-        <HeaderCategoryNav
-          size="sm"
-          activeId="all"
-          className="mt-2.5 justify-between"
-        />
-      ) : null}
     </div>
   );
 }
@@ -739,7 +756,7 @@ bg-[#323232]     // charcoal surface
 
       <Section
         title="PC Header"
-        description="guest · login · search — 고정 헤더가 아닌 레이아웃 미리보기"
+        description="guest · login · search — rgba(50,50,50,0.7) 반투명 고정 헤더 미리보기"
         code={`
 <BrandWordmark size="lg" />
 <HeaderUtilityIcons isAuthenticated showSearch showInboxIcons />

@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 import { Icon } from "@/components/atoms/icons";
@@ -14,12 +15,19 @@ import { useAppSession } from "@/context/SessionContext";
 import { cn } from "@/lib/utils";
 
 export function Header() {
+  const pathname = usePathname();
   const { isAuthenticated, isLoading, logout } = useAppSession();
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeCategoryId, setActiveCategoryId] = useState("all");
+  const isHome = pathname === "/";
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 w-full bg-[#323232]">
+    <header
+      className={cn(
+        "fixed inset-x-0 top-0 z-50 w-full",
+        isHome ? "bg-[#323232]/70" : "bg-[#323232]"
+      )}
+    >
       <div className="relative mx-auto flex w-full max-w-[1440px] flex-col gap-5 px-5 py-5 md:px-10">
         <div className="flex min-h-[52px] items-center justify-between">
           <button

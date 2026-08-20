@@ -16,11 +16,13 @@ export function MainTemplate({ className }: MainTemplateProps) {
         className
       )}
     >
-      <MainHeroSection />
+      <div className="flex flex-col gap-[100px] md:gap-[200px]">
+        <MainHeroSection />
 
-      <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-[100px] px-5 md:gap-[200px] md:px-10">
-        <MainCategorySection className="md:-mt-10 lg:mt-0" />
-        <MainRecommendedProducts />
+        <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-[100px] px-5 md:gap-[200px] md:px-10">
+          <MainCategorySection />
+          <MainRecommendedProducts />
+        </div>
       </div>
 
       <MainBottomNav />

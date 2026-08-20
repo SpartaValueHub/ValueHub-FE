@@ -144,8 +144,8 @@ templates → organisms → molecules → atoms
 | 계층 | 도메인 폴더 |
 |------|-------------|
 | molecules | `auth`, `brand`, `chat`, `form`, `header`, `footer`, `listing`, `main`, `overlay` |
-| organisms | `auth`, `chat`, `header`, `main` |
-| templates | `auth`, `design-system`, `dev`, `layout`, `main` |
+| organisms | `auth`, `header`, `main` |
+| templates | `auth`, `design-system`, `layout`, `main` |
 
 ### 계층 선택 가이드
 

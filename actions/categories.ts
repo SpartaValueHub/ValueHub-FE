@@ -6,16 +6,11 @@
  */
 import { ApiError } from "@/lib/api/client";
 import {
-  buildHeaderCategoryNavItems,
   listChildCategoriesService,
   listLeafCategoriesService,
   listRootCategoriesService,
 } from "@/services/categories.service";
-import { HEADER_ROOT_CATEGORY_FALLBACK } from "@/constants/categories";
-import type {
-  UiCategoryNavItem,
-  UiCategorySummary,
-} from "@/types/categories/ui";
+import type { UiCategorySummary } from "@/types/categories/ui";
 
 export type CategoriesActionResult<T> =
   | { ok: true; data: T }
@@ -38,21 +33,6 @@ export async function listRootCategoriesAction(): Promise<
       ok: false,
       message: toErrorMessage(e, "카테고리를 불러오지 못했습니다."),
     };
-  }
-}
-
-export async function listHeaderCategoryNavAction(): Promise<
-  CategoriesActionResult<UiCategoryNavItem[]>
-> {
-  try {
-    const roots = await listRootCategoriesService();
-    const data = buildHeaderCategoryNavItems(roots);
-    if (data.length <= 1) {
-      return { ok: true, data: HEADER_ROOT_CATEGORY_FALLBACK };
-    }
-    return { ok: true, data };
-  } catch (e) {
-    return { ok: true, data: HEADER_ROOT_CATEGORY_FALLBACK };
   }
 }
 

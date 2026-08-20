@@ -89,6 +89,17 @@ export function getCategoryApiUrl() {
   return raw.replace(/\/$/, "");
 }
 
+/** Gateway product-post-service — 서버 전용 */
+export function getProductPostApiUrl() {
+  assertServerOnlyApiUrl();
+
+  const raw =
+    process.env.PRODUCT_POST_API_URL ||
+    "http://localhost:8000/product-post-service";
+
+  return raw.replace(/\/$/, "");
+}
+
 type FetchCacheOpts = {
   tags?: string[];
   revalidate?: number | false;

@@ -7,15 +7,7 @@ import {
   listCategoryLeaves,
 } from "@/lib/api/categories";
 import type { ApiCategorySummary } from "@/types/categories/api";
-import type {
-  UiCategoryNavItem,
-  UiCategorySummary,
-} from "@/types/categories/ui";
-import {
-  ALL_CATEGORY_NAV_ID,
-  ALL_CATEGORY_NAV_LABEL,
-  HEADER_ROOT_CATEGORY_FALLBACK,
-} from "@/constants/categories";
+import type { UiCategorySummary } from "@/types/categories/ui";
 
 export function mapCategorySummary(
   api: ApiCategorySummary
@@ -51,30 +43,9 @@ export async function listLeafCategoriesService(
   return list.map(mapCategorySummary);
 }
 
-/** 헤더용: FE All + 활성 대분류 (BE sortOrder 유지) */
-export function buildHeaderCategoryNavItems(
-  roots: UiCategorySummary[]
-): UiCategoryNavItem[] {
-  const allItem: UiCategoryNavItem = {
-    id: ALL_CATEGORY_NAV_ID,
-    label: ALL_CATEGORY_NAV_LABEL,
-    categoryUuid: null,
-  };
-
-  const categoryItems = roots
-    .filter((c) => c.active)
-    .map((c) => ({
-      id: c.categoryUuid,
-      label: c.categoryName,
-      categoryUuid: c.categoryUuid,
-    }));
-
-  return [allItem, ...categoryItems];
-}
-
 /**
- * categoryUuid로 카테고리 경로 문자열 생성.
- * 리프이면 "대분류 > 리프명", 대분류이면 "대분류명".
+ * categoryUuid로 경로 문자열 생성.
+ * 리프/중분류 → "대분류 > 중분류", 대분류 → "대분류명".
  * API 실패 시 UUID 그대로 반환.
  */
 export async function getCategoryPathService(
@@ -93,6 +64,13 @@ export async function getCategoryPathService(
       if (childMatch) {
         return `${root.categoryName} > ${childMatch.categoryName}`;
       }
+
+      for (const mid of children) {
+        const leaves = await listLeafCategoriesService(mid.categoryUuid);
+        if (leaves.some((leaf) => leaf.categoryUuid === categoryUuid)) {
+          return `${root.categoryName} > ${mid.categoryName}`;
+        }
+      }
     }
     return categoryUuid;
   } catch {
@@ -100,17 +78,39 @@ export async function getCategoryPathService(
   }
 }
 
-export async function loadHeaderCategoryNavService(): Promise<
-  UiCategoryNavItem[]
-> {
+/** 상세 「동네 추천」용 — 같은 중분류 하위 리프 UUID (없으면 자기 UUID) */
+export async function listSiblingLeafCategoryUuids(
+  categoryUuid: string
+): Promise<string[]> {
   try {
     const roots = await listRootCategoriesService();
-    const items = buildHeaderCategoryNavItems(roots);
-    if (items.length <= 1) {
-      return HEADER_ROOT_CATEGORY_FALLBACK;
+    for (const root of roots) {
+      if (root.categoryUuid === categoryUuid) {
+        const mids = await listChildCategoriesService(root.categoryUuid);
+        const leaves = (
+          await Promise.all(
+            mids.map((mid) => listLeafCategoriesService(mid.categoryUuid))
+          )
+        ).flat();
+        return leaves.map((l) => l.categoryUuid);
+      }
+
+      const children = await listChildCategoriesService(root.categoryUuid);
+      const mid = children.find((c) => c.categoryUuid === categoryUuid);
+      if (mid) {
+        const leaves = await listLeafCategoriesService(mid.categoryUuid);
+        return leaves.map((l) => l.categoryUuid);
+      }
+
+      for (const child of children) {
+        const leaves = await listLeafCategoriesService(child.categoryUuid);
+        if (leaves.some((leaf) => leaf.categoryUuid === categoryUuid)) {
+          return leaves.map((l) => l.categoryUuid);
+        }
+      }
     }
-    return items;
   } catch {
-    return HEADER_ROOT_CATEGORY_FALLBACK;
+    /* fall through */
   }
+  return [categoryUuid];
 }

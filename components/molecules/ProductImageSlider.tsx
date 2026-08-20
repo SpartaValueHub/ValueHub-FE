@@ -1,67 +1,23 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 
+import { Icon } from "@/components/atoms/icons";
 import { cn } from "@/lib/utils";
 import type { UiProductPostImage } from "@/types/product-posts/ui";
 
 interface ProductImageSliderProps {
   images: UiProductPostImage[];
   productName: string;
+  className?: string;
 }
 
-function SlideChevron({ direction }: { direction: "left" | "right" }) {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      className={cn("size-5", direction === "left" && "-scale-x-100")}
-      fill="none"
-      aria-hidden
-    >
-      <path
-        d="M5 2 L12 9 L5 16"
-        stroke="#323232"
-        strokeWidth="2.25"
-        strokeLinecap="butt"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function SlideNavButton({
-  direction,
-  onClick,
-}: {
-  direction: "left" | "right";
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "absolute top-1/2 z-10 flex size-10 -translate-y-1/2 items-center justify-center",
-        direction === "left" ? "left-4" : "right-4"
-      )}
-      aria-label={direction === "left" ? "이전 이미지" : "다음 이미지"}
-    >
-      <span
-        aria-hidden
-        className="absolute inset-0 rounded-sm"
-        style={{ backgroundColor: "#FFFFFF", opacity: 0.3 }}
-      />
-      <span className="relative z-10">
-        <SlideChevron direction={direction} />
-      </span>
-    </button>
-  );
-}
-
+/** Figma product_detail thumbnail — 정사각 + 좌우 화살표 + 하단 인디케이터 */
 export function ProductImageSlider({
   images,
   productName,
+  className,
 }: ProductImageSliderProps) {
   const [current, setCurrent] = useState(0);
   const total = images.length;
@@ -77,41 +33,76 @@ export function ProductImageSlider({
 
   if (total === 0) {
     return (
-      <div className="flex aspect-square w-full items-center justify-center rounded-lg bg-vh-gray-700">
+      <div
+        className={cn(
+          "flex aspect-square w-full max-w-[600px] items-center justify-center border border-[#e0e0e0] bg-[#e0e0e0]",
+          className
+        )}
+      >
         <span className="text-sm text-vh-gray-500">이미지 없음</span>
       </div>
     );
   }
 
   return (
-    <div className="relative w-full">
-      <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-vh-gray-900">
-        {images.map((img, idx) => (
-          <div
-            key={img.uuid}
-            className={cn(
-              "absolute inset-0 transition-opacity duration-300",
-              idx === current ? "opacity-100" : "opacity-0 pointer-events-none"
-            )}
-          >
-            <Image
-              src={img.url}
-              alt={`${productName} ${idx + 1}`}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 50vw"
-              priority={idx === 0}
-            />
-          </div>
-        ))}
-
-        <SlideNavButton direction="left" onClick={prev} />
-        <SlideNavButton direction="right" onClick={next} />
-
-        <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center justify-center rounded-[6px] bg-[#828384] px-2.5 py-1 font-sans text-[12px] font-medium leading-none">
-          <span className="text-white">{current + 1}</span>
-          <span className="text-white/55">/{total}</span>
+    <div
+      className={cn(
+        "relative aspect-square w-full max-w-[600px] overflow-hidden border border-[#e0e0e0] bg-[#e0e0e0]",
+        className
+      )}
+    >
+      {images.map((img, idx) => (
+        <div
+          key={img.uuid}
+          className={cn(
+            "absolute inset-0 transition-opacity duration-300",
+            idx === current ? "opacity-100" : "pointer-events-none opacity-0"
+          )}
+        >
+          <Image
+            src={img.url}
+            alt={`${productName} ${idx + 1}`}
+            fill
+            unoptimized
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 600px"
+            priority={idx === 0}
+          />
         </div>
+      ))}
+
+      {total > 1 ? (
+        <>
+          <button
+            type="button"
+            onClick={prev}
+            aria-label="이전 이미지"
+            className="absolute left-2.5 top-1/2 z-10 flex size-10 -translate-y-1/2 items-center justify-center bg-white/30"
+          >
+            <Icon name="chevron-left" size={24} className="text-[#323232]" />
+          </button>
+          <button
+            type="button"
+            onClick={next}
+            aria-label="다음 이미지"
+            className="absolute right-2.5 top-1/2 z-10 flex size-10 -translate-y-1/2 items-center justify-center bg-white/30"
+          >
+            <Icon name="chevron-right" size={24} className="text-[#323232]" />
+          </button>
+        </>
+      ) : null}
+
+      <div
+        className="absolute bottom-[30px] left-1/2 z-10 flex min-w-[4.5rem] -translate-x-1/2 items-center justify-center gap-px rounded-[3px] bg-[rgba(50,50,50,0.5)] px-1.5 py-0.5 font-sans text-base leading-none tabular-nums"
+        aria-live="polite"
+      >
+        <span className="inline-block min-w-[1.25em] text-right text-white">
+          {current + 1}
+        </span>
+        <span className="text-[#d9d9d9]">/</span>
+        <span className="inline-block min-w-[1.25em] text-left text-[#d9d9d9]">
+          {total}
+        </span>
       </div>
     </div>
   );

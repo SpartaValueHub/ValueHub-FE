@@ -10,8 +10,12 @@ interface FooterBrandProps {
 export function FooterBrand({ className }: FooterBrandProps) {
   return (
     <div className={cn("flex items-end gap-2.5 opacity-60", className)}>
-      <BrandLogoIcon size="md" className="size-[21px] md:size-[42px]" />
-      <BrandWordmark size="md" className="pointer-events-none" href="/" />
+      <BrandLogoIcon size="md" className="size-[21px] shrink-0 md:size-[42px]" />
+      <BrandWordmark
+        size="md"
+        className="pointer-events-none leading-none"
+        href="/"
+      />
     </div>
   );
 }

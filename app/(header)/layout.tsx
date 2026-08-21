@@ -1,4 +1,6 @@
-import { Header } from "@/components/templates/Header";
+import { Suspense } from "react";
+
+import { Header } from "@/components/templates/layout/Header";
 
 export default function HomeLayout({
   children,
@@ -6,8 +8,10 @@ export default function HomeLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-1 flex-col bg-vh-surface-charcoal">
-      <Header />
+    <div className="flex min-h-screen flex-1 flex-col bg-[#323232]">
+      <Suspense fallback={null}>
+        <Header />
+      </Suspense>
       {children}
     </div>
   );

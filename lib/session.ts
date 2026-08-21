@@ -1,34 +1,53 @@
 import { cookies } from "next/headers";
+import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
 import { redirect } from "next/navigation";
 
-import type { SessionUser } from "@/types/auth/session";
+import { isSecureNextAuthCookieEnv } from "@/lib/auth/nextauth-session";
+import { authOptions } from "@/lib/auth/options";
+import type { ClientSessionUser, SessionUser } from "@/types/auth/session";
 
 export type AuthUser = SessionUser;
+
+/**
+ * 헤더 등 클라이언트 UI용.
+ * /api/auth/session과 같은 getServerSession을 써서 nickname만 읽는다.
+ */
+export async function getClientSessionUser(): Promise<ClientSessionUser | null> {
+  const session = await getServerSession(authOptions);
+  const nickname =
+    typeof session?.user?.nickname === "string"
+      ? session.user.nickname.trim()
+      : "";
+
+  if (!nickname) {
+    return null;
+  }
+
+  return { nickname };
+}
 
 /**
  * 서버 전용 세션 사용자.
  * memberUuid·role은 JWT token에만 두고 /api/auth/session에는 노출하지 않으므로
  * getServerSession 대신 getToken으로 읽는다.
+ *
+ * next-auth SessionStore는 req.cookies만 본다. Cookie 헤더 문자열만 넘기면
+ * 토큰이 항상 null이 되어 헤더가 비로그인으로 남는다.
  */
 export async function getAuthUser(): Promise<AuthUser | null> {
   const cookieStore = await cookies();
-  const cookieHeader = cookieStore
-    .getAll()
-    .map((cookie) => `${cookie.name}=${cookie.value}`)
-    .join("; ");
 
-  if (!cookieHeader) {
+  if (cookieStore.getAll().length === 0) {
     return null;
   }
 
   const token = await getToken({
     req: {
-      headers: {
-        cookie: cookieHeader,
-      },
-    } as Parameters<typeof getToken>[0]["req"],
+      cookies: cookieStore,
+    } as unknown as Parameters<typeof getToken>[0]["req"],
     secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+    secureCookie: isSecureNextAuthCookieEnv(),
   });
 
   const memberUuid =

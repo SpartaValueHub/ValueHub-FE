@@ -25,11 +25,13 @@ export function useSigninFlow({ callbackUrl, captcha }: UseSigninFlowOptions) {
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<string>();
   const [resumeLoginId, setResumeLoginId] = useState<string>();
+  const [lockSeconds, setLockSeconds] = useState<number>();
 
   function clearMessages() {
     setMessage(undefined);
     captcha.setMessage(undefined);
     setResumeLoginId(undefined);
+    setLockSeconds(undefined);
   }
 
   function dismissResumeGuidance() {
@@ -56,6 +58,19 @@ export function useSigninFlow({ callbackUrl, captcha }: UseSigninFlowOptions) {
     }
 
     const errorMessage = signInErrorMessage(parsed);
+    if (
+      parsed.code === "AUTH_ACCOUNT_LOCKED" ||
+      parsed.code === "AUTH_RATE_LIMITED"
+    ) {
+      setLockSeconds(
+        parsed.retryAfterSeconds && parsed.retryAfterSeconds > 0
+          ? Math.ceil(parsed.retryAfterSeconds)
+          : 120
+      );
+      setMessage(undefined);
+      captcha.setMessage(undefined);
+      return;
+    }
     if (isCaptchaRequiredError(parsed)) {
       captcha.requireCaptcha();
       captcha.setMessage(errorMessage);
@@ -111,6 +126,9 @@ export function useSigninFlow({ callbackUrl, captcha }: UseSigninFlowOptions) {
     isPending,
     message,
     resumeGuidanceOpen: resumeLoginId !== undefined,
+    lockOpen: lockSeconds !== undefined,
+    lockSeconds: lockSeconds ?? 120,
+    dismissLock: () => setLockSeconds(undefined),
     submit,
     handleInvalid,
     handleCaptchaLoadError,

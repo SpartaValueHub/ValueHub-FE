@@ -8,8 +8,9 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 ## Git / Husky / 코드 스타일
 
 - 브랜치·커밋·PR 규칙: [CONTRIBUTING.md](./CONTRIBUTING.md)
-- 로컬 개발·스크립트·Husky pre-commit: [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md)
-- **pre-commit:** staged 파일에 ESLint(`--fix`) + Prettier 자동 적용 (`lint-staged`). 실패 시 커밋 중단.
+- 로컬 개발·스크립트·Husky: [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md)
+- **pre-commit:** staged 파일에 ESLint(`--fix`) + Prettier (`lint-staged`). 실패 시 커밋 중단.
+- **pre-push:** `pnpm lint` → `pnpm build`. 실패 시 push 중단.
 - 패키지 매니저는 **pnpm**만 사용합니다.
 
 ## Getting Started

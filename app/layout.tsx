@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import { Ephesis, Geist_Mono, Noto_Serif_KR } from "next/font/google";
 
-import { Footer } from "@/components/templates/Footer";
-import { getAuthUser } from "@/lib/session";
+import { Footer } from "@/components/templates/layout/Footer";
+import { getClientSessionUser } from "@/lib/session";
 import { AuthSessionProvider } from "@/provider/AuthSessionProvider";
 import { SessionContextProvider } from "@/provider/SessionContextProvider";
-import { toClientSessionUser } from "@/types/auth/session";
 
 import "./globals.css";
 
@@ -36,10 +35,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const authUser = await getAuthUser();
+  const clientUser = await getClientSessionUser();
   const initialSession = {
-    isAuthenticated: !!authUser,
-    user: authUser ? toClientSessionUser(authUser) : null,
+    isAuthenticated: !!clientUser,
+    user: clientUser,
   };
 
   return (
@@ -49,7 +48,10 @@ export default async function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         <AuthSessionProvider>
-          <SessionContextProvider initialSession={initialSession}>
+          <SessionContextProvider
+            key={`${initialSession.isAuthenticated}-${initialSession.user?.nickname ?? "guest"}`}
+            initialSession={initialSession}
+          >
             {children}
             <Footer />
           </SessionContextProvider>

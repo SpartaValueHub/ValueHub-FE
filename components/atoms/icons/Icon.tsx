@@ -6,6 +6,7 @@ export const SYSTEM_ICONS = {
   clock: "/icons/system/furniture/clock.svg",
   location: "/icons/system/navigation/location.svg",
   calendar: "/icons/system/essentials/calendar.svg",
+  "calendar-plus": "/icons/system/essentials/calendar-plus.svg",
   smile: "/icons/system/emojis/smile.svg",
   "shield-check": "/icons/system/safety/shield-check.svg",
   "calendar-check": "/icons/system/essentials/calendar-check.svg",

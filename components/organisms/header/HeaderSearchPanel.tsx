@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
@@ -104,6 +105,8 @@ export function HeaderUtilityIcons({
   showInboxIcons = isAuthenticated,
   className,
 }: HeaderUtilityIconsProps) {
+  const router = useRouter();
+
   return (
     <div className={cn("flex h-[37px] items-center gap-[30px]", className)}>
       {showSearch ? (
@@ -121,7 +124,11 @@ export function HeaderUtilityIcons({
           <HeaderIconButton label="알림" badgeCount={notificationCount}>
             <HeaderGlyph src="/icons/header-alert.svg" />
           </HeaderIconButton>
-          <HeaderIconButton label="채팅" badgeCount={chatCount}>
+          <HeaderIconButton
+            label="채팅"
+            badgeCount={chatCount}
+            onClick={() => router.push("/chat")}
+          >
             <HeaderGlyph src="/icons/header-chat.svg" />
           </HeaderIconButton>
         </>

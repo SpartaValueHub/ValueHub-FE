@@ -24,6 +24,8 @@ function isProductDetailPath(pathname: string) {
 
 export function Footer({ layout = "responsive", className }: FooterProps) {
   const pathname = usePathname();
+  if (pathname.startsWith("/chat")) return null;
+
   const isPc = layout === "pc";
   const isMobile = layout === "mobile";
   /** 상세 모바일 하단 고정 채팅 바에 저작권이 가리지 않도록 */

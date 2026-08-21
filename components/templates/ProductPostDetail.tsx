@@ -3,8 +3,8 @@
 import { useState } from "react";
 
 import { Icon } from "@/components/atoms/icons";
-import { VhIcon } from "@/components/atoms/vh-icon";
 import { StatusBadge } from "@/components/atoms/status-badge";
+import { VhIcon } from "@/components/atoms/vh-icon";
 import {
   ProductChatCta,
   type ProductChatViewerRole,
@@ -51,7 +51,62 @@ function tradeBadgeStatus(status: TradeStatus): "reserved" | "sold" | null {
 /** 판매자 활동 위치 — 멤버 API 연동 전 Figma placeholder */
 const SELLER_ACTIVITY_LOCATION = "동구 초량동";
 
-/** Figma product_detail 상단·설명 — API 필드만 표시, 판매자/채팅은 UI 자리 */
+function SellerProfile() {
+  return (
+    <div className="flex items-center gap-5">
+      <button
+        type="button"
+        className="flex items-center gap-2.5"
+        aria-label="판매자 프로필"
+      >
+        <span className="flex size-[37px] shrink-0 items-center justify-center rounded-full bg-[#dddddd]/87 font-sans text-[10px] text-[#323232] md:size-12 md:text-xs">
+          판매
+        </span>
+        <span className="flex flex-col items-start gap-0.5 md:gap-2.5">
+          <span className="flex items-center gap-1.5">
+            <span className="font-sans text-base font-medium text-white md:text-2xl md:font-normal">
+              판매자
+            </span>
+            <Icon
+              name="chevron-right"
+              size={20}
+              className="md:hidden"
+            />
+            <Icon
+              name="chevron-right"
+              size={26}
+              className="hidden md:inline-flex"
+            />
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="font-sans text-[10px] tracking-[-0.5px] text-[#ababab] md:text-[13px] md:tracking-[-0.65px]">
+              {SELLER_ACTIVITY_LOCATION}
+            </span>
+            <Icon
+              name="shield-check"
+              size={16}
+              className="text-[#ababab]"
+            />
+          </span>
+        </span>
+      </button>
+
+      <div className="flex flex-col items-center gap-1.5 md:gap-5">
+        <VhIcon
+          src="/product-detail/trust-grade-chevron.svg"
+          width={21}
+          height={28}
+          alt=""
+        />
+        <span className="font-sans text-[10px] tracking-[-0.5px] text-[#ababab] md:text-[13px] md:tracking-[-0.65px]">
+          거래안심등급
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** Figma product_detail (PC + 모바일) */
 export function ProductPostDetail({
   post,
   categoryPath,
@@ -63,22 +118,22 @@ export function ProductPostDetail({
   const badge = tradeBadgeStatus(post.tradeStatus);
 
   return (
-    <div className="flex w-full flex-col gap-[50px]">
-      <div className="flex flex-col items-start gap-[50px] lg:flex-row">
+    <div className="flex w-full flex-col gap-[30px] md:gap-[50px]">
+      <div className="flex flex-col items-start gap-[30px] md:gap-[50px] lg:flex-row">
         <ProductImageSlider
           images={post.images}
           productName={post.name}
-          className="mx-auto w-full shrink-0 lg:mx-0"
+          className="mx-auto w-full shrink-0 max-w-none md:max-w-[600px] lg:mx-0"
         />
 
-        <div className="flex w-full min-w-0 flex-1 flex-col gap-[50px] py-0 md:py-[30px]">
-          <div className="flex flex-col gap-5">
-            <div className="flex flex-col gap-1.5">
-              <p className="font-sans text-base tracking-[-0.8px] text-[#ababab]">
+        <div className="flex w-full min-w-0 flex-1 flex-col gap-2.5 px-4 md:gap-[50px] md:px-0 md:py-[30px]">
+          <div className="flex flex-col gap-2.5 md:gap-5">
+            <div className="flex flex-col gap-1 md:gap-1.5">
+              <p className="font-sans text-[10px] tracking-[-0.5px] text-[#ababab] md:text-base md:tracking-[-0.8px]">
                 {categoryPath}
               </p>
-              <div className="flex items-center justify-between gap-4">
-                <h1 className="font-sans text-2xl font-medium tracking-[-1.5px] text-white md:text-[30px] md:leading-[1.5]">
+              <div className="flex items-center justify-between gap-3">
+                <h1 className="font-sans text-xl font-medium tracking-[-1px] text-white md:text-[30px] md:leading-[1.5] md:tracking-[-1.5px]">
                   {post.name}
                 </h1>
                 <button
@@ -93,9 +148,9 @@ export function ProductPostDetail({
 
             <div className="flex flex-col gap-2.5">
               <div className="flex items-center gap-4">
-                <p className="font-sans text-[30px] font-bold leading-[0.9] tracking-[1.2px] text-white">
+                <p className="font-sans text-2xl font-bold leading-[0.9] tracking-[0.96px] text-white md:text-[30px] md:tracking-[1.2px]">
                   {formatPrice(post.price)}
-                  <span className="ml-1 text-xl font-medium tracking-[-0.6px]">
+                  <span className="ml-1 text-base font-medium tracking-[-0.48px] md:text-xl md:tracking-[-0.6px]">
                     원
                   </span>
                 </p>
@@ -113,132 +168,106 @@ export function ProductPostDetail({
 
               {post.placeName ? (
                 <div className="flex items-center gap-5">
-                  <span className="shrink-0 font-sans text-base tracking-[-0.8px] text-white">
+                  <span className="shrink-0 font-sans text-xs tracking-[-0.6px] text-white md:text-base md:tracking-[-0.8px]">
                     거래희망장소
                   </span>
                   <button
                     type="button"
-                    className="flex items-start gap-1.5 font-sans text-lg tracking-[-0.9px] text-white"
+                    className="flex items-center gap-0.5 font-sans text-sm tracking-[-0.7px] text-white md:gap-1.5 md:text-lg md:tracking-[-0.9px]"
                   >
                     {post.placeName}
-                    <Icon name="chevron-right" size={26} />
+                    <Icon name="chevron-right" size={20} className="md:hidden" />
+                    <Icon
+                      name="chevron-right"
+                      size={26}
+                      className="hidden md:inline-flex"
+                    />
                   </button>
                 </div>
               ) : null}
             </div>
           </div>
 
-          <div className="flex w-full flex-col gap-5 border border-[#808080] px-4 py-2.5">
-            <div className="flex flex-col gap-2.5">
-              <div className="flex flex-wrap items-center gap-x-[30px] gap-y-2">
-                <span className="font-sans text-base tracking-[0.32px] text-white">
-                  상품 상태
-                </span>
-                <div className="flex items-center gap-[30px]">
-                  <span className="font-sans text-[30px] tracking-[0.6px] text-white">
-                    {post.conditionGrade}
+          {/* 모바일: 판매자 → 상태박스 / PC: 상태박스 → 판매자+채팅 */}
+          <div className="mt-2.5 md:mt-0 md:contents">
+            <div className="md:hidden">
+              <SellerProfile />
+            </div>
+
+            <div className="mt-2.5 flex w-full flex-col gap-5 border border-[#808080] p-2.5 md:mt-0 md:px-4 md:py-2.5">
+              <div className="flex flex-col gap-2.5">
+                <div className="flex flex-wrap items-center gap-x-[30px] gap-y-2">
+                  <span className="font-sans text-[13px] tracking-[0.26px] text-white md:text-base md:tracking-[0.32px]">
+                    상품 상태
                   </span>
-                  <span className="font-sans text-sm tracking-[0.28px] text-[#ababab]">
-                    {CONDITION_DESCRIPTIONS[post.conditionGrade]}
+                  <div className="flex items-center gap-[30px]">
+                    <span className="font-sans text-xl tracking-[0.4px] text-white md:text-[30px] md:tracking-[0.6px]">
+                      {post.conditionGrade}
+                    </span>
+                    <span className="font-sans text-xs tracking-[0.24px] text-[#ababab] md:text-sm md:tracking-[0.28px]">
+                      {CONDITION_DESCRIPTIONS[post.conditionGrade]}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-x-[30px] gap-y-2">
+                  <span className="font-sans text-[13px] tracking-[0.26px] text-white md:text-base md:tracking-[0.32px]">
+                    첨부 서류
                   </span>
+                  <div className="flex flex-wrap items-start gap-5 font-sans text-sm tracking-[0.28px] text-white md:gap-[30px] md:text-xl md:tracking-[0.4px]">
+                    {DOC_TYPES.map((doc) => (
+                      <span
+                        key={doc.type}
+                        className={cn(!attached.has(doc.type) && "opacity-30")}
+                      >
+                        {doc.label}
+                      </span>
+                    ))}
+                    <span className="opacity-30">기타 서류</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-x-[30px] gap-y-2">
-                <span className="font-sans text-base tracking-[0.32px] text-white">
-                  첨부 서류
-                </span>
-                <div className="flex flex-wrap items-start gap-[30px] font-sans text-xl tracking-[0.4px] text-white">
-                  {DOC_TYPES.map((doc) => (
-                    <span
-                      key={doc.type}
-                      className={cn(!attached.has(doc.type) && "opacity-30")}
-                    >
-                      {doc.label}
-                    </span>
-                  ))}
-                  <span className="opacity-30">기타 서류</span>
-                </div>
-              </div>
+              <p className="font-sans text-xs leading-[1.4] text-[#ababab] md:text-sm">
+                등록된 보증서, 영수증, 감정서 등은 판매자가 제공한 자료입니다. 본
+                플랫폼은 해당 자료 및 상품의 정품 여부를 보증하거나 인증하지
+                않으며, 거래에 대한 최종 판단과 확인 책임은 구매자에게 있습니다.
+                구매 전 상품 상태와 인증 서류를 꼼꼼히 확인한 후 안전하게
+                거래하시기 바랍니다.
+              </p>
             </div>
 
-            <p className="font-sans text-sm leading-[1.4] text-[#ababab]">
-              등록된 보증서, 영수증, 감정서 등은 판매자가 제공한 자료입니다. 본
-              플랫폼은 해당 자료 및 상품의 정품 여부를 보증하거나 인증하지
-              않으며, 거래에 대한 최종 판단과 확인 책임은 구매자에게 있습니다.
-              구매 전 상품 상태와 인증 서류를 꼼꼼히 확인한 후 안전하게
-              거래하시기 바랍니다.
-            </p>
-          </div>
-
-          <div className="flex flex-col items-stretch gap-5 sm:flex-row sm:items-center sm:gap-[30px]">
-            <div className="flex items-center gap-5">
-              <button
-                type="button"
-                className="flex items-center gap-2.5"
-                aria-label="판매자 프로필"
-              >
-                <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#dddddd]/87 font-sans text-xs text-[#323232]">
-                  판매
-                </span>
-                <span className="flex flex-col items-start gap-2.5">
-                  <span className="flex items-center gap-1.5">
-                    <span className="font-sans text-2xl text-white">판매자</span>
-                    <Icon name="chevron-right" size={26} />
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="font-sans text-[13px] tracking-[-0.65px] text-[#ababab]">
-                      {SELLER_ACTIVITY_LOCATION}
-                    </span>
-                    <Icon
-                      name="shield-check"
-                      size={16}
-                      className="text-[#ababab]"
-                    />
-                  </span>
-                </span>
-              </button>
-
-              <div className="hidden flex-col items-center gap-5 sm:flex">
-                <VhIcon
-                  src="/product-detail/trust-grade-chevron.svg"
-                  width={21}
-                  height={28}
-                  alt=""
-                />
-                <span className="font-sans text-[13px] tracking-[-0.65px] text-[#ababab]">
-                  거래안심등급
-                </span>
-              </div>
+            <div className="mt-2.5 hidden items-center gap-[30px] md:mt-0 md:flex">
+              <SellerProfile />
+              <ProductChatCta
+                role={chatRole}
+                productPostUuid={post.productPostUuid}
+                sellerMemberUuid={post.memberUuid}
+                activeChatCount={activeChatCount}
+                className="max-w-none"
+              />
             </div>
-
-            <ProductChatCta
-              role={chatRole}
-              productPostUuid={post.productPostUuid}
-              sellerMemberUuid={post.memberUuid}
-              activeChatCount={activeChatCount}
-            />
           </div>
         </div>
       </div>
 
-      <div className="relative">
+      <div className="relative px-4 md:px-0">
         <div
           className={cn(
-            "font-sans text-lg leading-[1.55] tracking-[-0.9px] text-white whitespace-pre-wrap",
-            !descExpanded && "max-h-[130px] overflow-hidden"
+            "font-sans text-sm leading-[1.55] tracking-[-0.7px] text-white whitespace-pre-wrap md:text-lg md:tracking-[-0.9px]",
+            !descExpanded && "max-h-[100px] overflow-hidden md:max-h-[130px]"
           )}
         >
           {post.description}
         </div>
         {!descExpanded ? (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[130px] bg-gradient-to-t from-[#323232] from-[30%] to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[100px] bg-gradient-to-t from-[#323232] from-[30%] to-transparent md:h-[130px]" />
         ) : null}
-        <div className="relative z-10 mt-5 flex justify-center">
+        <div className="relative z-10 mt-2 flex justify-center md:mt-5">
           <button
             type="button"
             onClick={() => setDescExpanded((v) => !v)}
-            className="flex w-full max-w-[380px] items-center justify-center gap-2.5 border border-[#868686] bg-[#323232] py-3.5 font-sans text-base font-medium tracking-[-0.48px] text-[#d0d0d0]"
+            className="flex w-full max-w-[300px] items-center justify-center gap-1 border border-[#868686] bg-[#323232] py-2 font-sans text-sm font-medium tracking-[-0.42px] text-[#d0d0d0] md:max-w-[380px] md:gap-2.5 md:py-3.5 md:text-base md:tracking-[-0.48px]"
           >
             {descExpanded ? "접기" : "더보기"}
             <Icon

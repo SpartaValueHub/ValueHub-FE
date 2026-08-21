@@ -35,7 +35,7 @@ export function ProductImageSlider({
     return (
       <div
         className={cn(
-          "flex aspect-square w-full max-w-[600px] items-center justify-center border border-[#e0e0e0] bg-[#e0e0e0]",
+          "flex aspect-square w-full items-center justify-center border border-[#e0e0e0] bg-[#e0e0e0]",
           className
         )}
       >
@@ -47,7 +47,7 @@ export function ProductImageSlider({
   return (
     <div
       className={cn(
-        "relative aspect-square w-full max-w-[600px] overflow-hidden border border-[#e0e0e0] bg-[#e0e0e0]",
+        "relative aspect-square w-full overflow-hidden border border-[#e0e0e0] bg-[#e0e0e0]",
         className
       )}
     >

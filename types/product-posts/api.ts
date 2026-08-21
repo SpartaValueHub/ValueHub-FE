@@ -54,3 +54,26 @@ export interface ApiProductPostCardPage {
   totalElements: number;
   totalPages: number;
 }
+
+/** POST /api/v1/product-posts body */
+export interface ApiCreateProductPostImage {
+  imageUrl: string;
+}
+
+export interface ApiCreateProductPostDocument {
+  documentType: "WARRANTY" | "RECEIPT" | "APPRAISAL";
+  imageUrl: string;
+}
+
+export interface ApiCreateProductPostRequest {
+  categoryUuid: string;
+  productPostName: string;
+  conditionGrade: ConditionGrade;
+  price: number;
+  description: string;
+  latitude: number;
+  longitude: number;
+  placeName: string;
+  images: ApiCreateProductPostImage[];
+  documents?: ApiCreateProductPostDocument[];
+}

@@ -6,6 +6,7 @@ import {
   ALL_CATEGORY_NAV_ID,
 } from "@/constants/categories";
 import {
+  createProductPost,
   getProductPostDetail,
   listProductPosts,
 } from "@/lib/api/product-posts";
@@ -15,6 +16,7 @@ import {
   listRootCategoriesService,
 } from "@/services/categories.service";
 import type {
+  ApiCreateProductPostRequest,
   ApiProductPostCard,
   ApiProductPostDetail,
 } from "@/types/product-posts/api";
@@ -96,6 +98,13 @@ export async function listProductPostsService(
     totalElements: api.totalElements,
     totalPages: api.totalPages,
   };
+}
+
+export async function createProductPostService(
+  body: ApiCreateProductPostRequest
+): Promise<UiProductPostDetail> {
+  const api = await createProductPost(body);
+  return mapProductPostDetail(api);
 }
 
 export const PRODUCT_POST_LIST_PAGE_SIZE = 20;

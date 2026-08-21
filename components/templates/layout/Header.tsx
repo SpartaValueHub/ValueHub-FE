@@ -18,7 +18,7 @@ import {
 } from "@/constants/product-posts";
 import { cn } from "@/lib/utils";
 
-function isProductDetailPath(pathname: string) {
+function isProductSubPath(pathname: string) {
   return (
     pathname.startsWith(`${PRODUCT_POSTS_PATH}/`) &&
     pathname !== PRODUCT_POSTS_PATH
@@ -32,7 +32,7 @@ export function Header() {
   const { isAuthenticated, isLoading, logout } = useAppSession();
   const [searchOpen, setSearchOpen] = useState(false);
   const isHome = pathname === "/";
-  const isDetail = isProductDetailPath(pathname);
+  const isDetail = isProductSubPath(pathname);
   const activeCategoryId =
     pathname === PRODUCT_POSTS_PATH
       ? headerCategoryNavIdFromUuid(searchParams.get("category"))

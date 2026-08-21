@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 export type CategoryDropdownOption = {
   id: string;
   title: string;
-  description: string;
+  description?: string;
 };
 
 export const CATEGORY_DROPDOWN_OPTIONS: CategoryDropdownOption[] = [
@@ -72,9 +72,11 @@ export function CategoryDropdown({
               className="flex w-full items-center gap-1.5 rounded-[3px] px-1.5 py-2.5 text-left hover:bg-[rgba(239,187,85,0.15)]"
             >
               <span className="text-base text-[#323232]">{option.title}</span>
-              <span className="text-sm text-[#ababab]">
-                {option.description}
-              </span>
+              {option.description ? (
+                <span className="text-sm text-[#ababab]">
+                  {option.description}
+                </span>
+              ) : null}
             </button>
           </li>
         ))}

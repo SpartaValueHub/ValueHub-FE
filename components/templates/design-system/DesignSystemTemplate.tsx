@@ -430,7 +430,7 @@ bg-[#323232]     // charcoal surface
         description="default 원형 · hover 시 라벨 확장"
         code={`
 <SideActionButton action="top" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} />
-<SideActionButton action="write" onClick={() => router.push("/write")} />
+<SideActionButton action="write" onClick={() => router.push("/product-posts/new")} />
 // expanded: 카탈로그용 고정 펼침. 실제 사용은 hover로 자동 확장
 `}
       >

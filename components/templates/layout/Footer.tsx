@@ -6,7 +6,10 @@ import { FooterBrand } from "@/components/molecules/footer/FooterBrand";
 import { FooterInfoRow } from "@/components/molecules/footer/FooterInfoRow";
 import { FooterNavLinks } from "@/components/molecules/footer/FooterNavLinks";
 import { FooterSocialLinks } from "@/components/molecules/footer/FooterSocialLinks";
-import { PRODUCT_POSTS_PATH } from "@/constants/product-posts";
+import {
+  PRODUCT_POST_CREATE_PATH,
+  PRODUCT_POSTS_PATH,
+} from "@/constants/product-posts";
 import { cn } from "@/lib/utils";
 
 interface FooterProps {
@@ -18,12 +21,15 @@ interface FooterProps {
 function isProductDetailPath(pathname: string) {
   return (
     pathname.startsWith(`${PRODUCT_POSTS_PATH}/`) &&
-    pathname !== PRODUCT_POSTS_PATH
+    pathname !== PRODUCT_POSTS_PATH &&
+    pathname !== PRODUCT_POST_CREATE_PATH
   );
 }
 
 export function Footer({ layout = "responsive", className }: FooterProps) {
   const pathname = usePathname();
+  if (pathname.startsWith("/chat")) return null;
+
   const isPc = layout === "pc";
   const isMobile = layout === "mobile";
   /** 상세 모바일 하단 고정 채팅 바에 저작권이 가리지 않도록 */

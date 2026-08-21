@@ -1,6 +1,7 @@
 import { apiFetch, getProductPostApiUrl } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import type {
+  ApiCreateProductPostRequest,
   ApiProductPostCardPage,
   ApiProductPostDetail,
 } from "@/types/product-posts/api";
@@ -26,4 +27,15 @@ export function listProductPosts(params?: Record<string, string | string[]>) {
   return productPostFetch<ApiProductPostCardPage>(
     API_ENDPOINTS.productPosts.list(params)
   );
+}
+
+export function createProductPost(body: ApiCreateProductPostRequest) {
+  return apiFetch<ApiProductPostDetail>(API_ENDPOINTS.productPosts.create, {
+    method: "POST",
+    body,
+    baseUrl: getProductPostApiUrl(),
+    cache: { noStore: true },
+    /** Gateway·BE 지연 시 UI가 무한 대기하지 않도록 */
+    timeoutMillis: 12_000,
+  });
 }

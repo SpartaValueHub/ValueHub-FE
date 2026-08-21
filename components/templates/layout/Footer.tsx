@@ -6,7 +6,10 @@ import { FooterBrand } from "@/components/molecules/footer/FooterBrand";
 import { FooterInfoRow } from "@/components/molecules/footer/FooterInfoRow";
 import { FooterNavLinks } from "@/components/molecules/footer/FooterNavLinks";
 import { FooterSocialLinks } from "@/components/molecules/footer/FooterSocialLinks";
-import { PRODUCT_POSTS_PATH } from "@/constants/product-posts";
+import {
+  PRODUCT_POST_CREATE_PATH,
+  PRODUCT_POSTS_PATH,
+} from "@/constants/product-posts";
 import { cn } from "@/lib/utils";
 
 interface FooterProps {
@@ -18,7 +21,8 @@ interface FooterProps {
 function isProductDetailPath(pathname: string) {
   return (
     pathname.startsWith(`${PRODUCT_POSTS_PATH}/`) &&
-    pathname !== PRODUCT_POSTS_PATH
+    pathname !== PRODUCT_POSTS_PATH &&
+    pathname !== PRODUCT_POST_CREATE_PATH
   );
 }
 

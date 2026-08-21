@@ -6,6 +6,34 @@ import {
 /** product-post 목록 경로 — listing 네이밍 사용 금지 */
 export const PRODUCT_POSTS_PATH = "/product-posts";
 
+/** 상품 등록 경로 */
+export const PRODUCT_POST_CREATE_PATH = `${PRODUCT_POSTS_PATH}/new`;
+
+/** 등록 최소가 (원) — BE product-post.policy.min-price 기본값과 동일 */
+export const PRODUCT_POST_MIN_PRICE_WON = 500_000;
+
+/** 상품명·설명 길이 (BE Create VO) */
+export const PRODUCT_POST_NAME_MIN = 2;
+export const PRODUCT_POST_NAME_MAX = 100;
+export const PRODUCT_POST_DESCRIPTION_MAX = 2000;
+
+/** 상품 사진 장수 */
+export const PRODUCT_POST_IMAGE_MIN = 1;
+export const PRODUCT_POST_IMAGE_MAX = 10;
+export const PRODUCT_POST_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
+/**
+ * S3 업로드 API 전 — 제출용 placeholder URL (≤500자).
+ * 미리보기는 로컬 object URL, 서버에는 이 패턴만 전달.
+ */
+export function productPostPlaceholderImageUrl(index: number) {
+  return `https://placehold.co/800x800/png?text=vh-${index + 1}`;
+}
+
+/** 지도 연동 전 임시 좌표 (서울시청 일대) */
+export const PRODUCT_POST_DEFAULT_LATITUDE = 37.5665;
+export const PRODUCT_POST_DEFAULT_LONGITUDE = 126.978;
+
 /** 가격 필터 하한 (원) — BE 최소가 정책과 동일 */
 export const PRODUCT_POST_PRICE_FILTER_MIN_WON = 500_000;
 

@@ -18,48 +18,106 @@ import { cn } from "@/lib/utils";
 interface HeaderSearchPanelProps {
   className?: string;
   onClose?: () => void;
+  variant?: "desktop" | "mobile";
 }
 
 /** 헤더 검색 확장 패널 — search bar + 추천검색어 */
 export function HeaderSearchPanel({
   className,
   onClose,
+  variant = "desktop",
 }: HeaderSearchPanelProps) {
   const [query, setQuery] = useState("");
+  const isMobile = variant === "mobile";
 
   return (
-    <div className={cn("relative w-full max-w-[800px]", className)}>
-      <div className="flex items-center justify-between rounded-[55px] border border-white bg-[#323232] px-[26px] py-2 shadow-[0_0_5px_rgba(255,255,255,0.4)]">
-        <div className="flex min-w-0 flex-1 items-center gap-1.5">
+    <div
+      className={cn("relative w-full", !isMobile && "max-w-[800px]", className)}
+    >
+      <div
+        className={cn(
+          "flex items-center justify-between rounded-[55px] border border-white bg-[#323232]",
+          isMobile
+            ? "px-[18px] py-1.5"
+            : "px-[26px] py-2 shadow-[0_0_5px_rgba(255,255,255,0.4)]"
+        )}
+      >
+        <div
+          className={cn(
+            "flex min-w-0 flex-1 items-center",
+            isMobile ? "gap-[5px]" : "gap-1.5"
+          )}
+        >
           <button
             type="button"
-            className="inline-flex shrink-0 items-center gap-1 font-sans text-base font-light text-white"
+            className={cn(
+              "inline-flex shrink-0 items-center gap-1 font-sans font-light text-white",
+              isMobile ? "text-[13px]" : "text-base"
+            )}
           >
             {MAIN_CATEGORY_PLACEHOLDER}
-            <ChevronDown className="size-[22px]" strokeWidth={1.5} />
+            <ChevronDown
+              className={isMobile ? "size-3.5" : "size-[22px]"}
+              strokeWidth={1.5}
+            />
           </button>
 
-          <VerticalDivider size="md" className="bg-white/40" />
+          <VerticalDivider
+            size={isMobile ? "sm" : "md"}
+            className="bg-white/40"
+          />
 
           <VhInput
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={MAIN_SEARCH_PLACEHOLDER}
             inputState={query ? "focus" : "default"}
-            className="min-w-0 flex-1 border-0 py-1 text-base text-white placeholder:text-white/50 focus:text-white"
+            autoFocus={isMobile}
+            className={cn(
+              "min-w-0 flex-1 border-0 text-white placeholder:text-white/50 focus:text-white",
+              isMobile ? "py-0.5 text-[13px]" : "py-1 text-base"
+            )}
           />
         </div>
 
-        <HeaderIconButton label="검색" onClick={onClose}>
-          <VhIcon src="/icons/header-search.svg" width={30} height={30} />
+        <HeaderIconButton
+          label="검색"
+          onClick={onClose}
+          className={isMobile ? "size-[22px]" : undefined}
+        >
+          <VhIcon
+            src="/icons/header-search.svg"
+            width={isMobile ? 22 : 30}
+            height={isMobile ? 22 : 30}
+          />
         </HeaderIconButton>
       </div>
 
-      <div className="absolute left-0 right-0 top-[calc(100%+12px)] rounded-[15px] bg-[#323232] p-5 shadow-[0_0_5px_rgba(255,255,255,0.4)]">
-        <p className="font-sans text-sm tracking-[-0.28px] text-[#d0d0d0]">
+      <div
+        className={cn(
+          isMobile
+            ? "px-1.5 py-2.5"
+            : "absolute top-[calc(100%+12px)] right-0 left-0 rounded-[15px] bg-[#323232] p-5 shadow-[0_0_5px_rgba(255,255,255,0.4)]"
+        )}
+      >
+        <p
+          className={cn(
+            "font-sans text-[#d0d0d0]",
+            isMobile
+              ? "text-xs tracking-[-0.24px]"
+              : "text-sm tracking-[-0.28px]"
+          )}
+        >
           추천검색어
         </p>
-        <ul className="mt-5 flex flex-col gap-2.5 font-sans text-base tracking-[-0.32px] text-white">
+        <ul
+          className={cn(
+            "flex flex-col font-sans text-white",
+            isMobile
+              ? "mt-5 gap-3.5 text-sm tracking-[-0.28px]"
+              : "mt-5 gap-2.5 text-base tracking-[-0.32px]"
+          )}
+        >
           {HEADER_SEARCH_SUGGESTIONS.map((term) => (
             <li key={term}>
               <button

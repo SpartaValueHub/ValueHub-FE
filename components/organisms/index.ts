@@ -1,3 +1,5 @@
+export { HeaderMobileMenu } from "./header/HeaderMobileMenu";
+export { HeaderMobileSearch } from "./header/HeaderMobileSearch";
 export {
   HeaderSearchPanel,
   HeaderUtilityIcons,

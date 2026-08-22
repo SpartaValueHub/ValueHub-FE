@@ -272,7 +272,6 @@ export function ProductPostDetail({
                 role={chatRole}
                 productPostUuid={post.productPostUuid}
                 sellerMemberUuid={post.memberUuid}
-                sellerNickname={sellerNickname}
                 activeChatCount={activeChatCount}
                 className="max-w-none"
               />

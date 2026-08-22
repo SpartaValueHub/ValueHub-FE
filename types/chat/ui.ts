@@ -52,9 +52,9 @@ export type UiTradeTimeValue = {
 };
 
 /**
- * 상품 상세 → 채팅 핸드오프.
- * uuid + (상세에서 조회한) sellerNickname → POST /rooms 입력.
- * 닉이 비면 `/chat`에서 Member profile로 한 번 더 보완.
+ * 상품 상세 → 채팅 핸드오프 결과.
+ * uuid는 query, 닉·이미지는 Member profile resolve 결과만 신뢰.
+ * Chat POST /rooms는 sellerNickname을 이 값(또는 BE Feign)으로 사용.
  */
 export type UiProductChatEntry = {
   productPostUuid: string;

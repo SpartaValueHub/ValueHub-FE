@@ -13,8 +13,8 @@ interface ChatListTemplateProps {
   rooms: UiChatRoom[];
   reservations: UiChatReservationCard[];
   /**
-   * 상품 상세에서 진입한 경우 — Chat 방 생성 API 연동 전까지
-   * uuid + Member resolve 닉네임을 DOM/prop으로 노출.
+   * 상품 상세에서 진입한 경우 — uuid로 Member resolve한 결과.
+   * Chat 방 생성 시 sellerNickname은 이 값 사용 (URL 닉 불신).
    */
   pendingProductChatEntry?: UiProductChatEntry | null;
   className?: string;

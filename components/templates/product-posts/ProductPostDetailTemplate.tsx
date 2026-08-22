@@ -55,7 +55,6 @@ export function ProductPostDetailTemplate({
             role={chatRole}
             productPostUuid={post.productPostUuid}
             sellerMemberUuid={post.memberUuid}
-            sellerNickname={sellerNickname}
             activeChatCount={activeChatCount}
           />
         </div>

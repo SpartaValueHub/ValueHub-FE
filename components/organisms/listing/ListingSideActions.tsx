@@ -30,7 +30,7 @@ export function ListingSideActions({ className }: ListingSideActionsProps) {
   return (
     <div
       className={cn(
-        "fixed bottom-8 right-8 z-40 hidden flex-col gap-6 md:flex",
+        "fixed right-5 bottom-8 z-40 flex flex-col items-end gap-6 md:right-8",
         className
       )}
     >

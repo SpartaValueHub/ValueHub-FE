@@ -17,6 +17,8 @@ interface ProductPostDetailTemplateProps {
   nearbyItems: UiProductPostCard[];
   chatRole: ProductChatViewerRole;
   activeChatCount?: number;
+  sellerNickname?: string;
+  sellerProfileImageUrl?: string | null;
 }
 
 /** Figma product_detail — 모바일 하단 채팅 고정, PC는 본문 인라인 CTA */
@@ -26,6 +28,8 @@ export function ProductPostDetailTemplate({
   nearbyItems,
   chatRole,
   activeChatCount = 0,
+  sellerNickname = "",
+  sellerProfileImageUrl = null,
 }: ProductPostDetailTemplateProps) {
   return (
     <main className="relative flex flex-1 flex-col bg-[#323232] pb-[110px] pt-[72px] md:pb-[100px] md:pt-[160px]">
@@ -35,6 +39,8 @@ export function ProductPostDetailTemplate({
           categoryPath={categoryPath}
           chatRole={chatRole}
           activeChatCount={activeChatCount}
+          sellerNickname={sellerNickname}
+          sellerProfileImageUrl={sellerProfileImageUrl}
         />
         <div className="flex flex-col gap-[50px] px-4 md:gap-[150px] md:px-0">
           <NearbyProductPosts items={nearbyItems} />
@@ -49,6 +55,7 @@ export function ProductPostDetailTemplate({
             role={chatRole}
             productPostUuid={post.productPostUuid}
             sellerMemberUuid={post.memberUuid}
+            sellerNickname={sellerNickname}
             activeChatCount={activeChatCount}
           />
         </div>

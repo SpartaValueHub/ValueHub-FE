@@ -7,6 +7,7 @@ import {
   getCategoryPathService,
   listSiblingLeafCategoryUuids,
 } from "@/services/categories.service";
+import { getMemberPublicProfileService } from "@/services/member.service";
 import {
   getProductPostDetailService,
   listProductPostsService,
@@ -46,10 +47,22 @@ export default async function ProductPostDetailPage({
     post.memberUuid
   );
 
-  const [categoryPath, nearbyCategoryUuids] = await Promise.all([
-    getCategoryPathService(post.categoryUuid),
-    listSiblingLeafCategoryUuids(post.categoryUuid),
-  ]);
+  const [categoryPath, nearbyCategoryUuids, sellerProfileResult] =
+    await Promise.all([
+      getCategoryPathService(post.categoryUuid),
+      listSiblingLeafCategoryUuids(post.categoryUuid),
+      getMemberPublicProfileService(post.memberUuid).then(
+        (profile) => ({ ok: true as const, profile }),
+        () => ({ ok: false as const })
+      ),
+    ]);
+
+  const sellerNickname = sellerProfileResult.ok
+    ? sellerProfileResult.profile.nickname
+    : "";
+  const sellerProfileImageUrl = sellerProfileResult.ok
+    ? sellerProfileResult.profile.profileImageUrl
+    : null;
 
   let nearbyItems: UiProductPostCard[] = [];
   try {
@@ -72,6 +85,8 @@ export default async function ProductPostDetailPage({
       nearbyItems={nearbyItems}
       chatRole={chatRole}
       activeChatCount={0}
+      sellerNickname={sellerNickname}
+      sellerProfileImageUrl={sellerProfileImageUrl}
     />
   );
 }

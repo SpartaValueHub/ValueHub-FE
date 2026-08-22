@@ -5,6 +5,7 @@ import type {
   ApiCreateMemberResponse,
   ApiMemberAvailabilityResponse,
   ApiMemberProfileResponse,
+  ApiMemberPublicProfileResponse,
 } from "@/types/member/api";
 
 /** member-service HTTP — lib/api/* 전용. UI·actions에서 import 금지. */
@@ -47,6 +48,19 @@ export function checkNicknameAvailability(nickname: string) {
       cache: { noStore: true },
       skipSessionRecovery: true,
       timeoutMillis: 3_000,
+    }
+  );
+}
+
+/** memberUuid 공개 프로필 (닉네임·이미지) — JWT 있으면 쿠키 전달, 실패는 호출측에서 처리 */
+export function getMemberPublicProfile(memberUuid: string) {
+  return apiFetch<ApiMemberPublicProfileResponse>(
+    API_ENDPOINTS.members.publicProfile(memberUuid),
+    {
+      baseUrl: getMemberApiUrl(),
+      cache: { noStore: true },
+      skipSessionRecovery: true,
+      timeoutMillis: 5_000,
     }
   );
 }

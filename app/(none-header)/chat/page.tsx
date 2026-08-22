@@ -1,8 +1,9 @@
-import { redirect } from "next/navigation";
+import { ChatListTemplate } from "@/components/templates/chat/ChatListTemplate";
+import { CHAT_RESERVATIONS, CHAT_ROOMS } from "@/constants/chat-page";
 
-import { CHAT_INITIAL_ROOM_ID } from "@/constants/chat-page";
-
-/** `/chat`은 목록 진입점 — 실제 화면은 채팅방 ID를 붙인다. */
+/** `/chat` 채팅 목록 — 방 상세는 `/chat/[uuid]` */
 export default function ChatIndexPage() {
-  redirect(`/chat/${CHAT_INITIAL_ROOM_ID}`);
+  return (
+    <ChatListTemplate rooms={CHAT_ROOMS} reservations={CHAT_RESERVATIONS} />
+  );
 }

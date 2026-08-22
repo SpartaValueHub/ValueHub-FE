@@ -304,4 +304,9 @@
   .font-script {
     font-family: var(--font-script), "Ephesis", cursive;
   }
+
+  /* 흰 배경(#ffffff) 위 시스템 아이콘 → #323232 */
+  .bg-white [data-vh-icon] {
+    filter: brightness(0) invert(19.61%);
+  }
 }

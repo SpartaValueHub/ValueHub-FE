@@ -21,7 +21,7 @@ const buttonBase =
 /**
  * 상세 채팅 CTA
  * - owner: 대화중인 채팅 N
- * - buyer: 채팅하기 + uuid 노출
+ * - buyer: 채팅하기 → /chat?productPostUuid&sellerMemberUuid (닉네임은 Chat에서 Member resolve)
  * - guest: 채팅하기 → /signin
  * - 모바일: 하단 고정 바에서 full-width로 사용
  */
@@ -64,7 +64,12 @@ export function ProductChatCta({
       );
       return;
     }
-    // buyer: 채팅 팀에서 방 생성 연동
+
+    const params = new URLSearchParams({
+      productPostUuid,
+      sellerMemberUuid,
+    });
+    router.push(`/chat?${params.toString()}`);
   };
 
   return (

@@ -24,6 +24,8 @@ export const API_ENDPOINTS = {
   members: {
     create: "/api/v1/members",
     me: "/api/v1/members/me",
+    publicProfile: (memberUuid: string) =>
+      `/api/v1/members/${encodeURIComponent(memberUuid)}/profile`,
     checkNickname: (nickname: string) =>
       `/api/v1/members/check/nickname?nickname=${encodeURIComponent(nickname)}`,
   },

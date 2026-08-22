@@ -23,6 +23,8 @@ interface ProductPostDetailProps {
   categoryPath: string;
   chatRole: ProductChatViewerRole;
   activeChatCount?: number;
+  sellerNickname?: string;
+  sellerProfileImageUrl?: string | null;
 }
 
 const CONDITION_DESCRIPTIONS: Record<ConditionGrade, string> = {
@@ -49,24 +51,43 @@ function tradeBadgeStatus(status: TradeStatus): "reserved" | "sold" | null {
   return null;
 }
 
-/** 판매자 활동 위치 — 멤버 API 연동 전 Figma placeholder */
+/** 판매자 활동 위치 — 멤버 주소 연동 전 Figma placeholder */
 const SELLER_ACTIVITY_LOCATION = "동구 초량동";
+const SELLER_FALLBACK_NICKNAME = "판매자";
 
-function SellerProfile() {
+function SellerProfile({
+  nickname,
+  profileImageUrl,
+}: {
+  nickname: string;
+  profileImageUrl?: string | null;
+}) {
+  const displayName = nickname.trim() || SELLER_FALLBACK_NICKNAME;
+  const avatarInitial = displayName.slice(0, 1);
+
   return (
     <div className="flex items-center gap-5">
       <button
         type="button"
         className="flex items-center gap-2.5"
-        aria-label="판매자 프로필"
+        aria-label={`${displayName} 프로필`}
       >
-        <span className="flex size-[37px] shrink-0 items-center justify-center rounded-full bg-[#dddddd]/87 font-sans text-[10px] text-[#323232] md:size-12 md:text-xs">
-          판매
-        </span>
+        {profileImageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- 외부/기본 아바타 URL
+          <img
+            src={profileImageUrl}
+            alt=""
+            className="size-[37px] shrink-0 rounded-full object-cover md:size-12"
+          />
+        ) : (
+          <span className="flex size-[37px] shrink-0 items-center justify-center rounded-full bg-[#dddddd]/87 font-sans text-[10px] text-[#323232] md:size-12 md:text-xs">
+            {avatarInitial}
+          </span>
+        )}
         <span className="flex flex-col items-start gap-0.5 md:gap-2.5">
           <span className="flex items-center gap-1.5">
             <span className="font-sans text-base font-medium text-white md:text-2xl md:font-normal">
-              판매자
+              {displayName}
             </span>
             <Icon
               name="chevron-right"
@@ -113,10 +134,13 @@ export function ProductPostDetail({
   categoryPath,
   chatRole,
   activeChatCount = 0,
+  sellerNickname = "",
+  sellerProfileImageUrl = null,
 }: ProductPostDetailProps) {
   const [descExpanded, setDescExpanded] = useState(false);
   const attached = new Set(post.documents.map((d) => d.type));
   const badge = tradeBadgeStatus(post.tradeStatus);
+  const displayNickname = sellerNickname.trim() || SELLER_FALLBACK_NICKNAME;
 
   return (
     <div className="flex w-full flex-col gap-[30px] md:gap-[50px]">
@@ -190,7 +214,10 @@ export function ProductPostDetail({
           {/* 모바일: 판매자 → 상태박스 / PC: 상태박스 → 판매자+채팅 */}
           <div className="mt-2.5 md:mt-0 md:contents">
             <div className="md:hidden">
-              <SellerProfile />
+              <SellerProfile
+                nickname={displayNickname}
+                profileImageUrl={sellerProfileImageUrl}
+              />
             </div>
 
             <div className="mt-2.5 flex w-full flex-col gap-5 border border-[#808080] p-2.5 md:mt-0 md:px-4 md:py-2.5">
@@ -237,7 +264,10 @@ export function ProductPostDetail({
             </div>
 
             <div className="mt-2.5 hidden items-center gap-[30px] md:mt-0 md:flex">
-              <SellerProfile />
+              <SellerProfile
+                nickname={displayNickname}
+                profileImageUrl={sellerProfileImageUrl}
+              />
               <ProductChatCta
                 role={chatRole}
                 productPostUuid={post.productPostUuid}

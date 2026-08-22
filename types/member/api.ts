@@ -28,6 +28,13 @@ export interface ApiCreateMemberResponse {
 
 export type ApiMemberProfileResponse = ApiCreateMemberResponse;
 
+/** GET /api/v1/members/{memberUuid}/profile */
+export interface ApiMemberPublicProfileResponse {
+  memberUuid: string;
+  nickname: string;
+  profileImageUrl: string | null;
+}
+
 export interface ApiMemberAvailabilityResponse {
   available: boolean;
 }

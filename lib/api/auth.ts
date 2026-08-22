@@ -1,6 +1,7 @@
 import { apiFetch, apiTimeoutFromEnv } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import type {
+  ApiAuthAccountResponse,
   ApiAvailabilityResponse,
   ApiSignupRequest,
   ApiSignupResponse,
@@ -9,6 +10,15 @@ import type {
 } from "@/types/auth/api";
 
 /** auth-service HTTP — lib/api/* 전용. UI·actions에서 import 금지. */
+
+/** 내 계정 정보 — Gateway JWT → X-Member-Uuid */
+export function getMyAuthAccount() {
+  return apiFetch<ApiAuthAccountResponse>(API_ENDPOINTS.auth.me, {
+    method: "GET",
+    cache: { noStore: true },
+    timeoutMillis: 5_000,
+  });
+}
 
 export function registerUser(body: ApiSignupRequest) {
   return apiFetch<ApiSignupResponse>(API_ENDPOINTS.auth.signUp, {

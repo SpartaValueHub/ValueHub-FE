@@ -5,12 +5,23 @@
 import {
   checkEmailAvailability,
   checkLoginIdAvailability,
+  getMyAuthAccount,
   logoutUser,
   registerUser,
   resumeSignup,
 } from "@/lib/api/auth";
-import type { ApiSignupResponse } from "@/types/auth/api";
+import type { ApiAuthAccountResponse, ApiSignupResponse } from "@/types/auth/api";
 import type { SignupApiInput } from "@/types/auth/signup";
+import type { UiAuthAccount } from "@/types/auth/ui";
+
+function mapAuthAccount(response: ApiAuthAccountResponse): UiAuthAccount {
+  return {
+    logInId: response.logInId,
+    email: response.email,
+    phoneNumber: response.phoneNumber,
+    joinedAt: response.joinedAt,
+  };
+}
 
 export async function signupService(
   input: SignupApiInput
@@ -43,4 +54,9 @@ export async function checkLoginIdAvailabilityService(loginId: string) {
 export async function checkEmailAvailabilityService(email: string) {
   const result = await checkEmailAvailability(email);
   return result.available;
+}
+
+export async function getMyAuthAccountService(): Promise<UiAuthAccount> {
+  const response = await getMyAuthAccount();
+  return mapAuthAccount(response);
 }

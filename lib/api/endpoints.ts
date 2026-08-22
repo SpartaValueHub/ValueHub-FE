@@ -9,6 +9,8 @@ export const API_ENDPOINTS = {
     signIn: "/api/v1/auth/sign-in",
     refresh: "/api/v1/auth/refresh",
     logout: "/api/v1/auth/logout",
+    /** 내 계정 정보 (logInId·email·phone·joinedAt) */
+    me: "/api/v1/auth/me",
     checkLoginId: (loginId: string) =>
       `/api/v1/auth/check/login-id?loginId=${encodeURIComponent(loginId)}`,
     checkEmail: (email: string) =>

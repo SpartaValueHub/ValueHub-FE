@@ -7,15 +7,16 @@ interface ChatIndexPageProps {
   searchParams: Promise<{
     productPostUuid?: string;
     sellerMemberUuid?: string;
+    sellerNickname?: string;
   }>;
 }
 
 /**
  * `/chat` 채팅 목록 — 방 상세는 `/chat/[uuid]`
  *
- * 상품 상세 「채팅하기」 핸드오프:
- * `?productPostUuid=&sellerMemberUuid=` → Member 프로필로 닉네임 resolve
- * → `pendingProductChatEntry` (방 생성 API 연동 입력)
+ * 상품 상세 「채팅하기」:
+ * `?productPostUuid&sellerMemberUuid&sellerNickname`(닉은 상세 Member 조회분)
+ * → `pendingProductChatEntry` → Chat `POST /rooms`의 sellerNickname
  */
 export default async function ChatIndexPage({
   searchParams,
@@ -23,12 +24,14 @@ export default async function ChatIndexPage({
   const params = await searchParams;
   const productPostUuid = params.productPostUuid?.trim() ?? "";
   const sellerMemberUuid = params.sellerMemberUuid?.trim() ?? "";
+  const sellerNickname = params.sellerNickname?.trim() ?? "";
 
   let pendingProductChatEntry: UiProductChatEntry | null = null;
   if (productPostUuid && sellerMemberUuid) {
     pendingProductChatEntry = await resolveProductChatEntryService({
       productPostUuid,
       sellerMemberUuid,
+      sellerNickname,
     });
   }
 

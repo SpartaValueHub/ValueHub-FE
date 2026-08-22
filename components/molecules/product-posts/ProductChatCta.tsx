@@ -10,6 +10,11 @@ interface ProductChatCtaProps {
   role: ProductChatViewerRole;
   productPostUuid: string;
   sellerMemberUuid: string;
+  /**
+   * 상세에서 Member profile로 이미 조회한 판매자 닉.
+   * 채팅 `POST /rooms`의 sellerNickname용 — fallback 문구는 넘기지 말 것.
+   */
+  sellerNickname?: string;
   /** 채팅 서비스 연동 전 placeholder — owner UI만 사용 */
   activeChatCount?: number;
   className?: string;
@@ -21,19 +26,20 @@ const buttonBase =
 /**
  * 상세 채팅 CTA
  * - owner: 대화중인 채팅 N
- * - buyer: 채팅하기 → /chat?productPostUuid&sellerMemberUuid (닉네임은 Chat에서 Member resolve)
+ * - buyer: 채팅하기 → /chat?productPostUuid&sellerMemberUuid&sellerNickname
  * - guest: 채팅하기 → /signin
- * - 모바일: 하단 고정 바에서 full-width로 사용
  */
 export function ProductChatCta({
   role,
   productPostUuid,
   sellerMemberUuid,
+  sellerNickname = "",
   activeChatCount = 0,
   className,
 }: ProductChatCtaProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const nicknameForChat = sellerNickname.trim();
 
   if (role === "owner") {
     return (
@@ -41,6 +47,7 @@ export function ProductChatCta({
         type="button"
         data-product-post-uuid={productPostUuid}
         data-seller-member-uuid={sellerMemberUuid}
+        data-seller-nickname={nicknameForChat}
         data-chat-role="owner"
         className={cn(
           buttonBase,
@@ -69,6 +76,9 @@ export function ProductChatCta({
       productPostUuid,
       sellerMemberUuid,
     });
+    if (nicknameForChat) {
+      params.set("sellerNickname", nicknameForChat);
+    }
     router.push(`/chat?${params.toString()}`);
   };
 
@@ -77,6 +87,7 @@ export function ProductChatCta({
       type="button"
       data-product-post-uuid={productPostUuid}
       data-seller-member-uuid={sellerMemberUuid}
+      data-seller-nickname={nicknameForChat}
       data-chat-role={role}
       onClick={goChatOrSignIn}
       className={cn(

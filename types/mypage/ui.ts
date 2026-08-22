@@ -25,6 +25,8 @@ export type UiMyPageTradeItem = {
 
 export type UiMyPageAccount = {
   nickname: string;
+  /** Member `profileImageUrl` — 없으면 UI 기본 아바타 */
+  profileImageUrl?: string | null;
   joinedAt: string;
   loginId: string;
   phone: string;

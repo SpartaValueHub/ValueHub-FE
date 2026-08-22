@@ -16,13 +16,24 @@ export function MyPageAccountSection({ account }: MyPageAccountSectionProps) {
     >
       <div className="flex items-center gap-2.5 lg:gap-[30px]">
         <div className="relative size-[50px] shrink-0 lg:size-[70px]">
-          <div className="flex size-full items-center justify-center rounded-[35px] bg-[rgba(221,221,221,0.87)]">
-            <Icon name="user" size={28} className="opacity-70 lg:hidden" />
-            <Icon
-              name="user"
-              size={32}
-              className="hidden opacity-70 lg:inline-block"
-            />
+          <div className="flex size-full items-center justify-center overflow-hidden rounded-[35px] bg-[rgba(221,221,221,0.87)]">
+            {account.profileImageUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={account.profileImageUrl}
+                alt=""
+                className="size-full object-cover"
+              />
+            ) : (
+              <>
+                <Icon name="user" size={28} className="opacity-70 lg:hidden" />
+                <Icon
+                  name="user"
+                  size={32}
+                  className="hidden opacity-70 lg:inline-block"
+                />
+              </>
+            )}
           </div>
           <span className="absolute right-0 bottom-0 flex size-4 items-center justify-center rounded-[20px] bg-white lg:size-[22px]">
             <Icon name="camera" size={12} className="lg:hidden" />
@@ -52,9 +63,11 @@ export function MyPageAccountSection({ account }: MyPageAccountSectionProps) {
               />
             </button>
           </div>
-          <p className="font-sans text-[10px] text-[#d0d0d0] lg:px-1.5 lg:text-base">
-            {account.joinedAt}
-          </p>
+          {account.joinedAt ? (
+            <p className="font-sans text-[10px] text-[#d0d0d0] lg:px-1.5 lg:text-base">
+              {account.joinedAt}
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -64,7 +77,7 @@ export function MyPageAccountSection({ account }: MyPageAccountSectionProps) {
           className="justify-start lg:col-start-1 lg:row-start-1"
         >
           <span className="font-sans text-[13px] text-white lg:text-base">
-            {account.loginId}
+            {account.loginId || "—"}
           </span>
         </MyPageFieldRow>
         <MyPageFieldRow
@@ -80,7 +93,7 @@ export function MyPageAccountSection({ account }: MyPageAccountSectionProps) {
           className="lg:col-start-1 lg:row-start-2"
         >
           <span className="mr-auto font-sans text-[13px] text-white lg:mr-0 lg:text-base">
-            {account.phone}
+            {account.phone || "—"}
           </span>
           <MyPageGhostButton className="w-[134px]">
             전화번호 변경
@@ -91,7 +104,7 @@ export function MyPageAccountSection({ account }: MyPageAccountSectionProps) {
           className="lg:col-start-2 lg:row-start-2"
         >
           <span className="mr-auto font-sans text-[13px] text-white lg:mr-0 lg:text-base">
-            {account.email}
+            {account.email || "—"}
           </span>
           <MyPageGhostButton className="w-[134px]">
             이메일 변경

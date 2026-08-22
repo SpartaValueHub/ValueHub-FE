@@ -1,9 +1,12 @@
 /**
  * 마이페이지 오케스트레이션.
- * 1차: Member `GET /members/me`만 조회 — Auth·Product-Post 등 API 준비 후 확장.
+ * Member `GET /members/me` + Auth `GET /auth/me` 병렬 조회 (서비스 분산).
+ * Product-Post 판매/구매 목록 등은 API 준비 후 확장.
  */
 import { MOCK_MYPAGE } from "@/constants/mypage";
+import { getMyAuthAccountService } from "@/services/auth.service";
 import { getMyMemberProfileService } from "@/services/member.service";
+import type { UiAuthAccount } from "@/types/auth/ui";
 import type { UiMemberProfile } from "@/types/member/ui";
 import type {
   UiMyPage,
@@ -66,14 +69,16 @@ export function mapAddressToRegion(address: string | null): {
 
   const parts = trimmed.split(/\s+/).filter(Boolean);
 
-  // 시·군 (특별시/광역시 포함). 뒤에 오는 구체 시명을 우선 (경기 → 성남시)
-  const cityCandidates = parts.filter((p) => /(특별시|광역시|특별자치시|시|군)$/.test(p));
+  const cityCandidates = parts.filter((p) =>
+    /(특별시|광역시|특별자치시|시|군)$/.test(p)
+  );
   const regionCity =
-    cityCandidates.find((p) => /시$/.test(p) && !/(특별시|광역시|특별자치시)$/.test(p)) ??
+    cityCandidates.find(
+      (p) => /시$/.test(p) && !/(특별시|광역시|특별자치시)$/.test(p)
+    ) ??
     cityCandidates[cityCandidates.length - 1] ??
     "";
 
-  // 법정동·읍·면·가·리 — 마지막 매칭 (판교동)
   const dongCandidates = parts.filter((p) => /(동|읍|면|가|리)$/.test(p));
   const regionDong = dongCandidates[dongCandidates.length - 1] ?? "";
 
@@ -87,16 +92,40 @@ export function mapAddressToRegion(address: string | null): {
   return { regionCity, regionDong };
 }
 
-function mapAccount(profile: UiMemberProfile): UiMyPageAccount {
+/** `2026-08-04T08:00:00Z` → `2026.08.04일 가입` */
+export function formatJoinedAtLabel(joinedAt: string): string {
+  const date = new Date(joinedAt);
+  if (Number.isNaN(date.getTime())) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}.${m}.${d}일 가입`;
+}
+
+/** `01012345678` → `010-1234-5678` (그 외 길이는 원문) */
+export function formatPhoneDisplay(phoneNumber: string): string {
+  const digits = phoneNumber.replace(/\D/g, "");
+  if (digits.length === 11) {
+    return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+  }
+  if (digits.length === 10) {
+    return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  return phoneNumber.trim();
+}
+
+function mapAccount(
+  profile: UiMemberProfile | null,
+  auth: UiAuthAccount | null
+): UiMyPageAccount {
   return {
     ...MOCK_MYPAGE.account,
-    nickname: profile.nickname,
-    profileImageUrl: profile.profileImageUrl,
-    /** Auth 계정 조회 API 전까지 미표시 */
-    joinedAt: "",
-    loginId: "",
-    phone: "",
-    email: "",
+    nickname: profile?.nickname?.trim() || "회원",
+    profileImageUrl: profile?.profileImageUrl ?? null,
+    joinedAt: auth?.joinedAt ? formatJoinedAtLabel(auth.joinedAt) : "",
+    loginId: auth?.logInId?.trim() ?? "",
+    phone: auth?.phoneNumber ? formatPhoneDisplay(auth.phoneNumber) : "",
+    email: auth?.email?.trim() ?? "",
   };
 }
 
@@ -109,16 +138,30 @@ function mapTradeSummary(profile: UiMemberProfile): UiMyPageTradeSummary {
     regionCity,
     regionDong,
     nextGradeHint: nextGradeHint(trustGrade),
-    /** 리뷰·완료 수는 거래/리뷰 서비스 연동 전까지 mock 유지 */
   };
 }
 
-/** RSC 읽기 — Member만 호출 (분산: Auth·Product-Post는 별도 요청으로 확장) */
+/**
+ * RSC 읽기 — Auth·Member 병렬 호출.
+ * 한쪽 실패해도 가능한 쪽은 표시 (전부 실패 시 page fallback).
+ */
 export async function getMyPageService(): Promise<UiMyPage> {
-  const profile = await getMyMemberProfileService();
+  const [memberResult, authResult] = await Promise.allSettled([
+    getMyMemberProfileService(),
+    getMyAuthAccountService(),
+  ]);
+
+  const profile =
+    memberResult.status === "fulfilled" ? memberResult.value : null;
+  const auth = authResult.status === "fulfilled" ? authResult.value : null;
+
+  if (!profile && !auth) {
+    throw new Error("마이페이지 프로필을 불러오지 못했습니다.");
+  }
+
   return {
     ...MOCK_MYPAGE,
-    account: mapAccount(profile),
-    trade: mapTradeSummary(profile),
+    account: mapAccount(profile, auth),
+    trade: profile ? mapTradeSummary(profile) : MOCK_MYPAGE.trade,
   };
 }

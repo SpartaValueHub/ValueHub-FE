@@ -53,8 +53,8 @@ export type UiTradeTimeValue = {
 
 /**
  * 상품 상세 → 채팅 핸드오프.
- * URL에는 uuid만 두고, 닉네임·이미지는 Member 공개 프로필로 resolve.
- * Chat 방 생성 API 연동 시 이 타입을 입력으로 쓰면 됨.
+ * uuid + (상세에서 조회한) sellerNickname → POST /rooms 입력.
+ * 닉이 비면 `/chat`에서 Member profile로 한 번 더 보완.
  */
 export type UiProductChatEntry = {
   productPostUuid: string;

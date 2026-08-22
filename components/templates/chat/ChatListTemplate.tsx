@@ -26,7 +26,7 @@ export function ChatListTemplate({
       <ChatBackBar className="hidden lg:flex" />
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row lg:overflow-hidden">
         <ChatReservationSection reservations={reservations} />
-        <ChatListSection rooms={rooms} className="min-h-0 overflow-y-auto" />
+        <ChatListSection rooms={rooms} className="min-h-0" />
       </div>
       <MainBottomNav
         activeId="chat"

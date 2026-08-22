@@ -2,6 +2,7 @@ import { Checkbox } from "@/components/atoms/checkbox";
 import { Icon } from "@/components/atoms/icons";
 import { MyPageFieldRow } from "@/components/molecules/mypage/MyPageFieldRow";
 import { MyPageGhostButton } from "@/components/molecules/mypage/MyPageGhostButton";
+import { MyPageWithdrawButton } from "@/components/molecules/mypage/MyPageWithdrawButton";
 import type { UiMyPageAccount } from "@/types/mypage/ui";
 
 interface MyPageAccountSectionProps {
@@ -133,7 +134,7 @@ export function MyPageAccountSection({ account }: MyPageAccountSectionProps) {
           label="회원탈퇴"
           className="lg:col-start-2 lg:row-start-3"
         >
-          <MyPageGhostButton className="w-[134px]">탈퇴하기</MyPageGhostButton>
+          <MyPageWithdrawButton />
         </MyPageFieldRow>
       </div>
     </section>

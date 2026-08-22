@@ -11,6 +11,8 @@ export const API_ENDPOINTS = {
     logout: "/api/v1/auth/logout",
     /** 내 계정 정보 (logInId·email·phone·joinedAt) */
     me: "/api/v1/auth/me",
+    /** PASS 본인인증(WITHDRAWAL) 후 회원 탈퇴 */
+    withdraw: "/api/v1/auth/withdraw",
     checkLoginId: (loginId: string) =>
       `/api/v1/auth/check/login-id?loginId=${encodeURIComponent(loginId)}`,
     checkEmail: (email: string) =>

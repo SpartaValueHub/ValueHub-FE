@@ -50,7 +50,11 @@ export interface ApiAuthAccountResponse {
 }
 
 export type VerificationPurpose =
-  "SIGN_UP" | "SOCIAL_LINK" | "FIND_ID" | "RESET_PASSWORD";
+  | "SIGN_UP"
+  | "SOCIAL_LINK"
+  | "FIND_ID"
+  | "RESET_PASSWORD"
+  | "WITHDRAWAL";
 
 export interface ApiIdentityVerificationConfirmRequest {
   identityVerificationId: string;

@@ -9,6 +9,7 @@ import {
   logoutUser,
   registerUser,
   resumeSignup,
+  withdrawMember,
 } from "@/lib/api/auth";
 import type { ApiAuthAccountResponse, ApiSignupResponse } from "@/types/auth/api";
 import type { SignupApiInput } from "@/types/auth/signup";
@@ -59,4 +60,8 @@ export async function checkEmailAvailabilityService(email: string) {
 export async function getMyAuthAccountService(): Promise<UiAuthAccount> {
   const response = await getMyAuthAccount();
   return mapAuthAccount(response);
+}
+
+export async function withdrawMemberService(requestToken: string): Promise<void> {
+  await withdrawMember({ requestToken });
 }

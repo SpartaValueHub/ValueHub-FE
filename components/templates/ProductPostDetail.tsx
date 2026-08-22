@@ -9,6 +9,7 @@ import {
   ProductChatCta,
   type ProductChatViewerRole,
 } from "@/components/molecules/product-posts/ProductChatCta";
+import { ProductOwnerOptionsMenu } from "@/components/molecules/product-posts/ProductOwnerOptionsMenu";
 import { ProductImageSlider } from "@/components/molecules/ProductImageSlider";
 import { cn } from "@/lib/utils";
 import type {
@@ -136,13 +137,11 @@ export function ProductPostDetail({
                 <h1 className="font-sans text-xl font-medium tracking-[-1px] text-white md:text-[30px] md:leading-[1.5] md:tracking-[-1.5px]">
                   {post.name}
                 </h1>
-                <button
-                  type="button"
-                  aria-label="더보기"
-                  className="shrink-0 text-white"
-                >
-                  <Icon name="more" size={30} />
-                </button>
+                {chatRole === "owner" ? (
+                  <ProductOwnerOptionsMenu
+                    productPostUuid={post.productPostUuid}
+                  />
+                ) : null}
               </div>
             </div>
 

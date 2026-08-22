@@ -19,7 +19,7 @@ const navItems: {
 }[] = [
   { id: "home", label: "홈", href: "/", icon: "home" },
   { id: "category", label: "카테고리", href: "#", icon: "grid" },
-  { id: "chat", label: "채팅", href: "#", icon: "chat" },
+  { id: "chat", label: "채팅", href: "/chat", icon: "chat" },
   { id: "notification", label: "알림", href: "#", icon: "bell" },
   { id: "profile", label: "마이", href: "#", icon: "user" },
 ];

@@ -7,6 +7,18 @@ export type UiChatRoom = {
   peerName: string;
   price: number;
   location: string;
+  lastMessage?: string;
+  reserved?: boolean;
+};
+
+export type UiChatReservationCard = {
+  id: string;
+  roomId: string;
+  title: string;
+  dateLabel: string;
+  weekdayLabel: string;
+  timeLabel: string;
+  placeName: string;
 };
 
 export type UiChatMessage = {

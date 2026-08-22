@@ -25,6 +25,7 @@ import { BrandWordmark } from "@/components/molecules/brand/BrandWordmark";
 import { CategoryDropdown } from "@/components/molecules/form/CategoryDropdown";
 import { FeedPostCard } from "@/components/molecules/listing/FeedPostCard";
 import { AlertDialog } from "@/components/molecules/overlay/AlertDialog";
+import { UserProfileDialog } from "@/components/molecules/overlay/UserProfileDialog";
 import { ChatFilterChip } from "@/components/molecules/chat/ChatFilterChip";
 import { DialogMaskedValue } from "@/components/molecules/overlay/Dialog";
 import { Empty } from "@/components/molecules/overlay/Empty";
@@ -47,6 +48,7 @@ import {
 import { MainBottomNav } from "@/components/organisms/main/MainBottomNav";
 import { Footer } from "@/components/templates/layout/Footer";
 import { MAIN_RECOMMENDED_PRODUCTS } from "@/constants/main-page";
+import { USER_PROFILE_DEMO } from "@/constants/user-profile";
 import { cn } from "@/lib/utils";
 
 const FIGMA_GOLD = [
@@ -235,7 +237,7 @@ function Swatch({
 
 export function DesignSystemTemplate() {
   const [dialogDemo, setDialogDemo] = useState<
-    "id" | "email" | "nickname" | "lock" | "findId" | "reset" | null
+    "id" | "email" | "nickname" | "lock" | "findId" | "reset" | "profile" | null
   >(null);
   const [sampleInput, setSampleInput] = useState("");
   const [underlineValue, setUnderlineValue] = useState("가나다라마바사");
@@ -614,6 +616,7 @@ bg-[#323232]     // charcoal surface
 
 <LoginLimitDialog open={open} initialSeconds={119} />
 <PasswordResetDialog open={open} />
+<UserProfileDialog open={open} profile={profile} />
 `}
       >
         <div className="flex flex-wrap gap-3">
@@ -625,6 +628,7 @@ bg-[#323232]     // charcoal surface
               ["lock", "로그인 제한"],
               ["findId", "아이디 찾기"],
               ["reset", "비밀번호 재설정"],
+              ["profile", "유저 프로필"],
             ] as const
           ).map(([id, label]) => (
             <Button
@@ -687,6 +691,11 @@ bg-[#323232]     // charcoal surface
         </AlertDialog>
         <PasswordResetDialog
           open={dialogDemo === "reset"}
+          onOpenChange={(open) => !open && setDialogDemo(null)}
+        />
+        <UserProfileDialog
+          open={dialogDemo === "profile"}
+          profile={USER_PROFILE_DEMO}
           onOpenChange={(open) => !open && setDialogDemo(null)}
         />
       </Section>

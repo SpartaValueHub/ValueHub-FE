@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 
 import { ChatRoomTemplate } from "@/components/templates/chat/ChatRoomTemplate";
-import { CHAT_MESSAGES, CHAT_ROOMS } from "@/constants/chat-page";
+import { requireAuth } from "@/lib/session";
+import { listChatRoomWorkspaceService } from "@/services/chat.service";
 
 interface ChatRoomPageProps {
   params: Promise<{ uuid: string }>;
@@ -9,14 +10,18 @@ interface ChatRoomPageProps {
 
 export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
   const { uuid } = await params;
-  const room = CHAT_ROOMS.find((item) => item.id === uuid);
-  if (!room) notFound();
+  await requireAuth(`/chat/${uuid}`);
+
+  const workspace = await listChatRoomWorkspaceService(uuid).catch(() => null);
+  if (!workspace) {
+    notFound();
+  }
 
   return (
     <ChatRoomTemplate
-      rooms={CHAT_ROOMS}
-      roomId={room.id}
-      messages={CHAT_MESSAGES}
+      rooms={workspace.rooms}
+      roomId={workspace.room.id}
+      messages={workspace.messages}
     />
   );
 }

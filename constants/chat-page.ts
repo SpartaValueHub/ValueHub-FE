@@ -256,6 +256,32 @@ export const CHAT_MESSAGES: UiChatMessage[] = [
 
 export const CHAT_DATE_DIVIDER = "07월 31일 금요일";
 
+export function formatChatMessageTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const period = hours < 12 ? "오전" : "오후";
+  const hour12 = hours % 12 || 12;
+  return `${period} ${hour12}:${minutes}`;
+}
+
+export function formatChatDateKey(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+export function formatChatDateDivider(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${month}월 ${day}일 ${WEEKDAYS[date.getDay()]}`;
+}
+
 const WEEKDAY_SHORT = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
 export function formatReservationDate(date: Date): string {

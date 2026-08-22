@@ -19,11 +19,11 @@ import {
 } from "@/components/organisms/chat/TradeReservationPanel";
 import {
   CHAT_MAP_PREVIEW,
-  CHAT_RESERVATIONS,
   formatReservationChipDate,
   formatReservationChipSubline,
-  reservationFromCard,
 } from "@/constants/chat-page";
+import { useChatSocket } from "@/hooks/chat/useChatSocket";
+import { applyChatListPreview } from "@/lib/chat/map-ui";
 import { cn } from "@/lib/utils";
 import type {
   UiChatMessage,
@@ -55,23 +55,68 @@ export function ChatRoomWorkspace({
   initialMessages,
 }: ChatRoomWorkspaceProps) {
   const router = useRouter();
+  const [roomRows, setRoomRows] = useState(rooms);
   const [messages, setMessages] = useState(initialMessages);
   const [reservation, setReservation] = useState<UiTradeReservation | null>(
-    () => {
-      const card = CHAT_RESERVATIONS.find((item) => item.roomId === roomId);
-      return card ? reservationFromCard(card) : null;
-    }
+    null
   );
-  const [postReserved, setPostReserved] = useState(Boolean(reservation));
+  const [postReserved, setPostReserved] = useState(
+    Boolean(rooms.find((item) => item.id === roomId)?.reserved)
+  );
+
+  const { sendText } = useChatSocket({
+    roomId,
+    onMessage: (incoming) => {
+      setMessages((current) => {
+        if (current.some((item) => item.id === incoming.id)) return current;
+        const withoutTyping = current.filter((item) => item.kind !== "typing");
+        if (incoming.from === "me") {
+          return [
+            ...withoutTyping.filter(
+              (item) =>
+                !(
+                  item.id.startsWith("tmp-") &&
+                  item.kind === incoming.kind &&
+                  item.text === incoming.text
+                )
+            ),
+            incoming,
+          ];
+        }
+        return [...withoutTyping, incoming];
+      });
+    },
+    onListPreview: (preview) => {
+      setRoomRows((current) =>
+        current.map((item) =>
+          item.id === preview.roomId
+            ? applyChatListPreview(
+                {
+                  ...item,
+                  unreadCount: item.id === roomId ? 0 : item.unreadCount,
+                },
+                preview.roomId === roomId
+                  ? { ...preview, unreadCount: 0 }
+                  : preview
+              )
+            : item
+        )
+      );
+    },
+  });
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [desktopMoreOpen, setDesktopMoreOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogIntent, setDialogIntent] = useState<"form" | "detail">("form");
 
   const room = useMemo(
-    () => rooms.find((item) => item.id === roomId) ?? rooms[0],
-    [rooms, roomId]
+    () => roomRows.find((item) => item.id === roomId) ?? roomRows[0],
+    [roomRows, roomId]
   );
+
+  if (!room) {
+    return null;
+  }
 
   function handleReserved(next: UiTradeReservation) {
     const summary = reservationNoticeLines(next);
@@ -114,10 +159,14 @@ export function ChatRoomWorkspace({
 
   function handleSend(payload: ChatOutgoingPayload) {
     const base = {
-      id: `msg-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      id: `tmp-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       from: "me" as const,
       time: "방금",
     };
+
+    if (payload.kind === "text") {
+      sendText(payload.text);
+    }
 
     setMessages((current) => {
       const withoutTyping = current.filter((item) => item.kind !== "typing");
@@ -193,7 +242,7 @@ export function ChatRoomWorkspace({
   return (
     <div className="flex min-h-0 flex-1 overflow-hidden bg-[#fbefd8]">
       <div className="hidden h-full lg:flex">
-        <ChatRoomList rooms={rooms} selectedId={room.id} />
+        <ChatRoomList rooms={roomRows} selectedId={room.id} />
       </div>
 
       <section className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -219,13 +268,15 @@ export function ChatRoomWorkspace({
           <div className="flex items-start justify-between pr-1 pl-1.5">
             <div className="flex min-w-0 items-start gap-2.5">
               <span className="relative size-[43px] shrink-0 overflow-hidden rounded-[6px] bg-[#868686]">
-                <Image
-                  src={room.thumbnail}
-                  alt=""
-                  fill
-                  sizes="43px"
-                  className="object-cover"
-                />
+                {room.thumbnail ? (
+                  <Image
+                    src={room.thumbnail}
+                    alt=""
+                    fill
+                    sizes="43px"
+                    className="object-cover"
+                  />
+                ) : null}
               </span>
               <div className="flex min-w-0 flex-col justify-center gap-0.5">
                 <p className="truncate font-sans text-xs tracking-[-0.24px] text-[#323232]">
@@ -263,13 +314,15 @@ export function ChatRoomWorkspace({
         <div className="hidden items-start gap-5 bg-[#fbefd8] px-5 py-[30px] lg:flex">
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
             <span className="relative size-16 shrink-0 overflow-hidden rounded-[6px] bg-[#868686]">
-              <Image
-                src={room.thumbnail}
-                alt=""
-                fill
-                sizes="64px"
-                className="object-cover"
-              />
+              {room.thumbnail ? (
+                <Image
+                  src={room.thumbnail}
+                  alt=""
+                  fill
+                  sizes="64px"
+                  className="object-cover"
+                />
+              ) : null}
             </span>
             <div className="flex min-w-0 flex-col gap-1">
               <div className="flex items-center gap-1">
@@ -282,10 +335,12 @@ export function ChatRoomWorkspace({
                 {room.price.toLocaleString("ko-KR")}
                 <span className="ml-0.5 text-base">원</span>
               </p>
-              <p className="flex items-center gap-0.5 font-sans text-sm text-[#323232]">
-                <Icon name="location" size={12} />
-                {room.location}
-              </p>
+              {room.location ? (
+                <p className="flex items-center gap-0.5 font-sans text-sm text-[#323232]">
+                  <Icon name="location" size={12} />
+                  {room.location}
+                </p>
+              ) : null}
             </div>
           </div>
           {renderMoreMenu(desktopMoreOpen, setDesktopMoreOpen)}
@@ -300,6 +355,7 @@ export function ChatRoomWorkspace({
           <div className="flex min-w-0 flex-1 flex-col">
             <ChatConversation
               peerName={room.peerName}
+              peerImageUrl={room.peerImageUrl}
               messages={messages}
               onViewReservation={openReserveDetail}
             />

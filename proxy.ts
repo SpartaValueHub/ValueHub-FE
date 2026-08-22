@@ -31,7 +31,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    // 향후 보호 라우트 추가 예: "/chat/:path*", "/api/chat/:path*"
-  ],
+  matcher: ["/chat", "/chat/:path*", "/api/chat/:path*"],
 };

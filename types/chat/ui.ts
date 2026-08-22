@@ -5,10 +5,12 @@ export type UiChatRoom = {
   timeAgo: string;
   unreadCount: number;
   peerName: string;
+  peerImageUrl?: string | null;
   price: number;
   location: string;
   lastMessage?: string;
   reserved?: boolean;
+  productPostUuid?: string;
 };
 
 export type UiChatReservationCard = {
@@ -30,6 +32,8 @@ export type UiChatMessage = {
   placeName?: string;
   mapImage?: string;
   time?: string;
+  createdAt?: string;
+  dateKey?: string;
   reservationSummary?: {
     dateLine: string;
     timePlaceLine: string;

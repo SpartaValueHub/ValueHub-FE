@@ -89,6 +89,15 @@ export function getCategoryApiUrl() {
   return raw.replace(/\/$/, "");
 }
 
+/** Gateway chat-service — 서버 전용 */
+export function getChatApiUrl() {
+  assertServerOnlyApiUrl();
+
+  const raw = process.env.CHAT_API_URL || "http://localhost:8000/chat-service";
+
+  return raw.replace(/\/$/, "");
+}
+
 /** Gateway product-post-service — 서버 전용 */
 export function getProductPostApiUrl() {
   assertServerOnlyApiUrl();

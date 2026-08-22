@@ -14,13 +14,13 @@ cp .env.example .env.local   # Windows: copy .env.example .env.local
 
 ### Environment (노트북 Gateway)
 
-| 변수                       | 용도                                                                                    |
-| -------------------------- | --------------------------------------------------------------------------------------- |
-| `API_URL`                  | 서버 → Gateway auth (`http://localhost:8000/auth-service`)                              |
-| `CHAT_API_URL`             | 서버 → Gateway chat REST                                                                |
-| `NEXT_PUBLIC_CHAT_API_URL` | 브라우저 SSE. `localhost` 설정 시 LAN(`192.168.10.45:3000`) 접속하면 hostname 자동 치환 |
-| `AUTH_TRUST_HOST`          | `true` — localhost / `192.168.10.45` 양쪽 로그인                                        |
-| `AUTH_SECRET`              | NextAuth 시크릿 (32자 이상)                                                             |
+| 변수                       | 용도                                                                  |
+| -------------------------- | --------------------------------------------------------------------- |
+| `API_URL`                  | 서버 → Gateway auth (`http://localhost:8000/auth-service`)            |
+| `CHAT_API_URL`             | 서버 → Gateway chat REST. 브라우저 STOMP URL은 `GET /api/chat/stomp`  |
+| `NEXT_PUBLIC_CHAT_API_URL` | (레거시) 사용하지 않음. STOMP는 서버 `CHAT_API_URL` → ws + `/ws-chat` |
+| `AUTH_TRUST_HOST`          | `true` — localhost / `192.168.10.45` 양쪽 로그인                      |
+| `AUTH_SECRET`              | NextAuth 시크릿 (32자 이상)                                           |
 
 Gateway CORS는 `localhost:3000`, `127.0.0.1:3000`, `192.168.10.45:3000` 허용.
 

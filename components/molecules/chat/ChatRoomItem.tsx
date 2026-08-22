@@ -55,13 +55,15 @@ export function ChatRoomItem({
       >
         <span className="flex min-w-0 items-center gap-1.5 lg:gap-2.5">
           <span className="relative size-[54px] shrink-0 overflow-hidden rounded-[2px] bg-[#868686]">
-            <Image
-              src={room.thumbnail}
-              alt=""
-              fill
-              sizes="54px"
-              className="rounded-[2px] object-cover"
-            />
+            {room.thumbnail ? (
+              <Image
+                src={room.thumbnail}
+                alt=""
+                fill
+                sizes="54px"
+                className="rounded-[2px] object-cover"
+              />
+            ) : null}
           </span>
           <span className="flex min-w-0 flex-col gap-1 lg:min-h-[54px] lg:justify-between lg:py-1.5">
             <span className="flex items-center gap-1.5">
@@ -106,13 +108,15 @@ export function ChatRoomItem({
     >
       <span className="flex min-w-0 items-center gap-2.5">
         <span className="relative size-[43px] shrink-0 overflow-hidden rounded-[2px] bg-[#868686]">
-          <Image
-            src={room.thumbnail}
-            alt=""
-            fill
-            sizes="43px"
-            className="rounded-[2px] object-cover"
-          />
+          {room.thumbnail ? (
+            <Image
+              src={room.thumbnail}
+              alt=""
+              fill
+              sizes="43px"
+              className="rounded-[2px] object-cover"
+            />
+          ) : null}
         </span>
         <span className="flex min-w-0 flex-col gap-[5px] font-sans text-xs tracking-[-0.24px]">
           <span className="line-clamp-1 text-[#323232]">{room.title}</span>

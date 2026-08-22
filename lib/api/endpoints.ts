@@ -42,10 +42,27 @@ export const API_ENDPOINTS = {
       return `/api/v1/categories/leaves?parentUuid=${encodeURIComponent(parentUuid)}`;
     },
   },
+  chat: {
+    rooms: "/api/v1/chat/rooms",
+    unreadCount: "/api/v1/chat/unread-count",
+    room: (roomId: string) =>
+      `/api/v1/chat/rooms/${encodeURIComponent(roomId)}`,
+    messages: (roomId: string, query?: { before?: string; limit?: number }) => {
+      const base = `/api/v1/chat/rooms/${encodeURIComponent(roomId)}/messages`;
+      if (!query) return base;
+      const sp = new URLSearchParams();
+      if (query.before) sp.set("before", query.before);
+      if (query.limit != null) sp.set("limit", String(query.limit));
+      const qs = sp.toString();
+      return qs ? `${base}?${qs}` : base;
+    },
+  },
   productPosts: {
     create: "/api/v1/product-posts",
-    detail: (uuid: string) => `/api/v1/product-posts/${encodeURIComponent(uuid)}`,
-    delete: (uuid: string) => `/api/v1/product-posts/${encodeURIComponent(uuid)}`,
+    detail: (uuid: string) =>
+      `/api/v1/product-posts/${encodeURIComponent(uuid)}`,
+    delete: (uuid: string) =>
+      `/api/v1/product-posts/${encodeURIComponent(uuid)}`,
     list: (params?: Record<string, string | string[]>) => {
       const base = "/api/v1/product-posts";
       if (!params) return base;

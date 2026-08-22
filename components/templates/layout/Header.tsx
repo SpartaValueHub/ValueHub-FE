@@ -14,6 +14,7 @@ import {
   HeaderUtilityIcons,
 } from "@/components/organisms/header/HeaderSearchPanel";
 import { useAppSession } from "@/context/SessionContext";
+import { useChatUnreadCount } from "@/hooks/chat/useChatUnreadCount";
 import {
   PRODUCT_POSTS_PATH,
   headerCategoryNavIdFromUuid,
@@ -32,6 +33,7 @@ export function Header() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading, logout } = useAppSession();
+  const chatCount = useChatUnreadCount(isAuthenticated);
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -107,6 +109,7 @@ export function Header() {
 
             <HeaderUtilityIcons
               isAuthenticated={isAuthenticated}
+              chatCount={chatCount}
               onSearchClick={() => {
                 setMenuOpen(false);
                 setMobileSearchOpen(false);

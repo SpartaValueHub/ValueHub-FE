@@ -13,10 +13,10 @@ import {
   DialogTitle,
 } from "@/components/molecules/overlay/Dialog";
 import {
-  CHAT_DATE_DIVIDER,
   CHAT_LOCATION_PIN,
   CHAT_MAP_PICKER,
   CHAT_MAP_PREVIEW,
+  formatChatDateDivider,
 } from "@/constants/chat-page";
 import type { UiChatMessage } from "@/types/chat/ui";
 
@@ -26,6 +26,7 @@ type MediaViewer =
 
 interface ChatConversationProps {
   peerName: string;
+  peerImageUrl?: string | null;
   messages: UiChatMessage[];
   onViewReservation?: () => void;
 }
@@ -110,8 +111,22 @@ function MessageBody({
 }
 
 /** 대화 메시지 스트림 — 사진·지도 클릭 시 Dialog로 확대 */
+function PeerAvatar({ src }: { src?: string | null }) {
+  if (src) {
+    return (
+      <span className="relative size-[35px] shrink-0 overflow-hidden rounded-full bg-[#d0d0d0] lg:size-9">
+        <Image src={src} alt="" fill sizes="36px" className="object-cover" />
+      </span>
+    );
+  }
+  return (
+    <span className="size-[35px] shrink-0 rounded-full bg-[#d0d0d0] lg:size-9" />
+  );
+}
+
 export function ChatConversation({
   peerName,
+  peerImageUrl,
   messages,
   onViewReservation,
 }: ChatConversationProps) {
@@ -120,37 +135,55 @@ export function ChatConversation({
   return (
     <>
       <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-3 pt-5 lg:px-[30px] lg:pt-[30px]">
-        <ChatDateDivider label={CHAT_DATE_DIVIDER} />
         {messages.map((message, index) => {
+          const dateKey = message.dateKey;
+          const prevDateKey =
+            index > 0 ? messages[index - 1].dateKey : undefined;
+          const showDate = Boolean(dateKey) && dateKey !== prevDateKey;
+          const divider = showDate ? (
+            <ChatDateDivider
+              label={
+                message.createdAt
+                  ? formatChatDateDivider(message.createdAt)
+                  : dateKey!
+              }
+            />
+          ) : null;
+
           if (
             message.kind === "system-reservation" &&
             message.reservationSummary
           ) {
             return (
-              <ChatReservationNotice
-                key={message.id}
-                dateLine={message.reservationSummary.dateLine}
-                timePlaceLine={message.reservationSummary.timePlaceLine}
-                time={message.time}
-                onViewDetails={onViewReservation}
-              />
+              <div key={message.id} className="flex flex-col gap-5">
+                {divider}
+                <ChatReservationNotice
+                  dateLine={message.reservationSummary.dateLine}
+                  timePlaceLine={message.reservationSummary.timePlaceLine}
+                  time={message.time}
+                  onViewDetails={onViewReservation}
+                />
+              </div>
             );
           }
 
           if (message.kind === "typing") {
             return (
-              <div key={message.id} className="flex items-start gap-2.5">
-                <span className="size-[35px] shrink-0 rounded-full bg-[#d0d0d0] lg:size-9" />
-                <div className="flex flex-col gap-2.5">
-                  <p className="font-sans text-[13px] text-[#323232] lg:text-base">
-                    {peerName}
-                  </p>
-                  <div className="flex h-[39px] items-center justify-center rounded-[10px] bg-[rgba(134,134,134,0.1)] px-4">
-                    <span className="flex gap-1">
-                      <span className="size-1.5 rounded-full bg-[#868686]" />
-                      <span className="size-1.5 rounded-full bg-[#868686]" />
-                      <span className="size-1.5 rounded-full bg-[#868686]" />
-                    </span>
+              <div key={message.id} className="flex flex-col gap-5">
+                {divider}
+                <div className="flex items-start gap-2.5">
+                  <PeerAvatar src={peerImageUrl} />
+                  <div className="flex flex-col gap-2.5">
+                    <p className="font-sans text-[13px] text-[#323232] lg:text-base">
+                      {peerName}
+                    </p>
+                    <div className="flex h-[39px] items-center justify-center rounded-[10px] bg-[rgba(134,134,134,0.1)] px-4">
+                      <span className="flex gap-1">
+                        <span className="size-1.5 rounded-full bg-[#868686]" />
+                        <span className="size-1.5 rounded-full bg-[#868686]" />
+                        <span className="size-1.5 rounded-full bg-[#868686]" />
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -169,16 +202,16 @@ export function ChatConversation({
 
           if (message.from === "peer" && shouldShowPeerMeta(messages, index)) {
             return (
-              <div
-                key={message.id}
-                className="flex items-start gap-2.5 lg:gap-3.5"
-              >
-                <span className="size-[35px] shrink-0 rounded-full bg-[#d0d0d0] lg:size-9" />
-                <div className="flex min-w-0 flex-col gap-3.5">
-                  <p className="font-sans text-[13px] text-[#323232] lg:text-base">
-                    {peerName}
-                  </p>
-                  {body}
+              <div key={message.id} className="flex flex-col gap-5">
+                {divider}
+                <div className="flex items-start gap-2.5 lg:gap-3.5">
+                  <PeerAvatar src={peerImageUrl} />
+                  <div className="flex min-w-0 flex-col gap-3.5">
+                    <p className="font-sans text-[13px] text-[#323232] lg:text-base">
+                      {peerName}
+                    </p>
+                    {body}
+                  </div>
                 </div>
               </div>
             );
@@ -186,16 +219,21 @@ export function ChatConversation({
 
           if (message.from === "peer") {
             return (
-              <div
-                key={message.id}
-                className="flex items-start gap-2.5 pl-[45px] lg:gap-3.5 lg:pl-12"
-              >
-                {body}
+              <div key={message.id} className="flex flex-col gap-5">
+                {divider}
+                <div className="flex items-start gap-2.5 pl-[45px] lg:gap-3.5 lg:pl-12">
+                  {body}
+                </div>
               </div>
             );
           }
 
-          return <div key={message.id}>{body}</div>;
+          return (
+            <div key={message.id} className="flex flex-col gap-5">
+              {divider}
+              {body}
+            </div>
+          );
         })}
       </div>
 

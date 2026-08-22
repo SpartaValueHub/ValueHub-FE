@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { cn } from "@/lib/utils";
@@ -26,7 +27,7 @@ const buttonBase =
 /**
  * 상세 채팅 CTA
  * - owner: 대화중인 채팅 N
- * - buyer: 채팅하기 → /chat?productPostUuid&sellerMemberUuid&sellerNickname
+ * - buyer: 채팅하기 → POST /api/chat/rooms → /chat/{roomId}
  * - guest: 채팅하기 → /signin
  */
 export function ProductChatCta({
@@ -40,6 +41,8 @@ export function ProductChatCta({
   const router = useRouter();
   const pathname = usePathname();
   const nicknameForChat = sellerNickname.trim();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (role === "owner") {
     return (
@@ -66,37 +69,65 @@ export function ProductChatCta({
   const goChatOrSignIn = () => {
     if (role === "guest") {
       const callbackUrl = pathname || `/product-posts/${productPostUuid}`;
-      router.push(
-        `/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`
-      );
+      router.push(`/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       return;
     }
 
-    const params = new URLSearchParams({
-      productPostUuid,
-      sellerMemberUuid,
-    });
-    if (nicknameForChat) {
-      params.set("sellerNickname", nicknameForChat);
-    }
-    router.push(`/chat?${params.toString()}`);
+    setError(null);
+    setPending(true);
+    void fetch("/api/chat/rooms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        productPostUuid,
+        sellerUuid: sellerMemberUuid,
+        sellerNickname: nicknameForChat,
+      }),
+    })
+      .then(async (res) => {
+        const json = (await res.json()) as {
+          ok?: boolean;
+          message?: string;
+          data?: { roomId: string };
+        };
+        if (!res.ok || !json.ok || !json.data?.roomId) {
+          setError(json.message || "채팅방을 만들지 못했습니다.");
+          return;
+        }
+        router.push(`/chat/${json.data.roomId}`);
+      })
+      .catch(() => {
+        setError("채팅방을 만들지 못했습니다.");
+      })
+      .finally(() => {
+        setPending(false);
+      });
   };
 
   return (
-    <button
-      type="button"
-      data-product-post-uuid={productPostUuid}
-      data-seller-member-uuid={sellerMemberUuid}
-      data-seller-nickname={nicknameForChat}
-      data-chat-role={role}
-      onClick={goChatOrSignIn}
-      className={cn(
-        buttonBase,
-        "h-10 w-full bg-[#efbb55] text-sm tracking-[-0.28px] md:h-[52px] md:flex-1 md:px-[30px] md:text-lg md:tracking-[0.36px]",
-        className
-      )}
-    >
-      채팅하기
-    </button>
+    <div className="flex w-full flex-col gap-1.5">
+      <button
+        type="button"
+        data-product-post-uuid={productPostUuid}
+        data-seller-member-uuid={sellerMemberUuid}
+        data-seller-nickname={nicknameForChat}
+        data-chat-role={role}
+        disabled={pending}
+        onClick={goChatOrSignIn}
+        className={cn(
+          buttonBase,
+          "h-10 w-full bg-[#efbb55] text-sm tracking-[-0.28px] md:h-[52px] md:flex-1 md:px-[30px] md:text-lg md:tracking-[0.36px]",
+          pending && "opacity-60",
+          className
+        )}
+      >
+        {pending ? "채팅방 여는 중" : "채팅하기"}
+      </button>
+      {error ? (
+        <p className="font-sans text-xs text-[#efbb55]" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }

@@ -39,3 +39,13 @@ export function createProductPost(body: ApiCreateProductPostRequest) {
     timeoutMillis: 12_000,
   });
 }
+
+/** Soft Delete — 204 No Content */
+export async function deleteProductPost(uuid: string): Promise<void> {
+  await apiFetch<null>(API_ENDPOINTS.productPosts.delete(uuid), {
+    method: "DELETE",
+    baseUrl: getProductPostApiUrl(),
+    cache: { noStore: true },
+    timeoutMillis: 12_000,
+  });
+}

@@ -7,6 +7,7 @@ import {
 } from "@/constants/categories";
 import {
   createProductPost,
+  deleteProductPost,
   getProductPostDetail,
   listProductPosts,
 } from "@/lib/api/product-posts";
@@ -105,6 +106,10 @@ export async function createProductPostService(
 ): Promise<UiProductPostDetail> {
   const api = await createProductPost(body);
   return mapProductPostDetail(api);
+}
+
+export async function deleteProductPostService(uuid: string): Promise<void> {
+  await deleteProductPost(uuid);
 }
 
 export const PRODUCT_POST_LIST_PAGE_SIZE = 20;

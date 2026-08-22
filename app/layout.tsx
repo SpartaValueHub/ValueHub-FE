@@ -48,10 +48,7 @@ export default async function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         <AuthSessionProvider>
-          <SessionContextProvider
-            key={`${initialSession.isAuthenticated}-${initialSession.user?.nickname ?? "guest"}`}
-            initialSession={initialSession}
-          >
+          <SessionContextProvider initialSession={initialSession}>
             {children}
             <Footer />
           </SessionContextProvider>

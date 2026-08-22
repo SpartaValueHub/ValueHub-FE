@@ -5,8 +5,10 @@
  * 클라이언트는 이 Action만 호출 — lib/api·services 직접 import 금지.
  */
 import { ApiError, ApiTimeoutError, AuthSessionExpiredError } from "@/lib/api/client";
+import { requireActionAuth } from "@/lib/session";
 import {
   createProductPostService,
+  deleteProductPostService,
   getProductPostDetailService,
   listProductPostsService,
 } from "@/services/product-posts.service";
@@ -70,6 +72,24 @@ export async function createProductPostAction(
     return {
       ok: false,
       message: toErrorMessage(e, "상품 등록에 실패했습니다."),
+    };
+  }
+}
+
+export async function deleteProductPostAction(
+  uuid: string
+): Promise<ProductPostActionResult<null>> {
+  try {
+    await requireActionAuth();
+    await deleteProductPostService(uuid);
+    return { ok: true, data: null };
+  } catch (e) {
+    if (e instanceof AuthSessionExpiredError) {
+      return { ok: false, message: e.message };
+    }
+    return {
+      ok: false,
+      message: toErrorMessage(e, "상품 삭제에 실패했습니다."),
     };
   }
 }

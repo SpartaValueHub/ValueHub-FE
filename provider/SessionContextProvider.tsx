@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 
@@ -59,11 +59,11 @@ export function SessionContextProvider({
     }
   }, []);
 
-  const login = () => {
+  const login = useCallback(() => {
     router.push("/signin");
-  };
+  }, [router]);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await fetch("/api/auth/logout", {
         method: "POST",
@@ -77,7 +77,7 @@ export function SessionContextProvider({
     setUser(null);
     router.push("/");
     router.refresh();
-  };
+  }, [router]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -86,18 +86,19 @@ export function SessionContextProvider({
     return () => window.clearTimeout(timer);
   }, [refresh]);
 
+  const value = useMemo(
+    () => ({
+      isAuthenticated,
+      isLoading,
+      user,
+      login,
+      logout,
+      refresh,
+    }),
+    [isAuthenticated, isLoading, user, login, logout, refresh]
+  );
+
   return (
-    <SessionContext.Provider
-      value={{
-        isAuthenticated,
-        isLoading,
-        user,
-        login,
-        logout,
-        refresh,
-      }}
-    >
-      {children}
-    </SessionContext.Provider>
+    <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
   );
 }

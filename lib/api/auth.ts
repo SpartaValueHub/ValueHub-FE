@@ -50,6 +50,17 @@ export function logoutUser() {
   });
 }
 
+/** PASS WITHDRAWAL confirm 후 탈퇴 — 204 + 쿠키 만료 */
+export function withdrawMember(body: { requestToken: string }) {
+  return apiFetch<void>(API_ENDPOINTS.auth.withdraw, {
+    method: "POST",
+    body,
+    cache: { noStore: true },
+    trustedOrigin: true,
+    timeoutMillis: 10_000,
+  });
+}
+
 export function checkLoginIdAvailability(loginId: string) {
   return apiFetch<ApiAvailabilityResponse>(
     API_ENDPOINTS.auth.checkLoginId(loginId),

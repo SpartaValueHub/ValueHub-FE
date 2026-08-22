@@ -2,7 +2,10 @@
 
 import { mapActionError } from "@/lib/auth/map-action-error";
 import { confirmIdentityVerificationService } from "@/services/identity-verification.service";
-import type { ApiIdentityVerificationConfirmResponse } from "@/types/auth/api";
+import type {
+  ApiIdentityVerificationConfirmResponse,
+  VerificationPurpose,
+} from "@/types/auth/api";
 
 export type ConfirmIdentityVerificationActionResult =
   | { ok: true; data: ApiIdentityVerificationConfirmResponse }
@@ -10,7 +13,8 @@ export type ConfirmIdentityVerificationActionResult =
 
 /** PortOne SDK 완료 후 auth-service confirm — requestToken·prefill 반환 */
 export async function confirmIdentityVerificationAction(
-  identityVerificationId: string
+  identityVerificationId: string,
+  purpose: VerificationPurpose = "SIGN_UP"
 ): Promise<ConfirmIdentityVerificationActionResult> {
   const trimmed = identityVerificationId.trim();
   if (!trimmed) {
@@ -20,7 +24,7 @@ export async function confirmIdentityVerificationAction(
   try {
     const data = await confirmIdentityVerificationService({
       identityVerificationId: trimmed,
-      purpose: "SIGN_UP",
+      purpose,
     });
     return { ok: true, data };
   } catch (error) {

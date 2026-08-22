@@ -69,12 +69,17 @@ export function productPostsHref(categoryId?: string | null) {
 
 /** 공통 헤더 All/Luxury… → 목록 URL */
 export function headerCategoryNavHref(navId: string) {
+  const rootUuid = headerCategoryRootUuid(navId);
+  return rootUuid ? productPostsHref(rootUuid) : productPostsHref();
+}
+
+/** 헤더 대분류 navId → category-service root uuid */
+export function headerCategoryRootUuid(navId: string) {
   if (!navId || navId === "all" || navId === ALL_CATEGORY_NAV_ID) {
-    return productPostsHref();
+    return null;
   }
   const key = HEADER_NAV_ROOT_KEY[navId];
-  if (!key) return productPostsHref();
-  return productPostsHref(HEADER_ROOT_CATEGORY_UUIDS[key]);
+  return key ? HEADER_ROOT_CATEGORY_UUIDS[key] : null;
 }
 
 export function headerCategoryNavIdFromUuid(categoryUuid: string | null) {
@@ -145,9 +150,7 @@ export function parseGradeParams(
     );
 }
 
-export function parseBrandParams(
-  raw: string | string[] | undefined
-): string[] {
+export function parseBrandParams(raw: string | string[] | undefined): string[] {
   const values = Array.isArray(raw) ? raw : raw ? [raw] : [];
   return values
     .flatMap((v) => v.split(","))

@@ -1,11 +1,17 @@
+import Link from "next/link";
+
 import { VerticalDivider } from "@/components/atoms/vertical-divider";
 import { TextUnderlineLink } from "@/components/molecules/form/TextUnderlineLink";
 import { cn } from "@/lib/utils";
+
+type HeaderAuthLinksVariant = "header" | "menu";
 
 interface HeaderAuthLinksProps {
   isAuthenticated: boolean;
   isLoading?: boolean;
   onLogout?: () => void;
+  onNavigate?: () => void;
+  variant?: HeaderAuthLinksVariant;
   className?: string;
 }
 
@@ -14,6 +20,8 @@ export function HeaderAuthLinks({
   isAuthenticated,
   isLoading,
   onLogout,
+  onNavigate,
+  variant = "header",
   className,
 }: HeaderAuthLinksProps) {
   if (isLoading) {
@@ -21,6 +29,39 @@ export function HeaderAuthLinks({
       <div className={cn("flex items-center gap-2.5", className)}>
         <span aria-hidden className="inline-block h-7 min-w-16" />
         <span aria-hidden className="inline-block h-7 min-w-16" />
+      </div>
+    );
+  }
+
+  if (variant === "menu") {
+    return (
+      <div
+        className={cn(
+          "font-sans text-xs leading-[1.4] text-[#323232]",
+          className
+        )}
+      >
+        {isAuthenticated ? (
+          <>
+            <Link href="/mypage" onClick={onNavigate}>
+              마이페이지
+            </Link>
+            <span aria-hidden> / </span>
+            <button type="button" onClick={onLogout}>
+              로그아웃
+            </button>
+          </>
+        ) : (
+          <>
+            <Link href="/signin" onClick={onNavigate}>
+              로그인
+            </Link>
+            <span aria-hidden> / </span>
+            <Link href="/signup" onClick={onNavigate}>
+              회원가입
+            </Link>
+          </>
+        )}
       </div>
     );
   }

@@ -1,9 +1,42 @@
 import { ChatListTemplate } from "@/components/templates/chat/ChatListTemplate";
 import { CHAT_RESERVATIONS, CHAT_ROOMS } from "@/constants/chat-page";
+import { resolveProductChatEntryService } from "@/services/chat-entry.service";
+import type { UiProductChatEntry } from "@/types/chat/ui";
 
-/** `/chat` 채팅 목록 — 방 상세는 `/chat/[uuid]` */
-export default function ChatIndexPage() {
+interface ChatIndexPageProps {
+  searchParams: Promise<{
+    productPostUuid?: string;
+    sellerMemberUuid?: string;
+  }>;
+}
+
+/**
+ * `/chat` 채팅 목록 — 방 상세는 `/chat/[uuid]`
+ *
+ * 상품 상세 「채팅하기」 핸드오프:
+ * `?productPostUuid=&sellerMemberUuid=` → Member 프로필로 닉네임 resolve
+ * → `pendingProductChatEntry` (방 생성 API 연동 입력)
+ */
+export default async function ChatIndexPage({
+  searchParams,
+}: ChatIndexPageProps) {
+  const params = await searchParams;
+  const productPostUuid = params.productPostUuid?.trim() ?? "";
+  const sellerMemberUuid = params.sellerMemberUuid?.trim() ?? "";
+
+  let pendingProductChatEntry: UiProductChatEntry | null = null;
+  if (productPostUuid && sellerMemberUuid) {
+    pendingProductChatEntry = await resolveProductChatEntryService({
+      productPostUuid,
+      sellerMemberUuid,
+    });
+  }
+
   return (
-    <ChatListTemplate rooms={CHAT_ROOMS} reservations={CHAT_RESERVATIONS} />
+    <ChatListTemplate
+      rooms={CHAT_ROOMS}
+      reservations={CHAT_RESERVATIONS}
+      pendingProductChatEntry={pendingProductChatEntry}
+    />
   );
 }

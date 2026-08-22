@@ -21,3 +21,25 @@ export type UiUserProfile = {
   rating: number;
   products: UiUserProfileProduct[];
 };
+
+export type UiTradeReview = {
+  id: string;
+  nickname: string;
+  avatarUrl?: string;
+  roleLabel: string;
+  dateLabel: string;
+  content: string;
+};
+
+export type UiRatingDistribution = {
+  score: 1 | 2 | 3 | 4 | 5;
+  count: number;
+};
+
+export type UiTradeReviewDetail = {
+  rating: number;
+  ratingMax?: number;
+  totalCount: number;
+  distribution: UiRatingDistribution[];
+  reviews: UiTradeReview[];
+};

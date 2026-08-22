@@ -24,13 +24,13 @@ export function ChatMessageBubble({
       )}
     >
       {mine && time ? (
-        <span className="shrink-0 font-sans text-xs text-[#606060]">
+        <span className="shrink-0 font-sans text-[10px] text-[#606060] lg:text-xs">
           {time}
         </span>
       ) : null}
       <div
         className={cn(
-          "max-w-[440px] rounded-[10px] px-4 py-2.5 font-sans text-base leading-[1.4] whitespace-pre-line text-[#323232]",
+          "max-w-[440px] rounded-[10px] px-2.5 py-2 font-sans text-sm leading-[1.4] whitespace-pre-line text-[#323232] lg:px-4 lg:py-2.5 lg:text-base",
           mine ? "bg-[#fbefd8] text-right" : "border border-[#d0d0d0] bg-white",
           className
         )}
@@ -38,7 +38,7 @@ export function ChatMessageBubble({
         {children}
       </div>
       {!mine && time ? (
-        <span className="shrink-0 font-sans text-xs text-[#606060]">
+        <span className="shrink-0 font-sans text-[10px] text-[#606060] lg:text-xs">
           {time}
         </span>
       ) : null}

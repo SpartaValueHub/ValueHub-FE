@@ -40,6 +40,7 @@ export type UiTradeReservation = {
   date: Date;
   dateLabel: string;
   timeLabel: string;
+  time: UiTradeTimeValue;
   placeName: string;
   mapImage: string;
 };

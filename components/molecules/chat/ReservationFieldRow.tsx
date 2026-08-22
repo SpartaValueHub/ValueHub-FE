@@ -8,6 +8,7 @@ interface ReservationFieldRowProps {
   placeholder: string;
   onClick?: () => void;
   disabled?: boolean;
+  showChevron?: boolean;
 }
 
 /** 거래 예약 날짜/시간/장소 행 */
@@ -18,6 +19,7 @@ export function ReservationFieldRow({
   placeholder,
   onClick,
   disabled,
+  showChevron = true,
 }: ReservationFieldRowProps) {
   return (
     <button
@@ -37,7 +39,7 @@ export function ReservationFieldRow({
           {label || placeholder}
         </span>
       </span>
-      <Icon name="chevron-right" size={26} />
+      {showChevron ? <Icon name="chevron-right" size={26} /> : null}
     </button>
   );
 }

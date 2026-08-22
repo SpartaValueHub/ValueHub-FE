@@ -25,6 +25,7 @@ import { BrandWordmark } from "@/components/molecules/brand/BrandWordmark";
 import { CategoryDropdown } from "@/components/molecules/form/CategoryDropdown";
 import { FeedPostCard } from "@/components/molecules/listing/FeedPostCard";
 import { AlertDialog } from "@/components/molecules/overlay/AlertDialog";
+import { TradeReviewDetailDialog } from "@/components/molecules/overlay/TradeReviewDetailDialog";
 import { UserProfileDialog } from "@/components/molecules/overlay/UserProfileDialog";
 import { ChatFilterChip } from "@/components/molecules/chat/ChatFilterChip";
 import { DialogMaskedValue } from "@/components/molecules/overlay/Dialog";
@@ -48,7 +49,10 @@ import {
 import { MainBottomNav } from "@/components/organisms/main/MainBottomNav";
 import { Footer } from "@/components/templates/layout/Footer";
 import { MAIN_RECOMMENDED_PRODUCTS } from "@/constants/main-page";
-import { USER_PROFILE_DEMO } from "@/constants/user-profile";
+import {
+  TRADE_REVIEW_DETAIL_DEMO,
+  USER_PROFILE_DEMO,
+} from "@/constants/user-profile";
 import { cn } from "@/lib/utils";
 
 const FIGMA_GOLD = [
@@ -237,7 +241,15 @@ function Swatch({
 
 export function DesignSystemTemplate() {
   const [dialogDemo, setDialogDemo] = useState<
-    "id" | "email" | "nickname" | "lock" | "findId" | "reset" | "profile" | null
+    | "id"
+    | "email"
+    | "nickname"
+    | "lock"
+    | "findId"
+    | "reset"
+    | "profile"
+    | "review"
+    | null
   >(null);
   const [sampleInput, setSampleInput] = useState("");
   const [underlineValue, setUnderlineValue] = useState("가나다라마바사");
@@ -616,7 +628,8 @@ bg-[#323232]     // charcoal surface
 
 <LoginLimitDialog open={open} initialSeconds={119} />
 <PasswordResetDialog open={open} />
-<UserProfileDialog open={open} profile={profile} />
+<UserProfileDialog open={open} profile={profile} reviewDetail={reviewDetail} />
+<TradeReviewDetailDialog open={open} detail={reviewDetail} />
 `}
       >
         <div className="flex flex-wrap gap-3">
@@ -629,6 +642,7 @@ bg-[#323232]     // charcoal surface
               ["findId", "아이디 찾기"],
               ["reset", "비밀번호 재설정"],
               ["profile", "유저 프로필"],
+              ["review", "거래 후기 상세"],
             ] as const
           ).map(([id, label]) => (
             <Button
@@ -696,6 +710,12 @@ bg-[#323232]     // charcoal surface
         <UserProfileDialog
           open={dialogDemo === "profile"}
           profile={USER_PROFILE_DEMO}
+          reviewDetail={TRADE_REVIEW_DETAIL_DEMO}
+          onOpenChange={(open) => !open && setDialogDemo(null)}
+        />
+        <TradeReviewDetailDialog
+          open={dialogDemo === "review"}
+          detail={TRADE_REVIEW_DETAIL_DEMO}
           onOpenChange={(open) => !open && setDialogDemo(null)}
         />
       </Section>

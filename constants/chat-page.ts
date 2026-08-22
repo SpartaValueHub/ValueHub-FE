@@ -2,6 +2,8 @@ import type {
   UiChatMessage,
   UiChatReservationCard,
   UiChatRoom,
+  UiTradeReservation,
+  UiTradeTimeValue,
 } from "@/types/chat/ui";
 
 const WEEKDAYS = [
@@ -254,8 +256,48 @@ export const CHAT_MESSAGES: UiChatMessage[] = [
 
 export const CHAT_DATE_DIVIDER = "07월 31일 금요일";
 
+const WEEKDAY_SHORT = ["일", "월", "화", "수", "목", "금", "토"] as const;
+
 export function formatReservationDate(date: Date): string {
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${WEEKDAYS[date.getDay()]}`;
+}
+
+export function formatReservationChipDate(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}.${month}.${day}`;
+}
+
+export function formatReservationChipSubline(
+  date: Date,
+  time: UiTradeTimeValue
+): string {
+  const periodLabel = time.period === "am" ? "오전" : "오후";
+  const minute = String(time.minute).padStart(2, "0");
+  return `(${WEEKDAY_SHORT[date.getDay()]}) ${periodLabel} ${time.hour}:${minute}`;
+}
+
+export function parseReservationTimeLabel(label: string): UiTradeTimeValue {
+  const period = label.includes("오전") ? "am" : "pm";
+  const hour = Number(label.match(/(\d+)\s*시/)?.[1] ?? 6);
+  const minute = Number(label.match(/(\d+)\s*분/)?.[1] ?? 0);
+  return { period, hour, minute };
+}
+
+export function reservationFromCard(
+  card: UiChatReservationCard
+): UiTradeReservation {
+  const [year, month, day] = card.dateLabel.split(".").map(Number);
+  const date = new Date(year, month - 1, day);
+  const time = parseReservationTimeLabel(card.timeLabel);
+  return {
+    date,
+    dateLabel: formatReservationDate(date),
+    timeLabel: formatReservationTime(time.period, time.hour, time.minute),
+    time,
+    placeName: card.placeName,
+    mapImage: CHAT_MAP_PREVIEW,
+  };
 }
 
 export function formatReservationDateLine(date: Date): string {

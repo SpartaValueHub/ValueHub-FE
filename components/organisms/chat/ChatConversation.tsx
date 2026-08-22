@@ -27,6 +27,7 @@ type MediaViewer =
 interface ChatConversationProps {
   peerName: string;
   messages: UiChatMessage[];
+  onViewReservation?: () => void;
 }
 
 function shouldShowPeerMeta(messages: UiChatMessage[], index: number) {
@@ -112,12 +113,13 @@ function MessageBody({
 export function ChatConversation({
   peerName,
   messages,
+  onViewReservation,
 }: ChatConversationProps) {
   const [viewer, setViewer] = useState<MediaViewer | null>(null);
 
   return (
     <>
-      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-[30px] pt-[30px]">
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-3 pt-5 lg:px-[30px] lg:pt-[30px]">
         <ChatDateDivider label={CHAT_DATE_DIVIDER} />
         {messages.map((message, index) => {
           if (
@@ -130,6 +132,7 @@ export function ChatConversation({
                 dateLine={message.reservationSummary.dateLine}
                 timePlaceLine={message.reservationSummary.timePlaceLine}
                 time={message.time}
+                onViewDetails={onViewReservation}
               />
             );
           }
@@ -137,9 +140,9 @@ export function ChatConversation({
           if (message.kind === "typing") {
             return (
               <div key={message.id} className="flex items-start gap-2.5">
-                <span className="size-9 shrink-0 rounded-full bg-[#d0d0d0]" />
+                <span className="size-[35px] shrink-0 rounded-full bg-[#d0d0d0] lg:size-9" />
                 <div className="flex flex-col gap-2.5">
-                  <p className="font-sans text-base text-[#323232]">
+                  <p className="font-sans text-[13px] text-[#323232] lg:text-base">
                     {peerName}
                   </p>
                   <div className="flex h-[39px] items-center justify-center rounded-[10px] bg-[rgba(134,134,134,0.1)] px-4">
@@ -166,10 +169,13 @@ export function ChatConversation({
 
           if (message.from === "peer" && shouldShowPeerMeta(messages, index)) {
             return (
-              <div key={message.id} className="flex items-start gap-3.5">
-                <span className="size-9 shrink-0 rounded-full bg-[#d0d0d0]" />
+              <div
+                key={message.id}
+                className="flex items-start gap-2.5 lg:gap-3.5"
+              >
+                <span className="size-[35px] shrink-0 rounded-full bg-[#d0d0d0] lg:size-9" />
                 <div className="flex min-w-0 flex-col gap-3.5">
-                  <p className="font-sans text-base text-[#323232]">
+                  <p className="font-sans text-[13px] text-[#323232] lg:text-base">
                     {peerName}
                   </p>
                   {body}
@@ -180,7 +186,10 @@ export function ChatConversation({
 
           if (message.from === "peer") {
             return (
-              <div key={message.id} className="flex items-start gap-3.5 pl-12">
+              <div
+                key={message.id}
+                className="flex items-start gap-2.5 pl-[45px] lg:gap-3.5 lg:pl-12"
+              >
                 {body}
               </div>
             );

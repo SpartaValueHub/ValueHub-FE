@@ -23,7 +23,7 @@ export function ChatRoomTemplate({
         className
       )}
     >
-      <ChatBackBar />
+      <ChatBackBar className="hidden lg:flex" />
       <ChatRoomWorkspace
         key={roomId}
         rooms={rooms}

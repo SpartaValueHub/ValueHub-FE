@@ -18,12 +18,12 @@ export function ChatReservationSection({
       aria-label="거래 예약"
       className={cn(
         "flex w-full shrink-0 flex-col gap-2.5 bg-[#fbefd8] px-5 pt-3 pb-5",
-        "lg:h-full lg:w-[430px] lg:gap-[30px] lg:border-r lg:border-[#e0e0e0] lg:bg-white lg:p-[30px]",
+        "lg:h-full lg:w-[430px] lg:gap-[30px] lg:overflow-hidden lg:border-r lg:border-[#e0e0e0] lg:bg-white lg:p-[30px]",
         className
       )}
     >
-      <div className="flex items-center gap-1">
-        <Icon name="calendar-reserved" size={20} />
+      <div className="flex shrink-0 items-center gap-2.5">
+        <Icon name="calendar-reserved" size={15} />
         <h2 className="font-sans text-sm leading-[1.5] text-[#323232] lg:text-lg">
           거래 예약 {reservations.length}건
         </h2>

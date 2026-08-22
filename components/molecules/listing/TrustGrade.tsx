@@ -15,6 +15,8 @@ const TRUST_GRADE: Record<TrustGradeLevel, { src: string; label: string }> = {
 interface TrustGradeProps {
   level: TrustGradeLevel;
   showLabel?: boolean;
+  iconWidth?: number;
+  iconHeight?: number;
   className?: string;
 }
 
@@ -22,6 +24,8 @@ interface TrustGradeProps {
 export function TrustGrade({
   level,
   showLabel = true,
+  iconWidth = 61,
+  iconHeight = 82,
   className,
 }: TrustGradeProps) {
   const grade = TRUST_GRADE[level];
@@ -33,7 +37,7 @@ export function TrustGrade({
         className
       )}
     >
-      <VhIcon src={grade.src} width={61} height={82} />
+      <VhIcon src={grade.src} width={iconWidth} height={iconHeight} />
       {showLabel ? (
         <p className="font-sans text-base leading-[2] text-black">
           {grade.label}

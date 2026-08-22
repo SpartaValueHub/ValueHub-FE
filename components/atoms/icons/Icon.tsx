@@ -42,6 +42,9 @@ export const SYSTEM_ICONS = {
   grid: "/icons/system/menus/grid.svg",
   user: "/icons/system/essentials/user.svg",
   star: "/icons/system/essentials/star.svg",
+  "star-fill": "/icons/system/essentials/star-fill.svg",
+  boost: "/icons/system/essentials/boost.svg",
+  link: "/icons/system/essentials/link.svg",
   warning: "/icons/system/essentials/warning.svg",
 } as const;
 

@@ -28,7 +28,7 @@ export function HeaderAuthLinks({
   if (isAuthenticated) {
     return (
       <div className={cn("flex items-center gap-2.5", className)}>
-        <TextUnderlineLink href="#" variant="header">
+        <TextUnderlineLink href="/mypage" variant="header">
           마이페이지
         </TextUnderlineLink>
         <VerticalDivider size="md" className="bg-[#e0e0e0]/40" />

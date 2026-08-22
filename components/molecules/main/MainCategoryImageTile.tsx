@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import type { MainCategoryDetail } from "@/constants/main-page";
+import { headerCategoryNavHref } from "@/constants/product-posts";
 import { cn } from "@/lib/utils";
 
 interface MainCategoryImageTileProps {
@@ -15,7 +16,7 @@ export function MainCategoryImageTile({
 }: MainCategoryImageTileProps) {
   return (
     <Link
-      href="#"
+      href={headerCategoryNavHref(category.id)}
       className={cn(
         "relative flex h-[200px] w-full flex-col items-center justify-center overflow-hidden",
         className

@@ -47,8 +47,7 @@ export type MainCategoryDetail = {
   shortDescription: string;
   descriptions: string[];
   tileImage: string;
-  sideImage?: string;
-  highlighted?: boolean;
+  sideImage: string;
 };
 
 export const MAIN_HEADER_NAV: MainCategoryItem[] = [
@@ -58,6 +57,9 @@ export const MAIN_HEADER_NAV: MainCategoryItem[] = [
   { id: "premium", title: "Premium", description: "프리미엄" },
   { id: "electrics", title: "Electrics", description: "전자기기" },
 ];
+
+export const MAIN_CATEGORY_DEFAULT_SIDE_IMAGE =
+  "/main/categories/side-default.png";
 
 export const MAIN_CATEGORIES: MainCategoryDetail[] = [
   {
@@ -69,9 +71,8 @@ export const MAIN_CATEGORIES: MainCategoryDetail[] = [
       "높은 가치와 뛰어난 품질을 갖춘",
       "럭셔리 아이템을 한곳에서 만나보세요.",
     ],
-    tileImage: "/main/categories/luxury-tile.png",
+    tileImage: "/main/categories/luxury-side.png",
     sideImage: "/main/categories/luxury-side.png",
-    highlighted: true,
   },
   {
     id: "collectibles",
@@ -82,7 +83,8 @@ export const MAIN_CATEGORIES: MainCategoryDetail[] = [
       "특별한 희소성과 수집 가치를 지닌",
       "다양한 컬렉터 아이템을 만나보세요.",
     ],
-    tileImage: "/main/categories/collectibles-tile.png",
+    tileImage: "/main/categories/collectibles-side.png",
+    sideImage: "/main/categories/collectibles-side.png",
   },
   {
     id: "premium",
@@ -93,7 +95,8 @@ export const MAIN_CATEGORIES: MainCategoryDetail[] = [
       "역사적 의미를 지닌 작품부터",
       "희소성 높은 프리미엄 아이템까지 만나보세요.",
     ],
-    tileImage: "/main/categories/premium-tile.png",
+    tileImage: "/main/categories/premium-side.png",
+    sideImage: "/main/categories/premium-side.png",
   },
   {
     id: "electrics",
@@ -104,7 +107,8 @@ export const MAIN_CATEGORIES: MainCategoryDetail[] = [
       "기술력을 갖춘 다양한",
       "프리미엄 전자제품을 만나보세요.",
     ],
-    tileImage: "/main/categories/electrics-tile.png",
+    tileImage: "/main/categories/electrics-side.png",
+    sideImage: "/main/categories/electrics-side.png",
   },
 ];
 

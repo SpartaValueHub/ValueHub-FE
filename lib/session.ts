@@ -9,7 +9,6 @@ import { buildAuthCookieHeader } from "@/lib/auth/cookie-store";
 import { clearExpiredAuthSession } from "@/lib/auth/clear-expired-session";
 import { isSecureNextAuthCookieEnv } from "@/lib/auth/nextauth-session";
 import { authOptions } from "@/lib/auth/options";
-import { logSafeError } from "@/lib/log/safe-log";
 import type { ClientSessionUser, SessionUser } from "@/types/auth/session";
 
 export type AuthUser = SessionUser;
@@ -21,25 +20,15 @@ function isAuthFailure(error: unknown): boolean {
   );
 }
 
-/** RSC에서는 cookie delete가 막힐 수 있음 — Route Handler/Action에서는 정상 동작 */
-async function safeClearExpiredAuthSession() {
-  try {
-    await clearExpiredAuthSession();
-  } catch (error) {
-    logSafeError("clearExpiredAuthSession failed:", error);
-  }
-}
-
 /**
  * Auth HttpOnly 쿠키 + `/auth/me`(필요 시 refresh)로 백엔드 세션 생존 확인.
- * @returns true 생존 / false 만료·쿠키 없음 (정리 시도함) / 'transient' 네트워크 등
+ * 쿠키 삭제는 하지 않음 — RSC에서 cookies().delete 금지. 정리는 Route Handler/Action에서.
  */
 async function probeAuthBackendSession(): Promise<
   true | false | "transient"
 > {
   const cookieHeader = await buildAuthCookieHeader();
   if (!cookieHeader) {
-    await safeClearExpiredAuthSession();
     return false;
   }
 
@@ -48,7 +37,6 @@ async function probeAuthBackendSession(): Promise<
     return true;
   } catch (error) {
     if (isAuthFailure(error)) {
-      await safeClearExpiredAuthSession();
       return false;
     }
     return "transient";
@@ -131,10 +119,11 @@ export async function requireAuth(callbackUrl = "/") {
   return user;
 }
 
-/** Server Action용 — throw */
+/** Server Action용 — throw (쿠키 정리 가능) */
 export async function requireActionAuth(): Promise<AuthUser> {
   const user = await getAuthUser();
   if (!user) {
+    await clearExpiredAuthSession();
     throw new AuthSessionExpiredError();
   }
   return user;

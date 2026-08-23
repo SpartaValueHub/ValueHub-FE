@@ -43,15 +43,25 @@ export type UiUserProfileProductsPage = {
   hasMore: boolean;
 };
 
-export type UiUserProfileLoadResult = {
-  profile: UiUserProfile;
-  sources: UiUserProfileFieldSources;
-  /** 판매목록 API 성공 시 페이징 메타 */
-  productsMeta?: Pick<
-    UiUserProfileProductsPage,
-    "page" | "totalPages" | "hasMore"
-  >;
-};
+export type UiUserProfileLoadStatus = "ok" | "unavailable" | "error";
+
+export type UiUserProfileLoadResult =
+  | {
+      status: "ok";
+      profile: UiUserProfile;
+      sources: UiUserProfileFieldSources;
+      /** 판매목록 API 성공 시 페이징 메타 */
+      productsMeta?: Pick<
+        UiUserProfileProductsPage,
+        "page" | "totalPages" | "hasMore"
+      >;
+    }
+  | {
+      status: "unavailable";
+    }
+  | {
+      status: "error";
+    };
 
 export type UiTradeReview = {
   id: string;

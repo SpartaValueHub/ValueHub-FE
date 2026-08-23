@@ -1,8 +1,10 @@
 /**
  * 유저 프로필 모달 오케스트레이션.
  * Member 공개 프로필 + Auth 가입일 + Product-Post 판매목록(SELLING FE 필터) + 목업(등급·지역·별점).
+ * Member/가입일 404 → unavailable (탈퇴·확인 불가). 네트워크 오류는 error.
  */
 import { USER_PROFILE_DEMO } from "@/constants/user-profile";
+import { ApiError } from "@/lib/api/client";
 import { formatListedAt } from "@/lib/format-listed-at";
 import { getMemberJoinedAtService } from "@/services/auth.service";
 import { getMemberPublicProfileService } from "@/services/member.service";
@@ -19,6 +21,10 @@ import type {
 export const USER_PROFILE_PRODUCTS_PAGE_SIZE = 4;
 
 const PLACEHOLDER_IMAGE = "/main/products/product-1.png";
+
+function isNotFoundError(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 404;
+}
 
 function mapSellingProduct(item: {
   productPostUuid: string;
@@ -77,7 +83,13 @@ export async function listUserProfileProductsService(
 export async function getUserProfileForDialogService(
   memberUuid: string
 ): Promise<UiUserProfileLoadResult> {
-  const base: UiUserProfile = { ...USER_PROFILE_DEMO, products: [] };
+  const base: UiUserProfile = {
+    ...USER_PROFILE_DEMO,
+    nickname: "",
+    joinedAtLabel: "",
+    avatarUrl: undefined,
+    products: [],
+  };
   const mockSources = {
     nickname: "mock" as const,
     avatar: "mock" as const,
@@ -96,9 +108,29 @@ export async function getUserProfileForDialogService(
     ]
   );
 
+  const memberNotFound =
+    memberResult.status === "rejected" &&
+    isNotFoundError(memberResult.reason);
+  const joinedNotFound =
+    joinedResult.status === "rejected" &&
+    isNotFoundError(joinedResult.reason);
+
+  if (memberNotFound || joinedNotFound) {
+    return { status: "unavailable" };
+  }
+
+  const memberFailed = memberResult.status === "rejected";
+  const joinedFailed = joinedResult.status === "rejected";
+  if (memberFailed && joinedFailed) {
+    return { status: "error" };
+  }
+
   let profile: UiUserProfile = { ...base };
   const sources = { ...mockSources };
-  let productsMeta: UiUserProfileLoadResult["productsMeta"];
+  let productsMeta: Extract<
+    UiUserProfileLoadResult,
+    { status: "ok" }
+  >["productsMeta"];
 
   if (memberResult.status === "fulfilled") {
     const publicProfile = memberResult.value;
@@ -134,9 +166,7 @@ export async function getUserProfileForDialogService(
       totalPages: page.totalPages,
       hasMore: page.hasMore,
     };
-  } else {
-    profile = { ...profile, products: USER_PROFILE_DEMO.products };
   }
 
-  return { profile, sources, productsMeta };
+  return { status: "ok", profile, sources, productsMeta };
 }

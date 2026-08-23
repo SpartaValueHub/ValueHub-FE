@@ -49,6 +49,13 @@ export interface ApiAuthAccountResponse {
   joinedAt: string;
 }
 
+/** GET /api/v1/auth/members/{memberUuid}/joined-at */
+export interface ApiMemberJoinedAtResponse {
+  memberUuid: string;
+  /** ISO-8601 Instant — auth.created_at */
+  joinedAt: string;
+}
+
 export type VerificationPurpose =
   | "SIGN_UP"
   | "SOCIAL_LINK"

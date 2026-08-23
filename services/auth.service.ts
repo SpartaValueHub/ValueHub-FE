@@ -5,6 +5,7 @@
 import {
   checkEmailAvailability,
   checkLoginIdAvailability,
+  getMemberJoinedAt,
   getMyAuthAccount,
   logoutUser,
   registerUser,
@@ -60,6 +61,17 @@ export async function checkEmailAvailabilityService(email: string) {
 export async function getMyAuthAccountService(): Promise<UiAuthAccount> {
   const response = await getMyAuthAccount();
   return mapAuthAccount(response);
+}
+
+/** 타인 가입일 ISO — 프로필 모달용 (Gateway public) */
+export async function getMemberJoinedAtService(
+  memberUuid: string
+): Promise<{ memberUuid: string; joinedAt: string }> {
+  const response = await getMemberJoinedAt(memberUuid);
+  return {
+    memberUuid: response.memberUuid,
+    joinedAt: response.joinedAt,
+  };
 }
 
 export async function withdrawMemberService(requestToken: string): Promise<void> {

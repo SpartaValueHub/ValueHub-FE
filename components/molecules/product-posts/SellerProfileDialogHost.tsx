@@ -69,18 +69,29 @@ export function SellerProfileDialogHost({
   const [productsPage, setProductsPage] = useState(1);
   const [productsHasMore, setProductsHasMore] = useState(false);
 
-  useEffect(() => {
-    if (!open || !memberUuid.trim()) {
-      setPhase("idle");
-      setProfile(null);
-      setSources(null);
-      setProducts([]);
-      return;
-    }
+  function resetHost() {
+    setPhase("idle");
+    setProfile(null);
+    setSources(null);
+    setProducts([]);
+    setProductsPage(1);
+    setProductsHasMore(false);
+  }
 
-    setPhase("loading");
+  function handleOpenChange(next: boolean) {
+    if (!next) resetHost();
+    onOpenChange(next);
+  }
+
+  useEffect(() => {
+    if (!open || !memberUuid.trim()) return;
+
+    const uuid = memberUuid.trim();
+    let cancelled = false;
+
     startTransition(async () => {
-      const result = await getUserProfileAction(memberUuid);
+      const result = await getUserProfileAction(uuid);
+      if (cancelled) return;
 
       if (result.status === "unavailable") {
         setPhase("unavailable");
@@ -88,7 +99,7 @@ export function SellerProfileDialogHost({
       }
 
       if (result.status === "error") {
-        setPhase("idle");
+        resetHost();
         onOpenChange(false);
         return;
       }
@@ -100,6 +111,10 @@ export function SellerProfileDialogHost({
       setProductsHasMore(result.productsMeta?.hasMore ?? false);
       setPhase("profile");
     });
+
+    return () => {
+      cancelled = true;
+    };
   }, [open, memberUuid, onOpenChange]);
 
   function handleProductsMore() {
@@ -118,11 +133,10 @@ export function SellerProfileDialogHost({
   }
 
   function close() {
-    onOpenChange(false);
+    handleOpenChange(false);
   }
 
-  const showProductsMore =
-    sources?.products === "api" && productsHasMore;
+  const showProductsMore = sources?.products === "api" && productsHasMore;
 
   const dialogProfile: UiUserProfile | null = profile
     ? { ...profile, products }
@@ -134,7 +148,7 @@ export function SellerProfileDialogHost({
         <UserProfileDialog
           open={open && phase === "profile"}
           profile={dialogProfile}
-          onOpenChange={onOpenChange}
+          onOpenChange={handleOpenChange}
           showProductsMore={showProductsMore}
           productsMorePending={morePending}
           onProductsMoreClick={handleProductsMore}

@@ -78,6 +78,7 @@ export function RecaptchaWidget({
 
   useEffect(() => {
     let cancelled = false;
+    const container = containerRef.current;
     onChangeRef.current(undefined);
 
     function handleLoadFailure() {
@@ -176,7 +177,7 @@ export function RecaptchaWidget({
           delete window.onRecaptchaLoad;
         }
         widgetIdRef.current = undefined;
-        clearContainer(containerRef.current);
+        clearContainer(container);
       };
     }
 
@@ -197,7 +198,7 @@ export function RecaptchaWidget({
         delete window.onRecaptchaLoad;
       }
       widgetIdRef.current = undefined;
-      clearContainer(containerRef.current);
+      clearContainer(container);
     };
   }, [siteKey]);
 

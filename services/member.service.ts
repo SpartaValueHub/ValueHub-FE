@@ -70,6 +70,7 @@ function mapPublicProfile(
     memberUuid: response.memberUuid,
     nickname: response.nickname.trim(),
     profileImageUrl: response.profileImageUrl,
+    memberGrade: response.memberGrade?.trim() || null,
   };
 }
 

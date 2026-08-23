@@ -14,11 +14,11 @@ export function ChatListSection({ rooms, className }: ChatListSectionProps) {
     <section
       aria-label="채팅 목록"
       className={cn(
-        "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white lg:gap-2.5 lg:pt-[30px]",
+        "flex min-h-0 min-w-0 flex-1 flex-col bg-white pb-24 lg:gap-2.5 lg:pt-[30px] lg:pb-[120px]",
         className
       )}
     >
-      <div className="hidden shrink-0 flex-col gap-[30px] px-10 lg:flex">
+      <div className="hidden flex-col gap-[30px] px-10 lg:flex">
         <div className="flex items-center gap-2.5">
           <Icon name="chat" size={20} />
           <h1 className="font-sans text-lg text-[#323232]">채팅 목록</h1>
@@ -28,7 +28,7 @@ export function ChatListSection({ rooms, className }: ChatListSectionProps) {
         </p>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto pb-24 lg:grid-cols-2 lg:pb-[120px]">
+      <div className="grid grid-cols-1 lg:grid-cols-2">
         {rooms.map((room) => (
           <ChatRoomItem key={room.id} room={room} variant="page" />
         ))}

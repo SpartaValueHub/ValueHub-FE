@@ -208,7 +208,7 @@ export function ChatRoomWorkspace({
               <Icon name="chevron-left" size={30} />
             </button>
             <span className="flex h-[30px] items-center gap-0.5 rounded-[45px] bg-white px-3 py-[3px]">
-              <Icon name="user" size={12} />
+              <Icon name="user-fill" size={12} />
               <span className="font-sans text-sm font-medium text-[#323232]">
                 {room.peerName}
               </span>
@@ -283,8 +283,8 @@ export function ChatRoomWorkspace({
                 <span className="ml-0.5 text-base">원</span>
               </p>
               <p className="flex items-center gap-0.5 font-sans text-sm text-[#323232]">
-                <Icon name="location" size={12} />
-                {room.location}
+                <Icon name="user-fill" size={12} />
+                {room.peerName}
               </p>
             </div>
           </div>

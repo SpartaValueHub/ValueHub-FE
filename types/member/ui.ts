@@ -15,6 +15,7 @@ export type UiMemberPublicProfile = {
   memberUuid: string;
   nickname: string;
   profileImageUrl: string | null;
+  memberGrade: string | null;
 };
 
 export type CreateMemberInput = {

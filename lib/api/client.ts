@@ -7,6 +7,7 @@ import {
   buildAuthCookieHeader,
 } from "@/lib/auth/cookie-store";
 import { AUTH_COOKIE_REFRESH } from "@/lib/auth/cookies";
+import { clearExpiredAuthSession } from "@/lib/auth/clear-expired-session";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 
 export class ApiError extends Error {
@@ -283,6 +284,7 @@ export async function apiFetch<T>(
     if (refreshed) {
       return apiFetch<T>(path, { ...options, _retried: true });
     }
+    await clearExpiredAuthSession();
     throw new AuthSessionExpiredError();
   }
 

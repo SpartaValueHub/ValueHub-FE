@@ -4,7 +4,12 @@
  * Product-Post Server Actions.
  * 클라이언트는 이 Action만 호출 — lib/api·services 직접 import 금지.
  */
-import { ApiError, ApiTimeoutError, AuthSessionExpiredError } from "@/lib/api/client";
+import {
+  ApiError,
+  ApiTimeoutError,
+  AuthSessionExpiredError,
+} from "@/lib/api/client";
+import { mapActionError } from "@/lib/auth/map-action-error";
 import { requireActionAuth } from "@/lib/session";
 import {
   createProductPostService,
@@ -20,7 +25,7 @@ import type {
 
 export type ProductPostActionResult<T> =
   | { ok: true; data: T }
-  | { ok: false; message: string };
+  | { ok: false; message: string; code?: string };
 
 function toErrorMessage(e: unknown, fallback: string) {
   if (e instanceof ApiTimeoutError) {
@@ -67,7 +72,7 @@ export async function createProductPostAction(
     return { ok: true, data };
   } catch (e) {
     if (e instanceof AuthSessionExpiredError) {
-      return { ok: false, message: e.message };
+      return mapActionError(e, "상품 등록에 실패했습니다.");
     }
     return {
       ok: false,
@@ -85,7 +90,7 @@ export async function deleteProductPostAction(
     return { ok: true, data: null };
   } catch (e) {
     if (e instanceof AuthSessionExpiredError) {
-      return { ok: false, message: e.message };
+      return mapActionError(e, "상품 삭제에 실패했습니다.");
     }
     return {
       ok: false,

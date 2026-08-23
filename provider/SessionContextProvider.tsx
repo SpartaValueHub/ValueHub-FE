@@ -8,6 +8,7 @@ import {
   SessionContext,
   type SessionUserSummary,
 } from "@/context/SessionContext";
+import { SESSION_EXPIRED_EVENT } from "@/lib/auth/session-expired.client";
 import { logSafeError } from "@/lib/log/safe-log";
 
 export type InitialSession = {
@@ -33,6 +34,16 @@ export function SessionContextProvider({
     initialSession.user
   );
 
+  const expireSessionLocally = useCallback(async () => {
+    setIsAuthenticated(false);
+    setUser(null);
+    try {
+      await signOut({ redirect: false });
+    } catch (error) {
+      logSafeError("Local session expire signOut failed:", error);
+    }
+  }, []);
+
   const refresh = useCallback(async () => {
     try {
       const response = await fetch("/api/auth/status", {
@@ -48,8 +59,16 @@ export function SessionContextProvider({
         isAuthenticated: boolean;
         user: SessionUserSummary | null;
       };
-      setIsAuthenticated(!!data.isAuthenticated);
+      const nextAuth = !!data.isAuthenticated;
+      setIsAuthenticated(nextAuth);
       setUser(data.user);
+      if (!nextAuth) {
+        try {
+          await signOut({ redirect: false });
+        } catch (error) {
+          logSafeError("Session refresh signOut failed:", error);
+        }
+      }
     } catch (error) {
       logSafeError("Auth status check failed:", error);
       setIsAuthenticated(false);
@@ -86,6 +105,14 @@ export function SessionContextProvider({
     return () => window.clearTimeout(timer);
   }, [refresh]);
 
+  useEffect(() => {
+    function onExpired() {
+      void expireSessionLocally();
+    }
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+  }, [expireSessionLocally]);
+
   const value = useMemo(
     () => ({
       isAuthenticated,
@@ -94,8 +121,17 @@ export function SessionContextProvider({
       login,
       logout,
       refresh,
+      expireSession: expireSessionLocally,
     }),
-    [isAuthenticated, isLoading, user, login, logout, refresh]
+    [
+      isAuthenticated,
+      isLoading,
+      user,
+      login,
+      logout,
+      refresh,
+      expireSessionLocally,
+    ]
   );
 
   return (

@@ -28,6 +28,7 @@ import {
   PRODUCT_POSTS_PATH,
   productPostPlaceholderImageUrl,
 } from "@/constants/product-posts";
+import { notifyIfSessionExpiredAction } from "@/lib/auth/session-expired.client";
 import { cn } from "@/lib/utils";
 import type { UiCategorySummary } from "@/types/categories/ui";
 import type {
@@ -434,6 +435,7 @@ export function ProductPostCreateForm() {
         if (!result.ok) {
           setConfirmOpen(false);
           setError(result.message);
+          notifyIfSessionExpiredAction(result);
           return;
         }
 

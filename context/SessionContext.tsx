@@ -14,6 +14,8 @@ interface SessionContextType {
   login: () => void;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
+  /** Auth 만료 시 조용히 비로그인 UI (토스트·리다이렉트 없음) */
+  expireSession: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);

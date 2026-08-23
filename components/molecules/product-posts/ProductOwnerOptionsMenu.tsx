@@ -8,6 +8,7 @@ import { Icon, type SystemIconName } from "@/components/atoms/icons";
 import { ConfirmModal } from "@/components/molecules/overlay/ConfirmModal";
 import { Popover } from "@/components/molecules/overlay/Popover";
 import { PRODUCT_POSTS_PATH } from "@/constants/product-posts";
+import { notifyIfSessionExpiredAction } from "@/lib/auth/session-expired.client";
 import { cn } from "@/lib/utils";
 
 type OwnerMenuItem = {
@@ -64,6 +65,7 @@ export function ProductOwnerOptionsMenu({
         const res = await deleteProductPostAction(productPostUuid);
         if (!res.ok) {
           setError(res.message);
+          notifyIfSessionExpiredAction(res);
           return;
         }
         setConfirmOpen(false);

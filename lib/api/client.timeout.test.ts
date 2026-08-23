@@ -6,6 +6,10 @@ vi.mock("@/lib/auth/cookie-store", () => ({
   extractAuthCookieHeaderFromResponse: vi.fn(),
 }));
 
+vi.mock("@/lib/auth/clear-expired-session", () => ({
+  clearExpiredAuthSession: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { ApiTimeoutError, apiFetch } from "@/lib/api/client";
 
 describe("apiFetch timeout", () => {

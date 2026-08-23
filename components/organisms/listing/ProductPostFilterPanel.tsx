@@ -1,7 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useEffect,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 
 import { Checkbox } from "@/components/atoms/checkbox";
 import { Icon } from "@/components/atoms/icons";
@@ -18,6 +23,15 @@ import type { UiBrandFilterOption } from "@/services/product-posts.service";
 const GRADES: ProductPostConditionGrade[] = ["S", "A", "B", "C"];
 const PRICE_MIN_MAN = PRODUCT_POST_PRICE_FILTER_MIN_WON / 10_000;
 const PRICE_MAX_MAN = PRODUCT_POST_PRICE_FILTER_MAX_WON / 10_000;
+
+function clampPriceMan(man: number) {
+  if (!Number.isFinite(man)) return PRICE_MAX_MAN;
+  return Math.min(PRICE_MAX_MAN, Math.max(PRICE_MIN_MAN, Math.round(man)));
+}
+
+function manFromWon(won: number) {
+  return clampPriceMan(Math.round(won / 10_000));
+}
 
 interface ProductPostFilterPanelProps {
   categoryUuid: string | null;
@@ -80,13 +94,17 @@ export function ProductPostFilterPanel({
   className,
 }: ProductPostFilterPanelProps) {
   const router = useRouter();
-  const priceMan = Math.round(maxPrice / 10_000);
-  const clampedMan = Math.min(
-    PRICE_MAX_MAN,
-    Math.max(PRICE_MIN_MAN, priceMan)
-  );
+  const urlPriceMan = manFromWon(maxPrice);
+  const [draftMan, setDraftMan] = useState(urlPriceMan);
+  const [inputText, setInputText] = useState(String(urlPriceMan));
+
+  useEffect(() => {
+    setDraftMan(urlPriceMan);
+    setInputText(String(urlPriceMan));
+  }, [urlPriceMan]);
+
   const pricePct =
-    ((clampedMan - PRICE_MIN_MAN) / (PRICE_MAX_MAN - PRICE_MIN_MAN)) * 100;
+    ((draftMan - PRICE_MIN_MAN) / (PRICE_MAX_MAN - PRICE_MIN_MAN)) * 100;
 
   const pushFilters = (next: {
     brands?: string[];
@@ -94,7 +112,7 @@ export function ProductPostFilterPanel({
     grades?: ProductPostConditionGrade[];
     docs?: ProductPostDocumentFilter;
   }) => {
-    router.push(
+    router.replace(
       productPostsListHref({
         category: categoryUuid,
         sub: activeSub,
@@ -103,8 +121,18 @@ export function ProductPostFilterPanel({
         maxPrice: next.maxPrice ?? maxPrice,
         grades: next.grades ?? selectedGrades,
         docs: next.docs ?? docs,
-      })
+      }),
+      { scroll: false }
     );
+  };
+
+  const commitPriceMan = (rawMan: number) => {
+    const nextMan = clampPriceMan(rawMan);
+    setDraftMan(nextMan);
+    setInputText(String(nextMan));
+    const nextWon = nextMan * 10_000;
+    if (nextWon === maxPrice) return;
+    pushFilters({ maxPrice: nextWon });
   };
 
   const toggleBrand = (brand: UiBrandFilterOption) => {
@@ -127,12 +155,13 @@ export function ProductPostFilterPanel({
   };
 
   const resetFilters = () => {
-    router.push(
+    router.replace(
       productPostsListHref({
         category: categoryUuid,
         sub: activeSub,
         page: 1,
-      })
+      }),
+      { scroll: false }
     );
   };
 
@@ -183,7 +212,7 @@ export function ProductPostFilterPanel({
             min={PRICE_MIN_MAN}
             max={PRICE_MAX_MAN}
             step={10}
-            value={clampedMan}
+            value={draftMan}
             aria-label="최대 가격"
             className="vh-price-range w-full"
             style={
@@ -191,16 +220,55 @@ export function ProductPostFilterPanel({
                 "--vh-price-pct": `${Math.min(100, Math.max(0, pricePct))}%`,
               } as CSSProperties
             }
-            onChange={(e) =>
-              pushFilters({
-                maxPrice: Number(e.target.value) * 10_000,
-              })
+            onChange={(e) => {
+              const next = Number(e.target.value);
+              setDraftMan(next);
+              setInputText(String(next));
+            }}
+            onPointerUp={(e) =>
+              commitPriceMan(Number((e.target as HTMLInputElement).value))
+            }
+            onKeyUp={(e) =>
+              commitPriceMan(Number((e.target as HTMLInputElement).value))
             }
           />
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="filter-max-price-man"
+              className="shrink-0 font-sans text-sm text-[#ababab]"
+            >
+              최대
+            </label>
+            <input
+              id="filter-max-price-man"
+              type="number"
+              inputMode="numeric"
+              min={PRICE_MIN_MAN}
+              max={PRICE_MAX_MAN}
+              step={10}
+              value={inputText}
+              aria-label="최대 가격 (만원)"
+              className="w-full rounded border border-[#606060] bg-transparent px-3 py-2 font-sans text-sm text-white outline-none focus:border-vh-brand-gold"
+              onChange={(e) => setInputText(e.target.value)}
+              onBlur={() => {
+                const parsed = Number.parseInt(inputText.replace(/\D/g, ""), 10);
+                commitPriceMan(
+                  Number.isFinite(parsed) ? parsed : draftMan
+                );
+              }}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                e.currentTarget.blur();
+              }}
+            />
+            <span className="shrink-0 font-sans text-sm text-[#ababab]">
+              만원
+            </span>
+          </div>
           <p className="font-sans text-sm text-[#ababab]">
-            {clampedMan >= PRICE_MAX_MAN
+            {draftMan >= PRICE_MAX_MAN
               ? "1000만원 이상"
-              : `최대 ${clampedMan.toLocaleString("ko-KR")}만원`}
+              : `최대 ${draftMan.toLocaleString("ko-KR")}만원`}
           </p>
         </div>
       </FilterSection>

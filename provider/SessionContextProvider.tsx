@@ -29,7 +29,7 @@ export function SessionContextProvider({
   const [isAuthenticated, setIsAuthenticated] = useState(
     initialSession.isAuthenticated
   );
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<SessionUserSummary | null>(
     initialSession.user
   );

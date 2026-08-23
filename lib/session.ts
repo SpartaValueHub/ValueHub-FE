@@ -5,17 +5,59 @@ import { redirect } from "next/navigation";
 
 import { getMyAuthAccount } from "@/lib/api/auth";
 import { ApiError, AuthSessionExpiredError } from "@/lib/api/client";
+import { buildAuthCookieHeader } from "@/lib/auth/cookie-store";
 import { clearExpiredAuthSession } from "@/lib/auth/clear-expired-session";
 import { isSecureNextAuthCookieEnv } from "@/lib/auth/nextauth-session";
 import { authOptions } from "@/lib/auth/options";
+import { logSafeError } from "@/lib/log/safe-log";
 import type { ClientSessionUser, SessionUser } from "@/types/auth/session";
 
 export type AuthUser = SessionUser;
 
+function isAuthFailure(error: unknown): boolean {
+  return (
+    error instanceof AuthSessionExpiredError ||
+    (error instanceof ApiError && error.status === 401)
+  );
+}
+
+/** RSC에서는 cookie delete가 막힐 수 있음 — Route Handler/Action에서는 정상 동작 */
+async function safeClearExpiredAuthSession() {
+  try {
+    await clearExpiredAuthSession();
+  } catch (error) {
+    logSafeError("clearExpiredAuthSession failed:", error);
+  }
+}
+
+/**
+ * Auth HttpOnly 쿠키 + `/auth/me`(필요 시 refresh)로 백엔드 세션 생존 확인.
+ * @returns true 생존 / false 만료·쿠키 없음 (정리 시도함) / 'transient' 네트워크 등
+ */
+async function probeAuthBackendSession(): Promise<
+  true | false | "transient"
+> {
+  const cookieHeader = await buildAuthCookieHeader();
+  if (!cookieHeader) {
+    await safeClearExpiredAuthSession();
+    return false;
+  }
+
+  try {
+    await getMyAuthAccount();
+    return true;
+  } catch (error) {
+    if (isAuthFailure(error)) {
+      await safeClearExpiredAuthSession();
+      return false;
+    }
+    return "transient";
+  }
+}
+
 /**
  * 헤더 등 클라이언트 UI용.
- * NextAuth nickname + Auth `/auth/me`(필요 시 refresh)로 실세션을 검증한다.
- * Auth 만료 시 쿠키·NextAuth를 정리하고 null.
+ * NextAuth nickname + Auth 실세션. 쿠키 없음·만료면 null (헤더 비로그인).
  */
 export async function getClientSessionUser(): Promise<ClientSessionUser | null> {
   const session = await getServerSession(authOptions);
@@ -28,29 +70,18 @@ export async function getClientSessionUser(): Promise<ClientSessionUser | null> 
     return null;
   }
 
-  try {
-    await getMyAuthAccount();
-    return { nickname };
-  } catch (error) {
-    if (
-      error instanceof AuthSessionExpiredError ||
-      (error instanceof ApiError && error.status === 401)
-    ) {
-      await clearExpiredAuthSession();
-      return null;
-    }
-    // 네트워크 등 일시 오류 — NextAuth만으로 헤더 유지 (오로그아웃 방지)
-    return { nickname };
+  const probe = await probeAuthBackendSession();
+  if (probe === false) {
+    return null;
   }
+  // transient: 오로그아웃 방지로 nickname 유지
+  return { nickname };
 }
 
 /**
- * 서버 전용 세션 사용자.
- * memberUuid·role은 JWT token에만 두고 /api/auth/session에는 노출하지 않으므로
- * getServerSession 대신 getToken으로 읽는다.
- *
- * next-auth SessionStore는 req.cookies만 본다. Cookie 헤더 문자열만 넘기면
- * 토큰이 항상 null이 되어 헤더가 비로그인으로 남는다.
+ * 서버 전용 세션 사용자 (보호 페이지·Action).
+ * NextAuth JWT의 memberUuid·nickname + Auth 백엔드 세션을 함께 확인한다.
+ * Auth 쿠키가 없거나 만료면 null (requireAuth → 로그인 리다이렉트).
  */
 export async function getAuthUser(): Promise<AuthUser | null> {
   const cookieStore = await cookies();
@@ -76,6 +107,11 @@ export async function getAuthUser(): Promise<AuthUser | null> {
     return null;
   }
 
+  const probe = await probeAuthBackendSession();
+  if (probe === false) {
+    return null;
+  }
+
   return {
     memberUuid,
     nickname,
@@ -86,7 +122,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
   };
 }
 
-/** RSC/페이지용 — 미로그인 시 /signin 리다이렉트 */
+/** RSC/페이지용 — 미로그인·Auth 만료 시 /signin 리다이렉트 */
 export async function requireAuth(callbackUrl = "/") {
   const user = await getAuthUser();
   if (!user) {
@@ -99,7 +135,7 @@ export async function requireAuth(callbackUrl = "/") {
 export async function requireActionAuth(): Promise<AuthUser> {
   const user = await getAuthUser();
   if (!user) {
-    throw new Error("로그인이 필요합니다.");
+    throw new AuthSessionExpiredError();
   }
   return user;
 }

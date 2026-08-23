@@ -68,6 +68,7 @@ export async function createProductPostAction(
   body: ApiCreateProductPostRequest
 ): Promise<ProductPostActionResult<UiProductPostDetail>> {
   try {
+    await requireActionAuth();
     const data = await createProductPostService(body);
     return { ok: true, data };
   } catch (e) {

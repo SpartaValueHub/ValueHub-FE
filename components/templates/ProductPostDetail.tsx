@@ -10,6 +10,7 @@ import {
   type ProductChatViewerRole,
 } from "@/components/molecules/product-posts/ProductChatCta";
 import { ProductOwnerOptionsMenu } from "@/components/molecules/product-posts/ProductOwnerOptionsMenu";
+import { SellerProfileDialogHost } from "@/components/molecules/product-posts/SellerProfileDialogHost";
 import { ProductImageSlider } from "@/components/molecules/ProductImageSlider";
 import { cn } from "@/lib/utils";
 import type {
@@ -56,12 +57,15 @@ const SELLER_ACTIVITY_LOCATION = "동구 초량동";
 const SELLER_FALLBACK_NICKNAME = "판매자";
 
 function SellerProfile({
+  memberUuid,
   nickname,
   profileImageUrl,
 }: {
+  memberUuid: string;
   nickname: string;
   profileImageUrl?: string | null;
 }) {
+  const [profileOpen, setProfileOpen] = useState(false);
   const displayName = nickname.trim() || SELLER_FALLBACK_NICKNAME;
   const avatarInitial = displayName.slice(0, 1);
 
@@ -71,6 +75,7 @@ function SellerProfile({
         type="button"
         className="flex items-center gap-2.5"
         aria-label={`${displayName} 프로필`}
+        onClick={() => setProfileOpen(true)}
       >
         {profileImageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- 외부/기본 아바타 URL
@@ -124,6 +129,13 @@ function SellerProfile({
           거래안심등급
         </span>
       </div>
+      <SellerProfileDialogHost
+        open={profileOpen}
+        memberUuid={memberUuid}
+        previewNickname={nickname}
+        previewAvatarUrl={profileImageUrl}
+        onOpenChange={setProfileOpen}
+      />
     </div>
   );
 }
@@ -215,6 +227,7 @@ export function ProductPostDetail({
           <div className="mt-2.5 md:mt-0 md:contents">
             <div className="md:hidden">
               <SellerProfile
+                memberUuid={post.memberUuid}
                 nickname={displayNickname}
                 profileImageUrl={sellerProfileImageUrl}
               />
@@ -265,6 +278,7 @@ export function ProductPostDetail({
 
             <div className="mt-2.5 hidden items-center gap-[30px] md:mt-0 md:flex">
               <SellerProfile
+                memberUuid={post.memberUuid}
                 nickname={displayNickname}
                 profileImageUrl={sellerProfileImageUrl}
               />

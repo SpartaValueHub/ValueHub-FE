@@ -22,6 +22,24 @@ export type UiUserProfile = {
   products: UiUserProfileProduct[];
 };
 
+/** 프로필 모달 필드별 데이터 출처 — 데모 확인용 */
+export type UiProfileFieldSource = "api" | "mock";
+
+export type UiUserProfileFieldSources = {
+  nickname: UiProfileFieldSource;
+  avatar: UiProfileFieldSource;
+  joinedAt: UiProfileFieldSource;
+  trustGrade: UiProfileFieldSource;
+  region: UiProfileFieldSource;
+  rating: UiProfileFieldSource;
+  products: UiProfileFieldSource;
+};
+
+export type UiUserProfileLoadResult = {
+  profile: UiUserProfile;
+  sources: UiUserProfileFieldSources;
+};
+
 export type UiTradeReview = {
   id: string;
   nickname: string;

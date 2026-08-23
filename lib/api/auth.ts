@@ -3,6 +3,7 @@ import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import type {
   ApiAuthAccountResponse,
   ApiAvailabilityResponse,
+  ApiMemberJoinedAtResponse,
   ApiSignupRequest,
   ApiSignupResponse,
   ApiSignupResumeRequest,
@@ -18,6 +19,19 @@ export function getMyAuthAccount() {
     cache: { noStore: true },
     timeoutMillis: 5_000,
   });
+}
+
+/** 타인 가입일 — Gateway public, JWT 불필요 */
+export function getMemberJoinedAt(memberUuid: string) {
+  return apiFetch<ApiMemberJoinedAtResponse>(
+    API_ENDPOINTS.auth.memberJoinedAt(memberUuid),
+    {
+      method: "GET",
+      cache: { noStore: true },
+      skipSessionRecovery: true,
+      timeoutMillis: 5_000,
+    }
+  );
 }
 
 export function registerUser(body: ApiSignupRequest) {

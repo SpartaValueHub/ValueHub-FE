@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Image from "next/image";
 
 import { Icon } from "@/components/atoms/icons";
@@ -23,6 +23,8 @@ interface UserProfileDialogProps {
   onMoreClick?: () => void;
   onRatingDetailClick?: () => void;
   onProductsMoreClick?: () => void;
+  /** API/목업 구분 뱃지 등 — 개발·데모 확인용 */
+  headerExtra?: ReactNode;
   className?: string;
 }
 
@@ -99,6 +101,7 @@ export function UserProfileDialog({
   onMoreClick,
   onRatingDetailClick,
   onProductsMoreClick,
+  headerExtra,
   className,
 }: UserProfileDialogProps) {
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -130,6 +133,7 @@ export function UserProfileDialog({
           className={cn("px-[30px] pt-0 pb-[70px]", className)}
         >
           <div className="flex flex-col gap-2.5">
+            {headerExtra}
             <div className="flex items-start gap-5">
               <span className="relative size-[62px] shrink-0 overflow-hidden rounded-full bg-[rgba(221,221,221,0.87)]">
                 {profile.avatarUrl ? (

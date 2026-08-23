@@ -1,32 +1,18 @@
+import { redirect } from "next/navigation";
+
 import { MyPageTemplate } from "@/components/templates/mypage/MyPageTemplate";
-import { MOCK_MYPAGE } from "@/constants/mypage";
 import { requireAuth } from "@/lib/session";
 import { getMyPageService } from "@/services/mypage.service";
-import type { UiMyPage } from "@/types/mypage/ui";
-
-function fallbackMyPage(): UiMyPage {
-  return {
-    ...MOCK_MYPAGE,
-    account: {
-      ...MOCK_MYPAGE.account,
-      nickname: "회원",
-      profileImageUrl: null,
-      joinedAt: "",
-      loginId: "",
-      phone: "",
-      email: "",
-    },
-  };
-}
 
 export default async function MyPage() {
   await requireAuth("/mypage");
 
-  let data: UiMyPage;
+  let data;
   try {
     data = await getMyPageService();
   } catch {
-    data = fallbackMyPage();
+    // Auth는 통과했는데 프로필 API 전부 실패 — 목데이터로 위장하지 않고 재로그인 유도
+    redirect(`/signin?callbackUrl=${encodeURIComponent("/mypage")}`);
   }
 
   return <MyPageTemplate data={data} />;

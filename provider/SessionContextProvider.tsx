@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 
 import {
@@ -26,10 +26,11 @@ export function SessionContextProvider({
   initialSession,
 }: SessionContextProviderProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState(
     initialSession.isAuthenticated
   );
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<SessionUserSummary | null>(
     initialSession.user
   );
@@ -98,12 +99,10 @@ export function SessionContextProvider({
     router.refresh();
   }, [router]);
 
+  /** 루트 layout Provider는 클라이언트 이동 시 언마운트되지 않음 → 경로마다 status 재검증 */
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void refresh();
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [refresh]);
+    void refresh();
+  }, [refresh, pathname]);
 
   useEffect(() => {
     function onExpired() {

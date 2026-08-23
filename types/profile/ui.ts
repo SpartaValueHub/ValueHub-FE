@@ -35,9 +35,22 @@ export type UiUserProfileFieldSources = {
   products: UiProfileFieldSource;
 };
 
+/** 프로필 모달 판매글 페이지 (더보기 append용) */
+export type UiUserProfileProductsPage = {
+  products: UiUserProfileProduct[];
+  page: number;
+  totalPages: number;
+  hasMore: boolean;
+};
+
 export type UiUserProfileLoadResult = {
   profile: UiUserProfile;
   sources: UiUserProfileFieldSources;
+  /** 판매목록 API 성공 시 페이징 메타 */
+  productsMeta?: Pick<
+    UiUserProfileProductsPage,
+    "page" | "totalPages" | "hasMore"
+  >;
 };
 
 export type UiTradeReview = {

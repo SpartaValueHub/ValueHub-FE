@@ -2,12 +2,14 @@
 
 import { useState, type ReactNode } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 import { Icon } from "@/components/atoms/icons";
 import { RatingStars } from "@/components/molecules/listing/RatingStars";
 import { TrustGrade } from "@/components/molecules/listing/TrustGrade";
 import { Dialog, DialogContent } from "@/components/molecules/overlay/Dialog";
 import { TradeReviewDetailDialog } from "@/components/molecules/overlay/TradeReviewDetailDialog";
+import { PRODUCT_POSTS_PATH } from "@/constants/product-posts";
 import { cn } from "@/lib/utils";
 import type {
   UiTradeReviewDetail,
@@ -23,6 +25,9 @@ interface UserProfileDialogProps {
   onMoreClick?: () => void;
   onRatingDetailClick?: () => void;
   onProductsMoreClick?: () => void;
+  /** 판매글 더보기 노출 (4개 초과·다음 페이지 있을 때) */
+  showProductsMore?: boolean;
+  productsMorePending?: boolean;
   /** API/목업 구분 뱃지 등 — 개발·데모 확인용 */
   headerExtra?: ReactNode;
   className?: string;
@@ -32,9 +37,19 @@ function formatPrice(price: number) {
   return price.toLocaleString("ko-KR");
 }
 
-function ProfileProductCard({ product }: { product: UiUserProfileProduct }) {
+function ProfileProductCard({
+  product,
+  onNavigate,
+}: {
+  product: UiUserProfileProduct;
+  onNavigate?: () => void;
+}) {
   return (
-    <article className="flex w-[124px] shrink-0 flex-col gap-2.5">
+    <Link
+      href={`${PRODUCT_POSTS_PATH}/${product.id}`}
+      onClick={onNavigate}
+      className="flex w-[124px] shrink-0 flex-col gap-2.5"
+    >
       <div className="relative h-[150px] w-[124px] overflow-hidden bg-[#d9d9d9]">
         <Image
           src={product.image}
@@ -55,16 +70,18 @@ function ProfileProductCard({ product }: { product: UiUserProfileProduct }) {
             </span>
             <span className="font-sans text-sm leading-normal">원</span>
           </p>
-          <p className="flex gap-0.5 font-sans text-[11px] font-medium text-[#ababab]">
-            <span>{product.priceKor}</span>
-            <span>원</span>
-          </p>
+          {product.priceKor.trim() ? (
+            <p className="flex gap-0.5 font-sans text-[11px] font-medium text-[#ababab]">
+              <span>{product.priceKor}</span>
+              <span>원</span>
+            </p>
+          ) : null}
         </div>
         <p className="font-sans text-[11px] text-[#ababab]">
           {product.timeAgo}
         </p>
       </div>
-    </article>
+    </Link>
   );
 }
 
@@ -72,17 +89,21 @@ function TextAction({
   label,
   onClick,
   className,
+  disabled,
 }: {
   label: string;
   onClick?: () => void;
   className?: string;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={cn(
         "inline-flex items-center justify-center gap-1 font-sans text-[#ababab]",
+        disabled && "opacity-50",
         className
       )}
     >
@@ -101,6 +122,8 @@ export function UserProfileDialog({
   onMoreClick,
   onRatingDetailClick,
   onProductsMoreClick,
+  showProductsMore = false,
+  productsMorePending = false,
   headerExtra,
   className,
 }: UserProfileDialogProps) {
@@ -219,18 +242,31 @@ export function UserProfileDialog({
               <p className="font-sans text-base text-[#323232]">
                 판매중인 물품
               </p>
-              <TextAction
-                label="더보기"
-                onClick={onProductsMoreClick}
-                className="text-[13px]"
-              />
+              {showProductsMore ? (
+                <TextAction
+                  label={productsMorePending ? "불러오는 중…" : "더보기"}
+                  onClick={onProductsMoreClick}
+                  disabled={productsMorePending}
+                  className="text-[13px]"
+                />
+              ) : null}
             </div>
 
-            <div className="flex items-start justify-between">
-              {profile.products.map((product) => (
-                <ProfileProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            {profile.products.length > 0 ? (
+              <div className="grid grid-cols-4 gap-x-5 gap-y-4">
+                {profile.products.map((product) => (
+                  <ProfileProductCard
+                    key={product.id}
+                    product={product}
+                    onNavigate={close}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="py-4 font-sans text-sm text-[#868686]">
+                판매중인 물품이 없습니다.
+              </p>
+            )}
           </div>
         </DialogContent>
       </Dialog>

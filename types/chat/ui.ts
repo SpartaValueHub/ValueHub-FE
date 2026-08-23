@@ -62,3 +62,12 @@ export type UiProductChatEntry = {
   sellerNickname: string | null;
   sellerProfileImageUrl: string | null;
 };
+
+/** POST /rooms 성공 — 상세 `/chat/[roomId]` 이동용 */
+export type UiCreatedChatRoom = {
+  roomId: string;
+  productPostUuid: string;
+  buyerUuid: string;
+  sellerUuid: string;
+  reused: boolean;
+};

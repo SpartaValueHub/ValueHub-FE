@@ -101,6 +101,7 @@ export function SessionContextProvider({
 
   /** 루트 layout Provider는 클라이언트 이동 시 언마운트되지 않음 → 경로마다 status 재검증 */
   useEffect(() => {
+    /* eslint-disable-next-line react-hooks/set-state-in-effect -- Auth status follows the route */
     void refresh();
   }, [refresh, pathname]);
 

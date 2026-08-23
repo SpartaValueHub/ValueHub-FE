@@ -12,6 +12,7 @@ import { formatJoinedAtLabel } from "@/services/mypage.service";
 import { listProductPostsService } from "@/services/product-posts.service";
 import type {
   UiUserProfile,
+  UiUserProfileFieldSources,
   UiUserProfileLoadResult,
   UiUserProfileProduct,
   UiUserProfileProductsPage,
@@ -109,11 +110,9 @@ export async function getUserProfileForDialogService(
   );
 
   const memberNotFound =
-    memberResult.status === "rejected" &&
-    isNotFoundError(memberResult.reason);
+    memberResult.status === "rejected" && isNotFoundError(memberResult.reason);
   const joinedNotFound =
-    joinedResult.status === "rejected" &&
-    isNotFoundError(joinedResult.reason);
+    joinedResult.status === "rejected" && isNotFoundError(joinedResult.reason);
 
   if (memberNotFound || joinedNotFound) {
     return { status: "unavailable" };
@@ -126,7 +125,7 @@ export async function getUserProfileForDialogService(
   }
 
   let profile: UiUserProfile = { ...base };
-  const sources = { ...mockSources };
+  const sources: UiUserProfileFieldSources = { ...mockSources };
   let productsMeta: Extract<
     UiUserProfileLoadResult,
     { status: "ok" }

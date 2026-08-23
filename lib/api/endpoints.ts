@@ -47,8 +47,10 @@ export const API_ENDPOINTS = {
   },
   productPosts: {
     create: "/api/v1/product-posts",
-    detail: (uuid: string) => `/api/v1/product-posts/${encodeURIComponent(uuid)}`,
-    delete: (uuid: string) => `/api/v1/product-posts/${encodeURIComponent(uuid)}`,
+    detail: (uuid: string) =>
+      `/api/v1/product-posts/${encodeURIComponent(uuid)}`,
+    delete: (uuid: string) =>
+      `/api/v1/product-posts/${encodeURIComponent(uuid)}`,
     list: (params?: Record<string, string | string[]>) => {
       const base = "/api/v1/product-posts";
       if (!params) return base;
@@ -60,5 +62,12 @@ export const API_ENDPOINTS = {
       const qs = sp.toString();
       return qs ? `${base}?${qs}` : base;
     },
+  },
+  chat: {
+    rooms: "/api/v1/chat/rooms",
+    room: (roomId: string) =>
+      `/api/v1/chat/rooms/${encodeURIComponent(roomId)}`,
+    roomMessages: (roomId: string) =>
+      `/api/v1/chat/rooms/${encodeURIComponent(roomId)}/messages`,
   },
 } as const;

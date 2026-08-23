@@ -1,7 +1,11 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 
+import { createChatRoomAction } from "@/actions/chat";
+import { SESSION_EXPIRED_CODE } from "@/constants/auth-session";
+import { notifyIfSessionExpiredAction } from "@/lib/auth/session-expired.client";
 import { cn } from "@/lib/utils";
 
 export type ProductChatViewerRole = "guest" | "buyer" | "owner";
@@ -26,7 +30,7 @@ const buttonBase =
 /**
  * 상세 채팅 CTA
  * - owner: 대화중인 채팅 N
- * - buyer: 채팅하기 → /chat?productPostUuid&sellerMemberUuid&sellerNickname
+ * - buyer: 채팅하기 → POST /rooms → /chat/[roomId]
  * - guest: 채팅하기 → /signin
  */
 export function ProductChatCta({
@@ -40,6 +44,8 @@ export function ProductChatCta({
   const router = useRouter();
   const pathname = usePathname();
   const nicknameForChat = sellerNickname.trim();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (role === "owner") {
     return (
@@ -63,40 +69,69 @@ export function ProductChatCta({
     );
   }
 
+  const callbackUrl = pathname || `/product-posts/${productPostUuid}`;
+
   const goChatOrSignIn = () => {
+    if (pending) return;
+
     if (role === "guest") {
-      const callbackUrl = pathname || `/product-posts/${productPostUuid}`;
-      router.push(
-        `/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`
-      );
+      router.push(`/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       return;
     }
 
-    const params = new URLSearchParams({
-      productPostUuid,
-      sellerMemberUuid,
-    });
-    if (nicknameForChat) {
-      params.set("sellerNickname", nicknameForChat);
-    }
-    router.push(`/chat?${params.toString()}`);
+    setPending(true);
+    setError(null);
+    void (async () => {
+      try {
+        const result = await createChatRoomAction({
+          productPostUuid,
+          sellerUuid: sellerMemberUuid,
+          sellerNickname: nicknameForChat || undefined,
+        });
+
+        if (!result.ok) {
+          notifyIfSessionExpiredAction(result);
+          if (result.code === SESSION_EXPIRED_CODE) {
+            router.push(
+              `/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`
+            );
+            return;
+          }
+          setError(result.message);
+          return;
+        }
+
+        router.push(`/chat/${result.data.roomId}`);
+      } catch {
+        setError("채팅방을 만들지 못했습니다. 다시 시도해 주세요.");
+      } finally {
+        setPending(false);
+      }
+    })();
   };
 
   return (
-    <button
-      type="button"
-      data-product-post-uuid={productPostUuid}
-      data-seller-member-uuid={sellerMemberUuid}
-      data-seller-nickname={nicknameForChat}
-      data-chat-role={role}
-      onClick={goChatOrSignIn}
-      className={cn(
-        buttonBase,
-        "h-10 w-full bg-[#efbb55] text-sm tracking-[-0.28px] md:h-[52px] md:flex-1 md:px-[30px] md:text-lg md:tracking-[0.36px]",
-        className
-      )}
-    >
-      채팅하기
-    </button>
+    <div className={cn("flex w-full flex-col gap-1.5 md:flex-1", className)}>
+      <button
+        type="button"
+        disabled={pending}
+        data-product-post-uuid={productPostUuid}
+        data-seller-member-uuid={sellerMemberUuid}
+        data-seller-nickname={nicknameForChat}
+        data-chat-role={role}
+        onClick={goChatOrSignIn}
+        className={cn(
+          buttonBase,
+          "h-10 w-full bg-[#efbb55] text-sm tracking-[-0.28px] disabled:opacity-60 md:h-[52px] md:px-[30px] md:text-lg md:tracking-[0.36px]"
+        )}
+      >
+        {pending ? "채팅 연결 중..." : "채팅하기"}
+      </button>
+      {error ? (
+        <p className="font-sans text-xs text-[#efbb55]" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }

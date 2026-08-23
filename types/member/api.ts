@@ -33,8 +33,6 @@ export interface ApiMemberPublicProfileResponse {
   memberUuid: string;
   nickname: string;
   profileImageUrl: string | null;
-  /** 공개 프로필에 포함되면 채팅방 생성 sellerMemberGrade로 사용 */
-  memberGrade?: string | null;
 }
 
 export interface ApiMemberAvailabilityResponse {

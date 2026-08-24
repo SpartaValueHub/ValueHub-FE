@@ -26,8 +26,22 @@ type MediaViewer =
 
 interface ChatConversationProps {
   peerName: string;
+  peerImageUrl?: string | null;
   messages: UiChatMessage[];
   onViewReservation?: () => void;
+}
+
+function PeerAvatar({ src }: { src?: string | null }) {
+  if (src) {
+    return (
+      <span className="relative size-[35px] shrink-0 overflow-hidden rounded-full bg-[#d0d0d0] lg:size-9">
+        <Image src={src} alt="" fill sizes="36px" className="object-cover" />
+      </span>
+    );
+  }
+  return (
+    <span className="size-[35px] shrink-0 rounded-full bg-[#d0d0d0] lg:size-9" />
+  );
 }
 
 function shouldShowPeerMeta(messages: UiChatMessage[], index: number) {
@@ -112,6 +126,7 @@ function MessageBody({
 /** 대화 메시지 스트림 — 사진·지도 클릭 시 Dialog로 확대 */
 export function ChatConversation({
   peerName,
+  peerImageUrl,
   messages,
   onViewReservation,
 }: ChatConversationProps) {
@@ -140,7 +155,7 @@ export function ChatConversation({
           if (message.kind === "typing") {
             return (
               <div key={message.id} className="flex items-start gap-2.5">
-                <span className="size-[35px] shrink-0 rounded-full bg-[#d0d0d0] lg:size-9" />
+                <PeerAvatar src={peerImageUrl} />
                 <div className="flex flex-col gap-2.5">
                   <p className="font-sans text-[13px] text-[#323232] lg:text-base">
                     {peerName}
@@ -173,7 +188,7 @@ export function ChatConversation({
                 key={message.id}
                 className="flex items-start gap-2.5 lg:gap-3.5"
               >
-                <span className="size-[35px] shrink-0 rounded-full bg-[#d0d0d0] lg:size-9" />
+                <PeerAvatar src={peerImageUrl} />
                 <div className="flex min-w-0 flex-col gap-3.5">
                   <p className="font-sans text-[13px] text-[#323232] lg:text-base">
                     {peerName}

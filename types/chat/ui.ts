@@ -5,6 +5,8 @@ export type UiChatRoom = {
   timeAgo: string;
   unreadCount: number;
   peerName: string;
+  peerImageUrl?: string | null;
+  productPostUuid?: string;
   price: number;
   location: string;
   lastMessage?: string;

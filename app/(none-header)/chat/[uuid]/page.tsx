@@ -35,7 +35,14 @@ export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
   ]);
 
   const list = rooms.map((item) =>
-    item.id === room.id ? { ...item, peerName: room.peerName } : item
+    item.id === room.id
+      ? {
+          ...item,
+          peerName: room.peerName,
+          peerImageUrl: room.peerImageUrl,
+          productPostUuid: room.productPostUuid ?? item.productPostUuid,
+        }
+      : item
   );
   const roomsForUi = list.some((item) => item.id === room.id)
     ? list

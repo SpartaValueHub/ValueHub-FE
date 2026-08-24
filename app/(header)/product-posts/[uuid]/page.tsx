@@ -7,6 +7,7 @@ import {
   getCategoryPathService,
   listSiblingLeafCategoryUuids,
 } from "@/services/categories.service";
+import { listChatRoomsByProductPostService } from "@/services/chat.service";
 import { getMemberPublicProfileService } from "@/services/member.service";
 import {
   getProductPostDetailService,
@@ -78,13 +79,25 @@ export default async function ProductPostDetailPage({
     nearbyItems = [];
   }
 
+  let activeChatCount = 0;
+  if (chatRole === "owner") {
+    try {
+      const rooms = await listChatRoomsByProductPostService(
+        post.productPostUuid
+      );
+      activeChatCount = rooms.length;
+    } catch {
+      activeChatCount = 0;
+    }
+  }
+
   return (
     <ProductPostDetailTemplate
       post={post}
       categoryPath={categoryPath}
       nearbyItems={nearbyItems}
       chatRole={chatRole}
-      activeChatCount={0}
+      activeChatCount={activeChatCount}
       sellerNickname={sellerNickname}
       sellerProfileImageUrl={sellerProfileImageUrl}
     />

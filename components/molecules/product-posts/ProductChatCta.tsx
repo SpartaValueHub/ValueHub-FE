@@ -19,7 +19,7 @@ interface ProductChatCtaProps {
    * 채팅 `POST /rooms`의 sellerNickname용 — fallback 문구는 넘기지 말 것.
    */
   sellerNickname?: string;
-  /** 채팅 서비스 연동 전 placeholder — owner UI만 사용 */
+  /** owner: GET product-posts/{uuid}/rooms 의 rooms.length */
   activeChatCount?: number;
   className?: string;
 }
@@ -55,6 +55,11 @@ export function ProductChatCta({
         data-seller-member-uuid={sellerMemberUuid}
         data-seller-nickname={nicknameForChat}
         data-chat-role="owner"
+        onClick={() =>
+          router.push(
+            `/chat?productPostUuid=${encodeURIComponent(productPostUuid)}`
+          )
+        }
         className={cn(
           buttonBase,
           "h-10 w-full bg-white text-sm tracking-[-0.28px] md:h-[52px] md:flex-1 md:px-[30px] md:text-lg md:tracking-[0.36px]",

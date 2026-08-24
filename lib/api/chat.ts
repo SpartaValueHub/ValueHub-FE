@@ -34,6 +34,12 @@ export function listChatRooms() {
   return chatFetch<ApiChatRoomList>(API_ENDPOINTS.chat.rooms);
 }
 
+export function listChatRoomsByProductPost(productPostUuid: string) {
+  return chatFetch<ApiChatRoomList>(
+    API_ENDPOINTS.chat.productRooms(productPostUuid)
+  );
+}
+
 export function getChatRoom(roomId: string) {
   return chatFetch<ApiChatRoomDetail>(API_ENDPOINTS.chat.room(roomId));
 }

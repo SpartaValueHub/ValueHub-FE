@@ -71,5 +71,7 @@ export const API_ENDPOINTS = {
       `/api/v1/chat/rooms/${encodeURIComponent(roomId)}`,
     roomMessages: (roomId: string) =>
       `/api/v1/chat/rooms/${encodeURIComponent(roomId)}/messages`,
+    productRooms: (productPostUuid: string) =>
+      `/api/v1/chat/product-posts/${encodeURIComponent(productPostUuid)}/rooms`,
   },
 } as const;

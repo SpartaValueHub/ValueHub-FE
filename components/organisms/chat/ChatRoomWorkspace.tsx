@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { listOlderChatMessagesAction } from "@/actions/chat";
+import { useChatRoomSocket } from "@/hooks/chat/useChatRoomSocket";
 
 import { Icon, type SystemIconName } from "@/components/atoms/icons";
 import { StatusBadge } from "@/components/atoms/status-badge";
@@ -90,6 +91,16 @@ export function ChatRoomWorkspace({
   const [loadingOlder, setLoadingOlder] = useState(false);
   const loadingOlderRef = useRef(false);
   const requestedBeforeRef = useRef<string | null>(null);
+
+  const { publishText } = useChatRoomSocket({
+    roomId,
+    onMessage: (incoming) => {
+      setMessages((current) => {
+        if (current.some((item) => item.id === incoming.id)) return current;
+        return [...current, incoming];
+      });
+    },
+  });
   const [reservation, setReservation] = useState<UiTradeReservation | null>(
     () => {
       const card = CHAT_RESERVATIONS.find((item) => item.roomId === roomId);
@@ -169,6 +180,11 @@ export function ChatRoomWorkspace({
   }
 
   function handleSend(payload: ChatOutgoingPayload) {
+    if (payload.kind === "text") {
+      publishText(payload.text);
+      return;
+    }
+
     const base = {
       id: `msg-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       from: "me" as const,
@@ -178,12 +194,6 @@ export function ChatRoomWorkspace({
 
     setMessages((current) => {
       const withoutTyping = current.filter((item) => item.kind !== "typing");
-      if (payload.kind === "text") {
-        return [
-          ...withoutTyping,
-          { ...base, kind: "text", text: payload.text },
-        ];
-      }
       if (payload.kind === "image") {
         return [
           ...withoutTyping,

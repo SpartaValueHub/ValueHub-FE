@@ -91,7 +91,9 @@ export function ChatMessageForm({ onSend }: ChatMessageFormProps) {
         open={placeOpen}
         onOpenChange={setPlaceOpen}
         confirmLabel="전송"
-        onConfirm={(placeName) => onSend?.({ kind: "location", placeName })}
+        onConfirm={(loc) =>
+          onSend?.({ kind: "location", placeName: loc.placeName })
+        }
       />
     </>
   );

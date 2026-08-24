@@ -83,6 +83,11 @@ export interface ApiChatRoomList {
   rooms: ApiChatRoomListItem[];
 }
 
+/** GET /api/v1/chat/unread-count */
+export interface ApiChatUnreadCount {
+  totalUnreadCount: number;
+}
+
 export interface ApiChatMessageMetadata {
   fileSize?: string;
   imageWidth?: number;

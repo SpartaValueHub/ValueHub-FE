@@ -4,6 +4,7 @@ import type {
   ApiChatMessageList,
   ApiChatRoomDetail,
   ApiChatRoomList,
+  ApiChatUnreadCount,
   ApiCreateChatRoomRequest,
   ApiCreateChatRoomResponse,
 } from "@/types/chat/api";
@@ -51,4 +52,8 @@ export function listChatMessages(
   return chatFetch<ApiChatMessageList>(
     API_ENDPOINTS.chat.roomMessages(roomId, query)
   );
+}
+
+export function getChatUnreadCount() {
+  return chatFetch<ApiChatUnreadCount>(API_ENDPOINTS.chat.unreadCount);
 }

@@ -83,5 +83,6 @@ export const API_ENDPOINTS = {
     },
     productRooms: (productPostUuid: string) =>
       `/api/v1/chat/product-posts/${encodeURIComponent(productPostUuid)}/rooms`,
+    unreadCount: "/api/v1/chat/unread-count",
   },
 } as const;

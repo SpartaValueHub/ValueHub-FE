@@ -9,6 +9,7 @@ import { mapActionError } from "@/lib/auth/map-action-error";
 import { requireActionAuth } from "@/lib/session";
 import {
   createChatRoomService,
+  getChatUnreadCountService,
   listChatMessagesService,
 } from "@/services/chat.service";
 import { createChatRoomInputSchema } from "@/types/chat/create";
@@ -72,6 +73,21 @@ export async function listOlderChatMessagesAction(
     return mapActionError(
       e,
       toErrorMessage(e, "이전 메시지를 불러오지 못했습니다.")
+    );
+  }
+}
+
+export async function getChatUnreadCountAction(): Promise<
+  ChatActionResult<number>
+> {
+  try {
+    await requireActionAuth();
+    const data = await getChatUnreadCountService();
+    return { ok: true, data };
+  } catch (e) {
+    return mapActionError(
+      e,
+      toErrorMessage(e, "미읽음 수를 불러오지 못했습니다.")
     );
   }
 }

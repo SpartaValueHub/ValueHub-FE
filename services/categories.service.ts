@@ -78,6 +78,47 @@ export async function getCategoryPathService(
   }
 }
 
+/** 등록/수정 폼용 — 저장된 리프(또는 중분류=리프) UUID → 대·중·브랜드 선택값 */
+export type UiCategoryFormSelection = {
+  rootUuid: string;
+  midUuid: string;
+  /** 브랜드 리프. 중분류가 곧 리프면 빈 문자열 */
+  brandUuid: string;
+};
+
+export async function resolveCategoryFormSelection(
+  categoryUuid: string
+): Promise<UiCategoryFormSelection | null> {
+  try {
+    const roots = await listRootCategoriesService();
+    for (const root of roots) {
+      const children = await listChildCategoriesService(root.categoryUuid);
+      const midExact = children.find((c) => c.categoryUuid === categoryUuid);
+      if (midExact) {
+        return {
+          rootUuid: root.categoryUuid,
+          midUuid: midExact.categoryUuid,
+          brandUuid: "",
+        };
+      }
+
+      for (const mid of children) {
+        const leaves = await listLeafCategoriesService(mid.categoryUuid);
+        if (leaves.some((leaf) => leaf.categoryUuid === categoryUuid)) {
+          return {
+            rootUuid: root.categoryUuid,
+            midUuid: mid.categoryUuid,
+            brandUuid: categoryUuid,
+          };
+        }
+      }
+    }
+  } catch {
+    /* fall through */
+  }
+  return null;
+}
+
 /** 상세 「동네 추천」용 — 같은 중분류 하위 리프 UUID (없으면 자기 UUID) */
 export async function listSiblingLeafCategoryUuids(
   categoryUuid: string

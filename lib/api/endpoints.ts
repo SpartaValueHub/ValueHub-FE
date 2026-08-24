@@ -49,6 +49,8 @@ export const API_ENDPOINTS = {
     create: "/api/v1/product-posts",
     detail: (uuid: string) =>
       `/api/v1/product-posts/${encodeURIComponent(uuid)}`,
+    update: (uuid: string) =>
+      `/api/v1/product-posts/${encodeURIComponent(uuid)}`,
     delete: (uuid: string) =>
       `/api/v1/product-posts/${encodeURIComponent(uuid)}`,
     list: (params?: Record<string, string | string[]>) => {

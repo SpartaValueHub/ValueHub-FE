@@ -10,6 +10,7 @@ import {
   deleteProductPost,
   getProductPostDetail,
   listProductPosts,
+  updateProductPost,
 } from "@/lib/api/product-posts";
 import {
   listChildCategoriesService,
@@ -20,6 +21,7 @@ import type {
   ApiCreateProductPostRequest,
   ApiProductPostCard,
   ApiProductPostDetail,
+  ApiUpdateProductPostRequest,
 } from "@/types/product-posts/api";
 import type { UiCategorySummary } from "@/types/categories/ui";
 import type {
@@ -105,6 +107,14 @@ export async function createProductPostService(
   body: ApiCreateProductPostRequest
 ): Promise<UiProductPostDetail> {
   const api = await createProductPost(body);
+  return mapProductPostDetail(api);
+}
+
+export async function updateProductPostService(
+  uuid: string,
+  body: ApiUpdateProductPostRequest
+): Promise<UiProductPostDetail> {
+  const api = await updateProductPost(uuid, body);
   return mapProductPostDetail(api);
 }
 

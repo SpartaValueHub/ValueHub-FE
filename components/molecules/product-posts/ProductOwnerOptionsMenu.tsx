@@ -7,7 +7,10 @@ import { deleteProductPostAction } from "@/actions/product-posts";
 import { Icon, type SystemIconName } from "@/components/atoms/icons";
 import { ConfirmModal } from "@/components/molecules/overlay/ConfirmModal";
 import { Popover } from "@/components/molecules/overlay/Popover";
-import { PRODUCT_POSTS_PATH } from "@/constants/product-posts";
+import {
+  PRODUCT_POSTS_PATH,
+  productPostEditPath,
+} from "@/constants/product-posts";
 import { notifyIfSessionExpiredAction } from "@/lib/auth/session-expired.client";
 import { cn } from "@/lib/utils";
 
@@ -15,27 +18,24 @@ type OwnerMenuItem = {
   key: "bump" | "edit" | "delete";
   label: string;
   icon: SystemIconName;
-  /** false면 UI만 표시 (이번 스프린트: 끌어올리기·수정하기) */
+  /** false면 비활성(opacity) — 끌어올리기는 후속, 수정은 SELLING만 */
   enabled: boolean;
 };
 
-const MENU_ITEMS: OwnerMenuItem[] = [
-  { key: "bump", label: "끌어올리기", icon: "chevron-up", enabled: false },
-  { key: "edit", label: "수정하기", icon: "edit", enabled: false },
-  { key: "delete", label: "삭제하기", icon: "trash", enabled: true },
-];
-
 interface ProductOwnerOptionsMenuProps {
   productPostUuid: string;
+  /** BE PUT은 SELLING만 허용 — false면 「수정하기」 비활성 */
+  canEdit?: boolean;
   className?: string;
 }
 
 /**
  * Figma option_product_detail (518:862)
- * — owner 전용 ⋯ 메뉴. 삭제만 연동, 끌어올리기·수정은 UI placeholder.
+ * — owner 전용 ⋯ 메뉴. 삭제·수정(SELLING) 연동. 끌어올리기는 placeholder.
  */
 export function ProductOwnerOptionsMenu({
   productPostUuid,
+  canEdit = false,
   className,
 }: ProductOwnerOptionsMenuProps) {
   const router = useRouter();
@@ -44,9 +44,25 @@ export function ProductOwnerOptionsMenu({
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const menuItems: OwnerMenuItem[] = [
+    { key: "bump", label: "끌어올리기", icon: "chevron-up", enabled: false },
+    {
+      key: "edit",
+      label: "수정하기",
+      icon: "edit",
+      enabled: canEdit,
+    },
+    { key: "delete", label: "삭제하기", icon: "trash", enabled: true },
+  ];
+
   const onSelect = (item: OwnerMenuItem) => {
     if (!item.enabled) {
       setMenuOpen(false);
+      return;
+    }
+    if (item.key === "edit") {
+      setMenuOpen(false);
+      router.push(productPostEditPath(productPostUuid));
       return;
     }
     if (item.key === "delete") {
@@ -69,7 +85,6 @@ export function ProductOwnerOptionsMenu({
           return;
         }
         setConfirmOpen(false);
-        // 삭제 후 목록으로 이동 (히스토리에 상세 안 남김)
         router.replace(PRODUCT_POSTS_PATH);
       } catch {
         setError("상품 삭제 중 오류가 발생했습니다. 다시 시도해 주세요.");
@@ -98,12 +113,12 @@ export function ProductOwnerOptionsMenu({
         }
       >
         <ul className="flex flex-col gap-5" role="menu">
-          {MENU_ITEMS.map((item) => (
+          {menuItems.map((item) => (
             <li key={item.key} role="none">
               <button
                 type="button"
                 role="menuitem"
-                disabled={deleting}
+                disabled={deleting || !item.enabled}
                 onClick={() => onSelect(item)}
                 className={cn(
                   "flex w-full items-center gap-1 text-left font-sans text-base text-[#323232]",

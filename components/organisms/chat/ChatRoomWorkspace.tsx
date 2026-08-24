@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Icon, type SystemIconName } from "@/components/atoms/icons";
@@ -24,6 +25,7 @@ import {
   formatReservationChipSubline,
   reservationFromCard,
 } from "@/constants/chat-page";
+import { PRODUCT_POSTS_PATH } from "@/constants/product-posts";
 import { cn } from "@/lib/utils";
 import type {
   UiChatMessage,
@@ -35,6 +37,28 @@ interface ChatRoomWorkspaceProps {
   rooms: UiChatRoom[];
   roomId: string;
   initialMessages: UiChatMessage[];
+}
+
+function ProductPostLink({
+  room,
+  className,
+  children,
+}: {
+  room: UiChatRoom;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  if (!room.productPostUuid) {
+    return <div className={className}>{children}</div>;
+  }
+  return (
+    <Link
+      href={`${PRODUCT_POSTS_PATH}/${encodeURIComponent(room.productPostUuid)}`}
+      className={className}
+    >
+      {children}
+    </Link>
+  );
 }
 
 const MORE_MENU_ITEMS: {
@@ -217,7 +241,10 @@ export function ChatRoomWorkspace({
           </div>
 
           <div className="flex items-start justify-between pr-1 pl-1.5">
-            <div className="flex min-w-0 items-start gap-2.5">
+            <ProductPostLink
+              room={room}
+              className="flex min-w-0 items-start gap-2.5"
+            >
               <span className="relative size-[43px] shrink-0 overflow-hidden rounded-[6px] bg-[#868686]">
                 <Image
                   src={room.thumbnail}
@@ -236,7 +263,7 @@ export function ChatRoomWorkspace({
                   <span className="ml-0.5 text-xs">원</span>
                 </p>
               </div>
-            </div>
+            </ProductPostLink>
             {reservation ? (
               <button
                 type="button"
@@ -262,31 +289,36 @@ export function ChatRoomWorkspace({
 
         <div className="hidden items-start gap-5 bg-[#fbefd8] px-5 py-[30px] lg:flex">
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
-            <span className="relative size-16 shrink-0 overflow-hidden rounded-[6px] bg-[#868686]">
-              <Image
-                src={room.thumbnail}
-                alt=""
-                fill
-                sizes="64px"
-                className="object-cover"
-              />
-            </span>
-            <div className="flex min-w-0 flex-col gap-1">
-              <div className="flex items-center gap-1">
-                <p className="truncate font-sans text-sm text-[#323232]">
-                  {room.title}
+            <ProductPostLink
+              room={room}
+              className="flex min-w-0 flex-1 items-center gap-2.5"
+            >
+              <span className="relative size-16 shrink-0 overflow-hidden rounded-[6px] bg-[#868686]">
+                <Image
+                  src={room.thumbnail}
+                  alt=""
+                  fill
+                  sizes="64px"
+                  className="object-cover"
+                />
+              </span>
+              <div className="flex min-w-0 flex-col gap-1">
+                <div className="flex items-center gap-1">
+                  <p className="truncate font-sans text-sm text-[#323232]">
+                    {room.title}
+                  </p>
+                  {postReserved ? <StatusBadge status="reserved" /> : null}
+                </div>
+                <p className="font-sans text-lg text-[#323232]">
+                  {room.price.toLocaleString("ko-KR")}
+                  <span className="ml-0.5 text-base">원</span>
                 </p>
-                {postReserved ? <StatusBadge status="reserved" /> : null}
+                <p className="flex items-center gap-0.5 font-sans text-sm text-[#323232]">
+                  <Icon name="user-fill" size={12} />
+                  {room.peerName}
+                </p>
               </div>
-              <p className="font-sans text-lg text-[#323232]">
-                {room.price.toLocaleString("ko-KR")}
-                <span className="ml-0.5 text-base">원</span>
-              </p>
-              <p className="flex items-center gap-0.5 font-sans text-sm text-[#323232]">
-                <Icon name="user-fill" size={12} />
-                {room.peerName}
-              </p>
-            </div>
+            </ProductPostLink>
           </div>
           {renderMoreMenu(desktopMoreOpen, setDesktopMoreOpen)}
         </div>
@@ -300,6 +332,7 @@ export function ChatRoomWorkspace({
           <div className="flex min-w-0 flex-1 flex-col">
             <ChatConversation
               peerName={room.peerName}
+              peerImageUrl={room.peerImageUrl}
               messages={messages}
               onViewReservation={openReserveDetail}
             />

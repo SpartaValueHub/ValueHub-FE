@@ -57,17 +57,16 @@ export function mapChatRoomDetail(api: ApiChatRoomDetail): UiChatRoom {
   const post = api.productPost;
   return {
     id: api.roomId,
-    title: post.productPostName,
-    thumbnail: post.productPostImageUrl || PRODUCT_THUMBNAIL_FALLBACK,
+    title: post?.productPostName?.trim() ?? "",
+    thumbnail: post?.productPostImageUrl?.trim() || PRODUCT_THUMBNAIL_FALLBACK,
     timeAgo: "",
     unreadCount: 0,
-    peerName:
-      api.counterpart?.nickname?.trim() ||
-      api.seller.nickname.trim() ||
-      SELLER_NICKNAME_FALLBACK,
-    price: post.price,
+    peerName: api.counterpart?.nickname?.trim() ?? "",
+    peerImageUrl: api.counterpart?.profileImageUrl?.trim() || null,
+    productPostUuid: post?.productPostUuid?.trim() || undefined,
+    price: post?.price ?? 0,
     location: "",
-    reserved: post.tradeStatus === "RESERVED",
+    reserved: post?.tradeStatus === "RESERVED",
   };
 }
 
@@ -83,6 +82,7 @@ export function mapChatRoomListItem(api: ApiChatRoomListItem): UiChatRoom {
     timeAgo: stamp ? formatListedAt(stamp) : "",
     unreadCount: api.unreadCount ?? 0,
     peerName: "",
+    productPostUuid: post?.productPostUuid?.trim() || undefined,
     price: post?.price ?? 0,
     location: "",
     lastMessage: lastMessage || undefined,

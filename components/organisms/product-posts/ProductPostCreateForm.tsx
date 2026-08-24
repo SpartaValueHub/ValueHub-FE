@@ -17,7 +17,7 @@ import { Button } from "@/components/atoms/button";
 import { Checkbox } from "@/components/atoms/checkbox";
 import { AlertDialog } from "@/components/molecules/overlay/AlertDialog";
 import { DialogDescription } from "@/components/molecules/overlay/Dialog";
-import { LocationRegisterDialog } from "@/components/molecules/product-posts/LocationRegisterDialog";
+import { LocationRegisterDialog } from "@/components/molecules/overlay/LocationRegisterDialog";
 import {
   PRODUCT_POST_DEFAULT_LATITUDE,
   PRODUCT_POST_DEFAULT_LONGITUDE,
@@ -303,6 +303,12 @@ export function ProductPostCreateForm({
   const [placeName, setPlaceName] = useState(
     initialValues?.post.placeName ?? ""
   );
+  const [latitude, setLatitude] = useState<number | null>(
+    initialValues?.post.latitude ?? null
+  );
+  const [longitude, setLongitude] = useState<number | null>(
+    initialValues?.post.longitude ?? null
+  );
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [description, setDescription] = useState(
     initialValues?.post.description ?? ""
@@ -551,11 +557,17 @@ export function ProductPostCreateForm({
       price,
       description: description.trim(),
       latitude:
-        post?.latitude != null ? post.latitude : PRODUCT_POST_DEFAULT_LATITUDE,
+        latitude != null
+          ? latitude
+          : post?.latitude != null
+            ? post.latitude
+            : PRODUCT_POST_DEFAULT_LATITUDE,
       longitude:
-        post?.longitude != null
-          ? post.longitude
-          : PRODUCT_POST_DEFAULT_LONGITUDE,
+        longitude != null
+          ? longitude
+          : post?.longitude != null
+            ? post.longitude
+            : PRODUCT_POST_DEFAULT_LONGITUDE,
       placeName: placeName.trim(),
       images: images.map((img, i) => ({
         imageUrl: img.remoteUrl ?? productPostPlaceholderImageUrl(i),
@@ -994,8 +1006,12 @@ export function ProductPostCreateForm({
         open={locationModalOpen}
         onOpenChange={setLocationModalOpen}
         initialPlaceName={placeName}
-        onConfirm={(name) => {
-          setPlaceName(name);
+        initialLatitude={latitude}
+        initialLongitude={longitude}
+        onConfirm={(loc) => {
+          setPlaceName(loc.placeName);
+          setLatitude(loc.latitude);
+          setLongitude(loc.longitude);
           setFieldError(null);
         }}
       />

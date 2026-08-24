@@ -164,10 +164,12 @@ export function ChatConversation({
   const sentinelRef = useRef<HTMLDivElement>(null);
   const didInitScroll = useRef(false);
   const prevFirstId = useRef<string | undefined>(undefined);
+  const prevLastId = useRef<string | undefined>(undefined);
   const prevScrollHeight = useRef(0);
   const loadOlderRef = useRef(onLoadOlder);
 
   const firstId = messages[0]?.id;
+  const lastId = messages[messages.length - 1]?.id;
 
   useEffect(() => {
     loadOlderRef.current = onLoadOlder;
@@ -181,17 +183,21 @@ export function ChatConversation({
       el.scrollTop = el.scrollHeight;
       didInitScroll.current = true;
       prevFirstId.current = firstId;
+      prevLastId.current = lastId;
       prevScrollHeight.current = el.scrollHeight;
       return;
     }
 
     if (firstId && firstId !== prevFirstId.current) {
       el.scrollTop += el.scrollHeight - prevScrollHeight.current;
+    } else if (lastId && lastId !== prevLastId.current) {
+      el.scrollTop = el.scrollHeight;
     }
 
     prevFirstId.current = firstId;
+    prevLastId.current = lastId;
     prevScrollHeight.current = el.scrollHeight;
-  }, [firstId, messages]);
+  }, [firstId, lastId, messages]);
 
   useEffect(() => {
     const root = scrollRef.current;
@@ -212,91 +218,96 @@ export function ChatConversation({
     <>
       <div
         ref={scrollRef}
-        className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-3 pt-5 lg:px-[30px] lg:pt-[30px]"
+        className="min-h-0 flex-1 overflow-y-auto px-3 py-5 lg:px-[30px] lg:py-[30px]"
       >
-        <div ref={sentinelRef} className="h-px shrink-0" aria-hidden />
-        {loadingOlder ? (
-          <div className="flex justify-center py-1">
-            <Spinner size="sm" label="이전 메시지" inline />
-          </div>
-        ) : null}
-        <ChatDateDivider label={CHAT_DATE_DIVIDER} />
-        {messages.map((message, index) => {
-          if (
-            message.kind === "system-reservation" &&
-            message.reservationSummary
-          ) {
-            return (
-              <ChatReservationNotice
-                key={message.id}
-                dateLine={message.reservationSummary.dateLine}
-                timePlaceLine={message.reservationSummary.timePlaceLine}
-                time={message.time}
-                onViewDetails={onViewReservation}
-              />
-            );
-          }
+        <div className="flex flex-col gap-5">
+          <div ref={sentinelRef} className="h-px shrink-0" aria-hidden />
+          {loadingOlder ? (
+            <div className="flex justify-center py-1">
+              <Spinner size="sm" label="이전 메시지" inline />
+            </div>
+          ) : null}
+          <ChatDateDivider label={CHAT_DATE_DIVIDER} />
+          {messages.map((message, index) => {
+            if (
+              message.kind === "system-reservation" &&
+              message.reservationSummary
+            ) {
+              return (
+                <ChatReservationNotice
+                  key={message.id}
+                  dateLine={message.reservationSummary.dateLine}
+                  timePlaceLine={message.reservationSummary.timePlaceLine}
+                  time={message.time}
+                  onViewDetails={onViewReservation}
+                />
+              );
+            }
 
-          if (message.kind === "typing") {
-            return (
-              <div key={message.id} className="flex items-start gap-2.5">
-                <PeerAvatar src={peerImageUrl} />
-                <div className="flex flex-col gap-2.5">
-                  <p className="font-sans text-[13px] text-[#323232] lg:text-base">
-                    {peerName}
-                  </p>
-                  <div className="flex h-[39px] items-center justify-center rounded-[10px] bg-[rgba(134,134,134,0.1)] px-4">
-                    <span className="flex gap-1">
-                      <span className="size-1.5 rounded-full bg-[#868686]" />
-                      <span className="size-1.5 rounded-full bg-[#868686]" />
-                      <span className="size-1.5 rounded-full bg-[#868686]" />
-                    </span>
+            if (message.kind === "typing") {
+              return (
+                <div key={message.id} className="flex items-start gap-2.5">
+                  <PeerAvatar src={peerImageUrl} />
+                  <div className="flex flex-col gap-2.5">
+                    <p className="font-sans text-[13px] text-[#323232] lg:text-base">
+                      {peerName}
+                    </p>
+                    <div className="flex h-[39px] items-center justify-center rounded-[10px] bg-[rgba(134,134,134,0.1)] px-4">
+                      <span className="flex gap-1">
+                        <span className="size-1.5 rounded-full bg-[#868686]" />
+                        <span className="size-1.5 rounded-full bg-[#868686]" />
+                        <span className="size-1.5 rounded-full bg-[#868686]" />
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              );
+            }
+
+            const body = (
+              <MessageBody
+                message={message}
+                onOpenImage={(src) => setViewer({ kind: "image", src })}
+                onOpenLocation={(placeName, mapImage) =>
+                  setViewer({ kind: "location", placeName, mapImage })
+                }
+              />
             );
-          }
 
-          const body = (
-            <MessageBody
-              message={message}
-              onOpenImage={(src) => setViewer({ kind: "image", src })}
-              onOpenLocation={(placeName, mapImage) =>
-                setViewer({ kind: "location", placeName, mapImage })
-              }
-            />
-          );
+            if (
+              message.from === "peer" &&
+              shouldShowPeerMeta(messages, index)
+            ) {
+              return (
+                <div
+                  key={message.id}
+                  className="flex items-start gap-2.5 lg:gap-3.5"
+                >
+                  <PeerAvatar src={peerImageUrl} />
+                  <div className="flex min-w-0 flex-col gap-3.5">
+                    <p className="font-sans text-[13px] text-[#323232] lg:text-base">
+                      {peerName}
+                    </p>
+                    {body}
+                  </div>
+                </div>
+              );
+            }
 
-          if (message.from === "peer" && shouldShowPeerMeta(messages, index)) {
-            return (
-              <div
-                key={message.id}
-                className="flex items-start gap-2.5 lg:gap-3.5"
-              >
-                <PeerAvatar src={peerImageUrl} />
-                <div className="flex min-w-0 flex-col gap-3.5">
-                  <p className="font-sans text-[13px] text-[#323232] lg:text-base">
-                    {peerName}
-                  </p>
+            if (message.from === "peer") {
+              return (
+                <div
+                  key={message.id}
+                  className="flex items-start gap-2.5 pl-[45px] lg:gap-3.5 lg:pl-12"
+                >
                   {body}
                 </div>
-              </div>
-            );
-          }
+              );
+            }
 
-          if (message.from === "peer") {
-            return (
-              <div
-                key={message.id}
-                className="flex items-start gap-2.5 pl-[45px] lg:gap-3.5 lg:pl-12"
-              >
-                {body}
-              </div>
-            );
-          }
-
-          return <div key={message.id}>{body}</div>;
-        })}
+            return <div key={message.id}>{body}</div>;
+          })}
+        </div>
       </div>
 
       <Dialog

@@ -9,6 +9,11 @@ export const PRODUCT_POSTS_PATH = "/product-posts";
 /** 상품 등록 경로 */
 export const PRODUCT_POST_CREATE_PATH = `${PRODUCT_POSTS_PATH}/new`;
 
+/** 상품 수정 경로 */
+export function productPostEditPath(uuid: string) {
+  return `${PRODUCT_POSTS_PATH}/${encodeURIComponent(uuid)}/edit`;
+}
+
 /** 등록 최소가 (원) — BE product-post.policy.min-price 기본값과 동일 */
 export const PRODUCT_POST_MIN_PRICE_WON = 500_000;
 

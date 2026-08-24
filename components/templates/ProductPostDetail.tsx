@@ -176,6 +176,7 @@ export function ProductPostDetail({
                 {chatRole === "owner" ? (
                   <ProductOwnerOptionsMenu
                     productPostUuid={post.productPostUuid}
+                    canEdit={post.tradeStatus === "SELLING"}
                   />
                 ) : null}
               </div>

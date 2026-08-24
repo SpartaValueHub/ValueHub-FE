@@ -119,14 +119,8 @@ export function KakaoMapPicker({
           reverseAndNotify(mouseEvent.latLng);
         });
 
-        if (
-          initialLatitude != null &&
-          initialLongitude != null &&
-          Number.isFinite(initialLatitude) &&
-          Number.isFinite(initialLongitude)
-        ) {
-          reverseAndNotify(center);
-        }
+        // 초기 좌표는 마커·중심만 맞추고 onPick은 호출하지 않음
+        // (수정 모달의 기존 placeName을 열자마자 덮지 않기 위함)
 
         requestAnimationFrame(() => {
           map.relayout();

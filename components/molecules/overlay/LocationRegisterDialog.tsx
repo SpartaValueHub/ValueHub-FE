@@ -144,8 +144,9 @@ function LocationRegisterDialogBody({
             setLatitude(lat);
             setLongitude(lng);
             setLocalError(null);
+            // 장소 변경(수정) 시에도 픽한 좌표의 역지오코딩명을 반영
             if (suggestedPlaceName) {
-              setPlaceName((prev) => prev.trim() || suggestedPlaceName);
+              setPlaceName(suggestedPlaceName);
             }
           }}
         />

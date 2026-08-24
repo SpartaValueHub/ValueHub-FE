@@ -311,7 +311,7 @@ export function TradeReservationPanel({
       <LocationRegisterDialog
         open={placeOpen}
         onOpenChange={setPlaceOpen}
-        onConfirm={setPlaceName}
+        onConfirm={(loc) => setPlaceName(loc.placeName)}
       />
       <ConfirmModal
         open={confirmOpen}

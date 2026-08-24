@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 import { Icon } from "@/components/atoms/icons";
+import { Spinner } from "@/components/atoms/spinner";
 import { ChatDateDivider } from "@/components/molecules/chat/ChatDateDivider";
 import { ChatMessageBubble } from "@/components/molecules/chat/ChatMessageBubble";
 import { ChatReservationNotice } from "@/components/molecules/chat/ChatReservationNotice";
@@ -28,6 +29,9 @@ interface ChatConversationProps {
   peerName: string;
   peerImageUrl?: string | null;
   messages: UiChatMessage[];
+  hasMore?: boolean;
+  loadingOlder?: boolean;
+  onLoadOlder?: () => void;
   onViewReservation?: () => void;
 }
 
@@ -44,10 +48,32 @@ function PeerAvatar({ src }: { src?: string | null }) {
   );
 }
 
+const PEER_META_GAP_MS = 60_000;
+
+function isChatBubble(message: UiChatMessage) {
+  return message.kind !== "system-reservation" && message.kind !== "typing";
+}
+
+function isWithinOneMinute(earlier: UiChatMessage, later: UiChatMessage) {
+  if (!earlier.createdAt || !later.createdAt) return true;
+  const start = Date.parse(earlier.createdAt);
+  const end = Date.parse(later.createdAt);
+  if (Number.isNaN(start) || Number.isNaN(end)) return true;
+  return Math.abs(end - start) < PEER_META_GAP_MS;
+}
+
+/** 상대 박스: 첫 말풍선, 또는 이전 상대 말과 1분 이상 떨어질 때 */
 function shouldShowPeerMeta(messages: UiChatMessage[], index: number) {
-  if (messages[index].from !== "peer") return false;
-  if (index === 0) return true;
-  return messages[index - 1].from !== "peer";
+  const current = messages[index];
+  if (current.from !== "peer" || !isChatBubble(current)) return false;
+
+  for (let i = index - 1; i >= 0; i -= 1) {
+    const prev = messages[i];
+    if (!isChatBubble(prev)) continue;
+    if (prev.from !== "peer") return true;
+    return !isWithinOneMinute(prev, current);
+  }
+  return true;
 }
 
 function MessageBody({
@@ -128,13 +154,72 @@ export function ChatConversation({
   peerName,
   peerImageUrl,
   messages,
+  hasMore = false,
+  loadingOlder = false,
+  onLoadOlder,
   onViewReservation,
 }: ChatConversationProps) {
   const [viewer, setViewer] = useState<MediaViewer | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const didInitScroll = useRef(false);
+  const prevFirstId = useRef<string | undefined>(undefined);
+  const prevScrollHeight = useRef(0);
+  const loadOlderRef = useRef(onLoadOlder);
+
+  const firstId = messages[0]?.id;
+
+  useEffect(() => {
+    loadOlderRef.current = onLoadOlder;
+  }, [onLoadOlder]);
+
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    if (!didInitScroll.current) {
+      el.scrollTop = el.scrollHeight;
+      didInitScroll.current = true;
+      prevFirstId.current = firstId;
+      prevScrollHeight.current = el.scrollHeight;
+      return;
+    }
+
+    if (firstId && firstId !== prevFirstId.current) {
+      el.scrollTop += el.scrollHeight - prevScrollHeight.current;
+    }
+
+    prevFirstId.current = firstId;
+    prevScrollHeight.current = el.scrollHeight;
+  }, [firstId, messages]);
+
+  useEffect(() => {
+    const root = scrollRef.current;
+    const sentinel = sentinelRef.current;
+    if (!root || !sentinel || !hasMore || loadingOlder) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadOlderRef.current?.();
+      },
+      { root, rootMargin: "40px 0px 0px 0px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, firstId, loadingOlder]);
 
   return (
     <>
-      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-3 pt-5 lg:px-[30px] lg:pt-[30px]">
+      <div
+        ref={scrollRef}
+        className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-3 pt-5 lg:px-[30px] lg:pt-[30px]"
+      >
+        <div ref={sentinelRef} className="h-px shrink-0" aria-hidden />
+        {loadingOlder ? (
+          <div className="flex justify-center py-1">
+            <Spinner size="sm" label="이전 메시지" inline />
+          </div>
+        ) : null}
         <ChatDateDivider label={CHAT_DATE_DIVIDER} />
         {messages.map((message, index) => {
           if (

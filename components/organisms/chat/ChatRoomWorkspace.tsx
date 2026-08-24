@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
+import { listOlderChatMessagesAction } from "@/actions/chat";
 
 import { Icon, type SystemIconName } from "@/components/atoms/icons";
 import { StatusBadge } from "@/components/atoms/status-badge";
@@ -37,6 +39,7 @@ interface ChatRoomWorkspaceProps {
   rooms: UiChatRoom[];
   roomId: string;
   initialMessages: UiChatMessage[];
+  initialHasMoreMessages?: boolean;
 }
 
 function ProductPostLink({
@@ -77,9 +80,16 @@ export function ChatRoomWorkspace({
   rooms,
   roomId,
   initialMessages,
+  initialHasMoreMessages = false,
 }: ChatRoomWorkspaceProps) {
   const router = useRouter();
   const [messages, setMessages] = useState(initialMessages);
+  const [hasMoreMessages, setHasMoreMessages] = useState(
+    initialHasMoreMessages
+  );
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const loadingOlderRef = useRef(false);
+  const requestedBeforeRef = useRef<string | null>(null);
   const [reservation, setReservation] = useState<UiTradeReservation | null>(
     () => {
       const card = CHAT_RESERVATIONS.find((item) => item.roomId === roomId);
@@ -96,6 +106,28 @@ export function ChatRoomWorkspace({
     () => rooms.find((item) => item.id === roomId) ?? rooms[0],
     [rooms, roomId]
   );
+
+  async function handleLoadOlder() {
+    const before = messages[0]?.id;
+    if (!before || !hasMoreMessages || loadingOlderRef.current) return;
+    if (requestedBeforeRef.current === before) return;
+
+    requestedBeforeRef.current = before;
+    loadingOlderRef.current = true;
+    setLoadingOlder(true);
+    try {
+      const result = await listOlderChatMessagesAction({ roomId, before });
+      if (!result.ok) {
+        requestedBeforeRef.current = null;
+        return;
+      }
+      setMessages((current) => [...result.data.messages, ...current]);
+      setHasMoreMessages(result.data.hasMore);
+    } finally {
+      loadingOlderRef.current = false;
+      setLoadingOlder(false);
+    }
+  }
 
   function handleReserved(next: UiTradeReservation) {
     const summary = reservationNoticeLines(next);
@@ -141,6 +173,7 @@ export function ChatRoomWorkspace({
       id: `msg-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       from: "me" as const,
       time: "방금",
+      createdAt: new Date().toISOString(),
     };
 
     setMessages((current) => {
@@ -334,6 +367,9 @@ export function ChatRoomWorkspace({
               peerName={room.peerName}
               peerImageUrl={room.peerImageUrl}
               messages={messages}
+              hasMore={hasMoreMessages}
+              loadingOlder={loadingOlder}
+              onLoadOlder={handleLoadOlder}
               onViewReservation={openReserveDetail}
             />
             <ChatMessageForm onSend={handleSend} />

@@ -20,10 +20,12 @@ import type {
   ApiChatTradeStatus,
   ApiCreateChatRoomResponse,
 } from "@/types/chat/api";
-import type {
-  UiChatMessage,
-  UiChatRoom,
-  UiCreatedChatRoom,
+import {
+  CHAT_MESSAGE_PAGE_SIZE,
+  type UiChatMessage,
+  type UiChatMessagePage,
+  type UiChatRoom,
+  type UiCreatedChatRoom,
 } from "@/types/chat/ui";
 
 const SELLER_NICKNAME_FALLBACK = "판매자";
@@ -96,6 +98,7 @@ export function mapChatMessage(
 ): UiChatMessage {
   const from = api.senderUuid === viewerMemberUuid ? "me" : "peer";
   const time = formatChatTime(api.createdAt);
+  const createdAt = api.createdAt;
 
   if (api.messageType === "IMAGE") {
     return {
@@ -104,6 +107,7 @@ export function mapChatMessage(
       from,
       imageSrc: api.content,
       time,
+      createdAt,
     };
   }
   if (api.messageType === "LOCATION") {
@@ -113,6 +117,7 @@ export function mapChatMessage(
       from,
       placeName: api.metadata?.placeName || api.content,
       time,
+      createdAt,
     };
   }
   if (api.messageType === "RESERVATION") {
@@ -124,6 +129,7 @@ export function mapChatMessage(
       kind: "system-reservation",
       from,
       time,
+      createdAt,
       reservationSummary: {
         dateLine: api.content,
         timePlaceLine: [meetAt, api.metadata?.placeName]
@@ -133,7 +139,14 @@ export function mapChatMessage(
     };
   }
 
-  return { id: api.messageId, kind: "text", from, text: api.content, time };
+  return {
+    id: api.messageId,
+    kind: "text",
+    from,
+    text: api.content,
+    time,
+    createdAt,
+  };
 }
 
 export async function createChatRoomService(input: {
@@ -198,10 +211,21 @@ export async function getChatRoomService(roomId: string): Promise<UiChatRoom> {
 
 export async function listChatMessagesService(
   roomId: string,
-  viewerMemberUuid: string
-): Promise<UiChatMessage[]> {
-  const api = await listChatMessages(roomId);
-  return (api.messages ?? []).map((item) =>
+  viewerMemberUuid: string,
+  query?: { before?: string; limit?: number }
+): Promise<UiChatMessagePage> {
+  const limit = query?.limit ?? CHAT_MESSAGE_PAGE_SIZE;
+  const api = await listChatMessages(
+    roomId,
+    query?.before || query?.limit != null
+      ? { before: query?.before, limit }
+      : undefined
+  );
+  const messages = (api.messages ?? []).map((item) =>
     mapChatMessage(item, viewerMemberUuid)
   );
+  return {
+    messages,
+    hasMore: messages.length >= limit && messages.length > 0,
+  };
 }

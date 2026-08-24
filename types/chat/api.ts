@@ -42,11 +42,45 @@ export interface ApiChatCounterpart {
   memberUuid: string;
 }
 
+/** GET /rooms/{id} — 말풍선·헤더용 상대 */
+export interface ApiChatRoomDetailCounterpart {
+  memberUuid: string;
+  nickname: string;
+  profileImageUrl?: string | null;
+}
+
 export interface ApiChatRoomDetail {
   roomId: string;
   productPost: ApiChatProductPost;
   seller: ApiChatSeller;
-  counterpart: ApiChatCounterpart;
+  counterpart: ApiChatRoomDetailCounterpart;
+}
+
+/** GET /api/v1/chat/rooms — 스냅샷이 없으면 productPost·필드는 null */
+export interface ApiChatRoomListProduct {
+  productPostUuid: string | null;
+  productPostImageUrl: string | null;
+  productPostName: string | null;
+  price: number | null;
+  tradeStatus: ApiChatTradeStatus | null;
+}
+
+export interface ApiChatRoomListLastMessage {
+  content: string;
+  createdAt: string;
+}
+
+export interface ApiChatRoomListItem {
+  roomId: string;
+  productPost: ApiChatRoomListProduct | null;
+  counterpart: ApiChatCounterpart | null;
+  lastMessage: ApiChatRoomListLastMessage | null;
+  unreadCount: number;
+  updatedAt: string;
+}
+
+export interface ApiChatRoomList {
+  rooms: ApiChatRoomListItem[];
 }
 
 export interface ApiChatMessageMetadata {

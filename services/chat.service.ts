@@ -3,12 +3,19 @@
  * 방 생성 스냅샷은 Chat이 product-post를 조회하지 않으므로
  * product-post-service + member-service에서 서버가 조립한다.
  */
-import { createChatRoom, getChatRoom, listChatMessages } from "@/lib/api/chat";
+import {
+  createChatRoom,
+  getChatRoom,
+  listChatMessages,
+  listChatRooms,
+} from "@/lib/api/chat";
+import { formatListedAt } from "@/lib/format-listed-at";
 import { getMemberPublicProfileService } from "@/services/member.service";
 import { getProductPostDetailService } from "@/services/product-posts.service";
 import type {
   ApiChatMessage,
   ApiChatRoomDetail,
+  ApiChatRoomListItem,
   ApiChatTradeStatus,
   ApiCreateChatRoomResponse,
 } from "@/types/chat/api";
@@ -19,6 +26,7 @@ import type {
 } from "@/types/chat/ui";
 
 const SELLER_NICKNAME_FALLBACK = "판매자";
+const PRODUCT_THUMBNAIL_FALLBACK = "/main/products/product-1.png";
 
 function mapCreatedChatRoom(api: ApiCreateChatRoomResponse): UiCreatedChatRoom {
   return {
@@ -49,13 +57,35 @@ export function mapChatRoomDetail(api: ApiChatRoomDetail): UiChatRoom {
   return {
     id: api.roomId,
     title: post.productPostName,
-    thumbnail: post.productPostImageUrl || "/main/products/product-1.png",
+    thumbnail: post.productPostImageUrl || PRODUCT_THUMBNAIL_FALLBACK,
     timeAgo: "",
     unreadCount: 0,
-    peerName: api.seller.nickname.trim() || SELLER_NICKNAME_FALLBACK,
+    peerName:
+      api.counterpart?.nickname?.trim() ||
+      api.seller.nickname.trim() ||
+      SELLER_NICKNAME_FALLBACK,
     price: post.price,
     location: "",
     reserved: post.tradeStatus === "RESERVED",
+  };
+}
+
+export function mapChatRoomListItem(api: ApiChatRoomListItem): UiChatRoom {
+  const post = api.productPost;
+  const stamp = api.lastMessage?.createdAt ?? api.updatedAt;
+  const lastMessage = api.lastMessage?.content?.trim() ?? "";
+
+  return {
+    id: api.roomId,
+    title: post?.productPostName?.trim() ?? "",
+    thumbnail: post?.productPostImageUrl?.trim() || PRODUCT_THUMBNAIL_FALLBACK,
+    timeAgo: stamp ? formatListedAt(stamp) : "",
+    unreadCount: api.unreadCount ?? 0,
+    peerName: "",
+    price: post?.price ?? 0,
+    location: "",
+    lastMessage: lastMessage || undefined,
+    reserved: post?.tradeStatus === "RESERVED",
   };
 }
 
@@ -146,6 +176,11 @@ export async function createChatRoomService(input: {
   });
 
   return mapCreatedChatRoom(api);
+}
+
+export async function listChatRoomsService(): Promise<UiChatRoom[]> {
+  const api = await listChatRooms();
+  return (api.rooms ?? []).map(mapChatRoomListItem);
 }
 
 export async function getChatRoomService(roomId: string): Promise<UiChatRoom> {

@@ -3,6 +3,7 @@ import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import type {
   ApiChatMessageList,
   ApiChatRoomDetail,
+  ApiChatRoomList,
   ApiCreateChatRoomRequest,
   ApiCreateChatRoomResponse,
 } from "@/types/chat/api";
@@ -27,6 +28,10 @@ export function createChatRoom(body: ApiCreateChatRoomRequest) {
     method: "POST",
     body,
   });
+}
+
+export function listChatRooms() {
+  return chatFetch<ApiChatRoomList>(API_ENDPOINTS.chat.rooms);
 }
 
 export function getChatRoom(roomId: string) {

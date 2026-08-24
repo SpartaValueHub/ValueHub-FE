@@ -126,7 +126,9 @@ function ThumbCell({
         onClick={onSelect}
         className={cn(
           "relative size-full overflow-hidden",
-          isRep ? "border-[3px] border-vh-brand-gold" : "border border-transparent"
+          isRep
+            ? "border-[3px] border-vh-brand-gold"
+            : "border border-transparent"
         )}
       >
         <Image
@@ -254,7 +256,9 @@ export function ProductPostCreateForm({
   const formId = useId();
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [categoryReady, setCategoryReady] = useState(!isEdit);
+  const [categoryReady, setCategoryReady] = useState(
+    !isEdit || !initialValues?.category
+  );
 
   const [roots, setRoots] = useState<UiCategorySummary[]>([]);
   const [mids, setMids] = useState<UiCategorySummary[]>([]);
@@ -271,12 +275,15 @@ export function ProductPostCreateForm({
 
   const initialDocs = initialValues
     ? docsFromPost(initialValues.post)
-    : { docs: emptyDocs(), checked: {
-        RECEIPT: false,
-        WARRANTY: false,
-        APPRAISAL: false,
-        OTHER: false,
-      } as Record<DocUiType, boolean> };
+    : {
+        docs: emptyDocs(),
+        checked: {
+          RECEIPT: false,
+          WARRANTY: false,
+          APPRAISAL: false,
+          OTHER: false,
+        } as Record<DocUiType, boolean>,
+      };
 
   const [images, setImages] = useState<LocalImage[]>(() =>
     (initialValues?.post.images ?? []).map((img) => ({
@@ -291,9 +298,7 @@ export function ProductPostCreateForm({
     initialValues?.post.conditionGrade ?? ""
   );
   const [priceText, setPriceText] = useState(
-    initialValues?.post.price != null
-      ? String(initialValues.post.price)
-      : ""
+    initialValues?.post.price != null ? String(initialValues.post.price) : ""
   );
   const [placeName, setPlaceName] = useState(
     initialValues?.post.placeName ?? ""
@@ -324,7 +329,6 @@ export function ProductPostCreateForm({
   /** 수정 모드: 대·중·브랜드 옵션 로드 후 선택값 유지 */
   useEffect(() => {
     if (!isEdit || !initialValues?.category) {
-      setCategoryReady(true);
       return;
     }
     const { rootUuid: r, midUuid: m, brandUuid: b } = initialValues.category;
@@ -480,8 +484,7 @@ export function ProductPostCreateForm({
       return `상품명은 ${PRODUCT_POST_NAME_MIN}~${PRODUCT_POST_NAME_MAX}자여야 합니다.`;
     }
     const categoryUuid =
-      brandUuid ||
-      (brands.length === 0 && midUuid ? midUuid : "");
+      brandUuid || (brands.length === 0 && midUuid ? midUuid : "");
     if (!rootUuid || !midUuid) {
       return "카테고리를 선택해 주세요.";
     }
@@ -537,8 +540,7 @@ export function ProductPostCreateForm({
       const doc = docs[o.type];
       return {
         documentType: o.type as DocApiType,
-        imageUrl:
-          doc.remoteUrl ?? productPostPlaceholderImageUrl(100 + index),
+        imageUrl: doc.remoteUrl ?? productPostPlaceholderImageUrl(100 + index),
       };
     });
 
@@ -549,9 +551,7 @@ export function ProductPostCreateForm({
       price,
       description: description.trim(),
       latitude:
-        post?.latitude != null
-          ? post.latitude
-          : PRODUCT_POST_DEFAULT_LATITUDE,
+        post?.latitude != null ? post.latitude : PRODUCT_POST_DEFAULT_LATITUDE,
       longitude:
         post?.longitude != null
           ? post.longitude
@@ -611,12 +611,7 @@ export function ProductPostCreateForm({
       <div className="flex flex-col gap-10 md:flex-row md:items-start md:gap-[30px]">
         {/* 상품사진 — Figma: label100 + gap10 + upload520 = 630 */}
         <section className="flex w-full min-w-0 flex-col gap-2 md:w-[630px] md:shrink-0 md:flex-row md:items-start md:gap-2.5">
-          <p
-            className={cn(
-              fieldLabelClassName,
-              "md:w-[100px]"
-            )}
-          >
+          <p className={cn(fieldLabelClassName, "md:w-[100px]")}>
             상품사진
             <span className="ml-0.5 text-vh-brand-gold" aria-hidden>
               *
@@ -970,7 +965,10 @@ export function ProductPostCreateForm({
         />
 
         {fieldError || error ? (
-          <p className="text-center font-sans text-sm text-red-400" role="alert">
+          <p
+            className="text-center font-sans text-sm text-red-400"
+            role="alert"
+          >
             {fieldError ?? error}
           </p>
         ) : null}

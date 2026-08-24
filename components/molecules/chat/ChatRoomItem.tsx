@@ -116,6 +116,11 @@ export function ChatRoomItem({
         </span>
         <span className="flex min-w-0 flex-col gap-[5px] font-sans text-xs tracking-[-0.24px]">
           <span className="line-clamp-1 text-[#323232]">{room.title}</span>
+          {room.lastMessage ? (
+            <span className="line-clamp-1 text-[#868686]">
+              {room.lastMessage}
+            </span>
+          ) : null}
           <span className="text-[#ababab]">{room.timeAgo}</span>
         </span>
       </span>

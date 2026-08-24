@@ -1,53 +1,47 @@
 import { notFound } from "next/navigation";
 
 import { ChatRoomTemplate } from "@/components/templates/chat/ChatRoomTemplate";
-import { CHAT_MESSAGES, CHAT_ROOMS } from "@/constants/chat-page";
-import { getAuthUser } from "@/lib/session";
+import { requireAuth } from "@/lib/session";
 import {
   getChatRoomService,
   listChatMessagesService,
+  listChatRoomsService,
 } from "@/services/chat.service";
-import type { UiChatMessage } from "@/types/chat/ui";
+import type { UiChatMessage, UiChatRoom } from "@/types/chat/ui";
 
 interface ChatRoomPageProps {
   params: Promise<{ uuid: string }>;
 }
 
+/**
+ * `/chat/[uuid]` — 상세 GET + 왼쪽 목록은 `/chat`과 같은 GET /rooms
+ */
 export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
   const { uuid } = await params;
-  const mock = CHAT_ROOMS.find((item) => item.id === uuid);
-  if (mock) {
-    return (
-      <ChatRoomTemplate
-        rooms={CHAT_ROOMS}
-        roomId={mock.id}
-        messages={CHAT_MESSAGES}
-      />
-    );
-  }
+  const user = await requireAuth(`/chat/${uuid}`);
 
-  const authUser = await getAuthUser();
-  let room;
+  let room: UiChatRoom;
   try {
     room = await getChatRoomService(uuid);
   } catch {
     notFound();
   }
 
-  let messages: UiChatMessage[] = [];
-  if (authUser) {
-    try {
-      messages = await listChatMessagesService(uuid, authUser.memberUuid);
-    } catch {
-      messages = [];
-    }
-  }
+  const [rooms, messages] = await Promise.all([
+    listChatRoomsService().catch((): UiChatRoom[] => []),
+    listChatMessagesService(uuid, user.memberUuid).catch(
+      (): UiChatMessage[] => []
+    ),
+  ]);
+
+  const list = rooms.map((item) =>
+    item.id === room.id ? { ...item, peerName: room.peerName } : item
+  );
+  const roomsForUi = list.some((item) => item.id === room.id)
+    ? list
+    : [room, ...list];
 
   return (
-    <ChatRoomTemplate
-      rooms={[room, ...CHAT_ROOMS]}
-      roomId={room.id}
-      messages={messages}
-    />
+    <ChatRoomTemplate rooms={roomsForUi} roomId={room.id} messages={messages} />
   );
 }

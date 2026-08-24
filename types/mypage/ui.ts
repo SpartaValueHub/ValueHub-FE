@@ -1,3 +1,5 @@
+import type { UiMemberRegion } from "@/types/member-regions/ui";
+
 export type UiMyPageSectionId = "account" | "trade" | "payment";
 
 export type UiTrustGradeLevel =
@@ -54,6 +56,8 @@ export type UiMyPageBenefit = {
 export type UiMyPage = {
   account: UiMyPageAccount;
   trade: UiMyPageTradeSummary;
+  /** member-regions — 최대 2개 */
+  memberRegions: UiMemberRegion[];
   sellItems: UiMyPageTradeItem[];
   buyItems: UiMyPageTradeItem[];
   benefit: UiMyPageBenefit;

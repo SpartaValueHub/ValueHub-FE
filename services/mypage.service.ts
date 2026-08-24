@@ -4,10 +4,13 @@
  * Product-Post 판매/구매 목록 등은 API 준비 후 확장.
  */
 import { MOCK_MYPAGE } from "@/constants/mypage";
+import { splitRegionName } from "@/lib/member-regions/region-name";
 import { getMyAuthAccountService } from "@/services/auth.service";
 import { getMyMemberProfileService } from "@/services/member.service";
+import { listMyMemberRegionsService } from "@/services/member-regions.service";
 import type { UiAuthAccount } from "@/types/auth/ui";
 import type { UiMemberProfile } from "@/types/member/ui";
+import type { UiMemberRegion } from "@/types/member-regions/ui";
 import type {
   UiMyPage,
   UiMyPageAccount,
@@ -52,8 +55,8 @@ function nextGradeHint(level: UiTrustGradeLevel): string {
 }
 
 /**
- * Member address(예: `경기 성남시 분당구 판교동`) → UI용 시·동만.
- * Figma/마크업이 `부산시` + `초량동` 2줄이라 구·도 토큰은 버린다.
+ * Member address → UI용 짧은 시·동만 (구·도 제외).
+ * 예: `경기 성남시 분당구 판교동` → 성남 / 판교동
  */
 export function mapAddressToRegion(address: string | null): {
   regionCity: string;
@@ -67,29 +70,15 @@ export function mapAddressToRegion(address: string | null): {
     };
   }
 
-  const parts = trimmed.split(/\s+/).filter(Boolean);
-
-  const cityCandidates = parts.filter((p) =>
-    /(특별시|광역시|특별자치시|시|군)$/.test(p)
-  );
-  const regionCity =
-    cityCandidates.find(
-      (p) => /시$/.test(p) && !/(특별시|광역시|특별자치시)$/.test(p)
-    ) ??
-    cityCandidates[cityCandidates.length - 1] ??
-    "";
-
-  const dongCandidates = parts.filter((p) => /(동|읍|면|가|리)$/.test(p));
-  const regionDong = dongCandidates[dongCandidates.length - 1] ?? "";
-
-  if (!regionCity && !regionDong) {
+  const parsed = splitRegionName(trimmed);
+  if (!parsed.regionCity && !parsed.regionDong) {
     return {
       regionCity: MOCK_MYPAGE.trade.regionCity,
       regionDong: MOCK_MYPAGE.trade.regionDong,
     };
   }
 
-  return { regionCity, regionDong };
+  return parsed;
 }
 
 /** `2026-08-04T08:00:00Z` → `2026.08.04일 가입` */
@@ -129,31 +118,42 @@ function mapAccount(
   };
 }
 
-function mapTradeSummary(profile: UiMemberProfile): UiMyPageTradeSummary {
+function mapTradeSummary(
+  profile: UiMemberProfile,
+  memberRegions: UiMemberRegion[]
+): UiMyPageTradeSummary {
   const trustGrade = mapMemberGradeToTrustGrade(profile.memberGrade);
-  const { regionCity, regionDong } = mapAddressToRegion(profile.address);
+  const primary =
+    memberRegions.find((r) => r.primary) ?? memberRegions[0] ?? null;
+  const fromRegion = primary
+    ? splitRegionName(primary.regionName)
+    : mapAddressToRegion(profile.address);
+
   return {
     ...MOCK_MYPAGE.trade,
     trustGrade,
-    regionCity,
-    regionDong,
+    regionCity: fromRegion.regionCity || MOCK_MYPAGE.trade.regionCity,
+    regionDong: fromRegion.regionDong || MOCK_MYPAGE.trade.regionDong,
     nextGradeHint: nextGradeHint(trustGrade),
   };
 }
 
 /**
- * RSC 읽기 — Auth·Member 병렬 호출.
+ * RSC 읽기 — Auth·Member·member-regions 병렬 호출.
  * 한쪽 실패해도 가능한 쪽은 표시 (전부 실패 시 page fallback).
  */
 export async function getMyPageService(): Promise<UiMyPage> {
-  const [memberResult, authResult] = await Promise.allSettled([
+  const [memberResult, authResult, regionsResult] = await Promise.allSettled([
     getMyMemberProfileService(),
     getMyAuthAccountService(),
+    listMyMemberRegionsService(),
   ]);
 
   const profile =
     memberResult.status === "fulfilled" ? memberResult.value : null;
   const auth = authResult.status === "fulfilled" ? authResult.value : null;
+  const memberRegions =
+    regionsResult.status === "fulfilled" ? regionsResult.value : [];
 
   if (!profile && !auth) {
     throw new Error("마이페이지 프로필을 불러오지 못했습니다.");
@@ -162,6 +162,9 @@ export async function getMyPageService(): Promise<UiMyPage> {
   return {
     ...MOCK_MYPAGE,
     account: mapAccount(profile, auth),
-    trade: profile ? mapTradeSummary(profile) : MOCK_MYPAGE.trade,
+    trade: profile
+      ? mapTradeSummary(profile, memberRegions)
+      : MOCK_MYPAGE.trade,
+    memberRegions,
   };
 }

@@ -172,6 +172,6 @@ export function installChatWsProxy() {
         return true;
       }
     }
-    return originalEmit.call(this, event, ...args);
+    return Reflect.apply(originalEmit, this, [event, ...args]) as boolean;
   };
 }

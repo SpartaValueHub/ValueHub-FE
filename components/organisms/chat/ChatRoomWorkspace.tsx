@@ -22,7 +22,6 @@ import {
   reservationNoticeLines,
 } from "@/components/organisms/chat/TradeReservationPanel";
 import {
-  CHAT_MAP_PREVIEW,
   CHAT_RESERVATIONS,
   formatReservationChipDate,
   formatReservationChipSubline,
@@ -92,7 +91,7 @@ export function ChatRoomWorkspace({
   const loadingOlderRef = useRef(false);
   const requestedBeforeRef = useRef<string | null>(null);
 
-  const { publishText } = useChatRoomSocket({
+  const { publishText, publishLocation } = useChatRoomSocket({
     roomId,
     onMessage: (incoming) => {
       setMessages((current) => {
@@ -185,6 +184,15 @@ export function ChatRoomWorkspace({
       return;
     }
 
+    if (payload.kind === "location") {
+      publishLocation({
+        placeName: payload.placeName,
+        latitude: payload.latitude,
+        longitude: payload.longitude,
+      });
+      return;
+    }
+
     const base = {
       id: `msg-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       from: "me" as const,
@@ -194,20 +202,9 @@ export function ChatRoomWorkspace({
 
     setMessages((current) => {
       const withoutTyping = current.filter((item) => item.kind !== "typing");
-      if (payload.kind === "image") {
-        return [
-          ...withoutTyping,
-          { ...base, kind: "image", imageSrc: payload.src },
-        ];
-      }
       return [
         ...withoutTyping,
-        {
-          ...base,
-          kind: "location",
-          placeName: payload.placeName,
-          mapImage: CHAT_MAP_PREVIEW,
-        },
+        { ...base, kind: "image", imageSrc: payload.src },
       ];
     });
   }

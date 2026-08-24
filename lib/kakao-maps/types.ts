@@ -23,6 +23,8 @@ export type KakaoMap = {
   setLevel: (level: number, options?: { animate?: boolean }) => void;
   getLevel: () => number;
   relayout: () => void;
+  setDraggable?: (draggable: boolean) => void;
+  setZoomable?: (zoomable: boolean) => void;
 };
 
 export type KakaoMarker = {

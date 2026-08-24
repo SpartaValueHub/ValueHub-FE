@@ -8,22 +8,23 @@ import { Spinner } from "@/components/atoms/spinner";
 import { ChatDateDivider } from "@/components/molecules/chat/ChatDateDivider";
 import { ChatMessageBubble } from "@/components/molecules/chat/ChatMessageBubble";
 import { ChatReservationNotice } from "@/components/molecules/chat/ChatReservationNotice";
+import { KakaoMapPicker } from "@/components/molecules/maps/KakaoMapPicker";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
 } from "@/components/molecules/overlay/Dialog";
-import {
-  CHAT_DATE_DIVIDER,
-  CHAT_LOCATION_PIN,
-  CHAT_MAP_PICKER,
-  CHAT_MAP_PREVIEW,
-} from "@/constants/chat-page";
+import { CHAT_DATE_DIVIDER } from "@/constants/chat-page";
 import type { UiChatMessage } from "@/types/chat/ui";
 
 type MediaViewer =
   | { kind: "image"; src: string }
-  | { kind: "location"; placeName: string; mapImage: string };
+  | {
+      kind: "location";
+      placeName: string;
+      latitude?: number;
+      longitude?: number;
+    };
 
 interface ChatConversationProps {
   peerName: string;
@@ -83,7 +84,11 @@ function MessageBody({
 }: {
   message: UiChatMessage;
   onOpenImage: (src: string) => void;
-  onOpenLocation: (placeName: string, mapImage: string) => void;
+  onOpenLocation: (place: {
+    placeName: string;
+    latitude?: number;
+    longitude?: number;
+  }) => void;
 }) {
   if (message.kind === "image" && message.imageSrc) {
     return (
@@ -111,7 +116,6 @@ function MessageBody({
   }
 
   if (message.kind === "location" && message.placeName) {
-    const mapImage = message.mapImage ?? CHAT_MAP_PREVIEW;
     return (
       <ChatMessageBubble
         from={message.from}
@@ -122,15 +126,20 @@ function MessageBody({
           type="button"
           aria-label={`${message.placeName} 지도 크게 보기`}
           className="flex w-[220px] cursor-pointer flex-col gap-2 text-left"
-          onClick={() => onOpenLocation(message.placeName!, mapImage)}
+          onClick={() =>
+            onOpenLocation({
+              placeName: message.placeName!,
+              latitude: message.latitude,
+              longitude: message.longitude,
+            })
+          }
         >
-          <span className="relative h-[120px] w-full overflow-hidden bg-[#d9d9d9]">
-            <Image
-              src={mapImage}
-              alt=""
-              fill
-              sizes="220px"
-              className="object-cover"
+          <span className="pointer-events-none relative h-[120px] w-full overflow-hidden bg-[#d9d9d9]">
+            <KakaoMapPicker
+              interactive={false}
+              initialLatitude={message.latitude}
+              initialLongitude={message.longitude}
+              className="h-[120px] min-h-[120px] w-full sm:h-[120px] sm:min-h-[120px] sm:w-full sm:size-auto"
             />
           </span>
           <span className="flex items-center gap-1 font-sans text-sm">
@@ -268,8 +277,8 @@ export function ChatConversation({
               <MessageBody
                 message={message}
                 onOpenImage={(src) => setViewer({ kind: "image", src })}
-                onOpenLocation={(placeName, mapImage) =>
-                  setViewer({ kind: "location", placeName, mapImage })
+                onOpenLocation={(place) =>
+                  setViewer({ kind: "location", ...place })
                 }
               />
             );
@@ -341,25 +350,12 @@ export function ChatConversation({
             <DialogTitle className="w-full px-0 text-xl leading-[1.5] sm:px-0">
               {viewer.placeName}
             </DialogTitle>
-            <div className="relative size-[400px] max-w-full overflow-hidden bg-[#d9d9d9]">
-              <Image
-                src={CHAT_MAP_PICKER}
-                alt=""
-                fill
-                sizes="400px"
-                className="object-cover"
-              />
-              <span className="pointer-events-none absolute left-1/2 top-1/2 size-[78px] -translate-x-1/2 -translate-y-[85%]">
-                <Image
-                  src={CHAT_LOCATION_PIN}
-                  alt=""
-                  width={78}
-                  height={76}
-                  unoptimized
-                  className="size-full object-contain"
-                />
-              </span>
-            </div>
+            <KakaoMapPicker
+              interactive={false}
+              initialLatitude={viewer.latitude}
+              initialLongitude={viewer.longitude}
+              className="size-full max-h-[400px] min-h-[240px] sm:size-[400px]"
+            />
             <p className="flex w-full items-center gap-1.5 font-sans text-base text-[#323232]">
               <Icon name="location" size={20} />
               {viewer.placeName}

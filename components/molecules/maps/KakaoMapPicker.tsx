@@ -25,8 +25,10 @@ type KakaoMapPickerProps = {
   className?: string;
   initialLatitude?: number | null;
   initialLongitude?: number | null;
-  /** 지도 클릭·현위치 이동 시 */
-  onPick: (result: KakaoMapPickResult) => void;
+  /** false면 마커만 표시 (채팅 말풍선·확대 보기) */
+  interactive?: boolean;
+  /** 지도 클릭·현위치 이동 시. interactive일 때 사용 */
+  onPick?: (result: KakaoMapPickResult) => void;
 };
 
 /**
@@ -37,6 +39,7 @@ export function KakaoMapPicker({
   className,
   initialLatitude,
   initialLongitude,
+  interactive = true,
   onPick,
 }: KakaoMapPickerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -86,6 +89,11 @@ export function KakaoMapPicker({
         const marker = new kakao.maps.Marker({ position: center, map });
         markerRef.current = marker;
 
+        if (!interactive) {
+          map.setDraggable?.(false);
+          map.setZoomable?.(false);
+        }
+
         const reverseAndNotify = (latLng: {
           getLat: () => number;
           getLng: () => number;
@@ -107,7 +115,7 @@ export function KakaoMapPicker({
                 jibun?.address_name?.trim() ||
                 "";
             }
-            onPickRef.current({
+            onPickRef.current?.({
               latitude,
               longitude,
               suggestedPlaceName,
@@ -115,9 +123,11 @@ export function KakaoMapPicker({
           });
         };
 
-        kakao.maps.event.addListener(map, "click", (mouseEvent) => {
-          reverseAndNotify(mouseEvent.latLng);
-        });
+        if (interactive) {
+          kakao.maps.event.addListener(map, "click", (mouseEvent) => {
+            reverseAndNotify(mouseEvent.latLng);
+          });
+        }
 
         // 초기 좌표는 마커·중심만 맞추고 onPick은 호출하지 않음
         // (수정 모달의 기존 placeName을 열자마자 덮지 않기 위함)
@@ -175,7 +185,7 @@ export function KakaoMapPicker({
                 jibun?.address_name?.trim() ||
                 "";
             }
-            onPickRef.current({
+            onPickRef.current?.({
               latitude: pos.coords.latitude,
               longitude: pos.coords.longitude,
               suggestedPlaceName,
@@ -243,7 +253,7 @@ export function KakaoMapPicker({
         </div>
       ) : null}
 
-      {phase === "ready" ? (
+      {phase === "ready" && interactive ? (
         <div className="pointer-events-none absolute inset-y-2.5 right-2.5 z-[2] flex flex-col items-end justify-between">
           <button
             type="button"

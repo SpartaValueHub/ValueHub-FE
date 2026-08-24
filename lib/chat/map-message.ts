@@ -34,6 +34,8 @@ export function mapChatMessage(
       kind: "location",
       from,
       placeName: api.metadata?.placeName || api.content,
+      latitude: api.metadata?.latitude,
+      longitude: api.metadata?.longitude,
       time,
       createdAt,
     };

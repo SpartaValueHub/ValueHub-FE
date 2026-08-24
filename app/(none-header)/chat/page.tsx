@@ -2,7 +2,10 @@ import { ChatListTemplate } from "@/components/templates/chat/ChatListTemplate";
 import { CHAT_RESERVATIONS } from "@/constants/chat-page";
 import { requireAuth } from "@/lib/session";
 import { resolveProductChatEntryService } from "@/services/chat-entry.service";
-import { listChatRoomsService } from "@/services/chat.service";
+import {
+  listChatRoomsByProductPostService,
+  listChatRoomsService,
+} from "@/services/chat.service";
 import type { UiChatRoom, UiProductChatEntry } from "@/types/chat/ui";
 
 interface ChatIndexPageProps {
@@ -15,6 +18,7 @@ interface ChatIndexPageProps {
 
 /**
  * `/chat` 채팅 목록 — GET /api/v1/chat/rooms
+ * `?productPostUuid`만 있으면 상품별 GET /product-posts/{uuid}/rooms
  * 방 상세는 `/chat/[uuid]`
  *
  * 상품 상세 「채팅하기」:
@@ -31,7 +35,11 @@ export default async function ChatIndexPage({
   const sellerMemberUuid = params.sellerMemberUuid?.trim() ?? "";
   const sellerNickname = params.sellerNickname?.trim() ?? "";
 
-  const roomsPromise = listChatRoomsService().catch((): UiChatRoom[] => []);
+  const roomsPromise = (
+    productPostUuid && !sellerMemberUuid
+      ? listChatRoomsByProductPostService(productPostUuid)
+      : listChatRoomsService()
+  ).catch((): UiChatRoom[] => []);
 
   let pendingProductChatEntry: UiProductChatEntry | null = null;
   if (productPostUuid && sellerMemberUuid) {

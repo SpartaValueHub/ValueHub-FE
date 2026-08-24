@@ -8,6 +8,7 @@ import {
   getChatRoom,
   listChatMessages,
   listChatRooms,
+  listChatRoomsByProductPost,
 } from "@/lib/api/chat";
 import { formatListedAt } from "@/lib/format-listed-at";
 import { getMemberPublicProfileService } from "@/services/member.service";
@@ -180,6 +181,13 @@ export async function createChatRoomService(input: {
 
 export async function listChatRoomsService(): Promise<UiChatRoom[]> {
   const api = await listChatRooms();
+  return (api.rooms ?? []).map(mapChatRoomListItem);
+}
+
+export async function listChatRoomsByProductPostService(
+  productPostUuid: string
+): Promise<UiChatRoom[]> {
+  const api = await listChatRoomsByProductPost(productPostUuid);
   return (api.rooms ?? []).map(mapChatRoomListItem);
 }
 

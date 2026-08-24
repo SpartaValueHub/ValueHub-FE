@@ -55,7 +55,7 @@ export interface ApiProductPostCardPage {
   totalPages: number;
 }
 
-/** POST /api/v1/product-posts body */
+/** POST /api/v1/product-posts · PUT /api/v1/product-posts/{uuid} body (동일) */
 export interface ApiCreateProductPostImage {
   imageUrl: string;
 }
@@ -77,3 +77,6 @@ export interface ApiCreateProductPostRequest {
   images: ApiCreateProductPostImage[];
   documents?: ApiCreateProductPostDocument[];
 }
+
+/** PUT body — 등록과 동일. images/documents는 전체 교체 */
+export type ApiUpdateProductPostRequest = ApiCreateProductPostRequest;

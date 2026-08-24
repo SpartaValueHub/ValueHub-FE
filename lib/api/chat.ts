@@ -44,6 +44,11 @@ export function getChatRoom(roomId: string) {
   return chatFetch<ApiChatRoomDetail>(API_ENDPOINTS.chat.room(roomId));
 }
 
-export function listChatMessages(roomId: string) {
-  return chatFetch<ApiChatMessageList>(API_ENDPOINTS.chat.roomMessages(roomId));
+export function listChatMessages(
+  roomId: string,
+  query?: { before?: string; limit?: number }
+) {
+  return chatFetch<ApiChatMessageList>(
+    API_ENDPOINTS.chat.roomMessages(roomId, query)
+  );
 }

@@ -69,8 +69,18 @@ export const API_ENDPOINTS = {
     rooms: "/api/v1/chat/rooms",
     room: (roomId: string) =>
       `/api/v1/chat/rooms/${encodeURIComponent(roomId)}`,
-    roomMessages: (roomId: string) =>
-      `/api/v1/chat/rooms/${encodeURIComponent(roomId)}/messages`,
+    roomMessages: (
+      roomId: string,
+      params?: { before?: string; limit?: number }
+    ) => {
+      const base = `/api/v1/chat/rooms/${encodeURIComponent(roomId)}/messages`;
+      if (!params) return base;
+      const sp = new URLSearchParams();
+      if (params.before) sp.set("before", params.before);
+      if (params.limit != null) sp.set("limit", String(params.limit));
+      const qs = sp.toString();
+      return qs ? `${base}?${qs}` : base;
+    },
     productRooms: (productPostUuid: string) =>
       `/api/v1/chat/product-posts/${encodeURIComponent(productPostUuid)}/rooms`,
   },

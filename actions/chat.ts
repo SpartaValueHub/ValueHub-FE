@@ -7,9 +7,13 @@
 import { ApiError, ApiTimeoutError } from "@/lib/api/client";
 import { mapActionError } from "@/lib/auth/map-action-error";
 import { requireActionAuth } from "@/lib/session";
-import { createChatRoomService } from "@/services/chat.service";
+import {
+  createChatRoomService,
+  listChatMessagesService,
+} from "@/services/chat.service";
 import { createChatRoomInputSchema } from "@/types/chat/create";
-import type { UiCreatedChatRoom } from "@/types/chat/ui";
+import { listOlderChatMessagesInputSchema } from "@/types/chat/messages";
+import type { UiChatMessagePage, UiCreatedChatRoom } from "@/types/chat/ui";
 
 export type ChatActionResult<T> =
   { ok: true; data: T } | { ok: false; message: string; code?: string };
@@ -41,5 +45,33 @@ export async function createChatRoomAction(
     return { ok: true, data };
   } catch (e) {
     return mapActionError(e, toErrorMessage(e, "채팅방을 만들지 못했습니다."));
+  }
+}
+
+export async function listOlderChatMessagesAction(
+  input: unknown
+): Promise<ChatActionResult<UiChatMessagePage>> {
+  const parsed = listOlderChatMessagesInputSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message:
+        parsed.error.issues[0]?.message ?? "메시지 정보가 올바르지 않습니다.",
+    };
+  }
+
+  try {
+    const user = await requireActionAuth();
+    const data = await listChatMessagesService(
+      parsed.data.roomId,
+      user.memberUuid,
+      { before: parsed.data.before, limit: parsed.data.limit }
+    );
+    return { ok: true, data };
+  } catch (e) {
+    return mapActionError(
+      e,
+      toErrorMessage(e, "이전 메시지를 불러오지 못했습니다.")
+    );
   }
 }

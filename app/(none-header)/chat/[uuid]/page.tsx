@@ -7,7 +7,7 @@ import {
   listChatMessagesService,
   listChatRoomsService,
 } from "@/services/chat.service";
-import type { UiChatMessage, UiChatRoom } from "@/types/chat/ui";
+import type { UiChatMessagePage, UiChatRoom } from "@/types/chat/ui";
 
 interface ChatRoomPageProps {
   params: Promise<{ uuid: string }>;
@@ -27,10 +27,10 @@ export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
     notFound();
   }
 
-  const [rooms, messages] = await Promise.all([
+  const [rooms, messagePage] = await Promise.all([
     listChatRoomsService().catch((): UiChatRoom[] => []),
     listChatMessagesService(uuid, user.memberUuid).catch(
-      (): UiChatMessage[] => []
+      (): UiChatMessagePage => ({ messages: [], hasMore: false })
     ),
   ]);
 
@@ -49,6 +49,11 @@ export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
     : [room, ...list];
 
   return (
-    <ChatRoomTemplate rooms={roomsForUi} roomId={room.id} messages={messages} />
+    <ChatRoomTemplate
+      rooms={roomsForUi}
+      roomId={room.id}
+      messages={messagePage.messages}
+      hasMoreMessages={messagePage.hasMore}
+    />
   );
 }

@@ -32,10 +32,20 @@ export type UiChatMessage = {
   placeName?: string;
   mapImage?: string;
   time?: string;
+  /** API createdAt — 상대 박스 1분 묶음용 */
+  createdAt?: string;
   reservationSummary?: {
     dateLine: string;
     timePlaceLine: string;
   };
+};
+
+/** GET /rooms/{id}/messages — 기본·최대는 문서 limit */
+export const CHAT_MESSAGE_PAGE_SIZE = 50;
+
+export type UiChatMessagePage = {
+  messages: UiChatMessage[];
+  hasMore: boolean;
 };
 
 export type UiTradeReservation = {

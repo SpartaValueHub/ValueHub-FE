@@ -6,6 +6,7 @@
 import {
   createChatRoom,
   getChatRoom,
+  getChatUnreadCount,
   listChatMessages,
   listChatRooms,
   listChatRoomsByProductPost,
@@ -207,6 +208,12 @@ export async function listChatRoomsByProductPostService(
 export async function getChatRoomService(roomId: string): Promise<UiChatRoom> {
   const api = await getChatRoom(roomId);
   return mapChatRoomDetail(api);
+}
+
+export async function getChatUnreadCountService(): Promise<number> {
+  const api = await getChatUnreadCount();
+  const count = api.totalUnreadCount ?? 0;
+  return count > 0 ? count : 0;
 }
 
 export async function listChatMessagesService(

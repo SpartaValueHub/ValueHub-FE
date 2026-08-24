@@ -30,6 +30,8 @@ export type UiChatMessage = {
   text?: string;
   imageSrc?: string;
   placeName?: string;
+  latitude?: number;
+  longitude?: number;
   mapImage?: string;
   time?: string;
   /** API createdAt — 상대 박스 1분 묶음용 */

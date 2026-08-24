@@ -9,6 +9,7 @@ export type SignInErrorCode =
   | "AUTH_RATE_LIMITED"
   | "AUTH_MEMBER_NOT_ACTIVE"
   | "AUTH_REQUEST_TIMEOUT"
+  | "AUTH_SECURITY_STORE_UNAVAILABLE"
   | "MEMBER_NOT_FOUND"
   | "CredentialsSignin";
 
@@ -33,6 +34,9 @@ const RATE_LIMITED_FALLBACK =
 const CAPTCHA_PROVIDER_FALLBACK =
   "보안 확인을 일시적으로 사용할 수 없습니다. 잠시 후 다시 시도해 주세요.";
 
+const SECURITY_STORE_UNAVAILABLE_FALLBACK =
+  "인증 서비스를 일시적으로 사용할 수 없습니다. 잠시 후 다시 시도해 주세요.";
+
 const SIGN_IN_ERROR_MESSAGES: Record<
   Exclude<SignInErrorCode, "CredentialsSignin" | "MEMBER_NOT_FOUND">,
   string
@@ -46,6 +50,7 @@ const SIGN_IN_ERROR_MESSAGES: Record<
   AUTH_MEMBER_NOT_ACTIVE: "현재 로그인할 수 없는 계정입니다.",
   AUTH_REQUEST_TIMEOUT:
     "요청 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.",
+  AUTH_SECURITY_STORE_UNAVAILABLE: SECURITY_STORE_UNAVAILABLE_FALLBACK,
 };
 
 function formatRetryAfterMessage(
@@ -172,6 +177,10 @@ export function buildAuthorizeErrorPayload(
     return fromCode(body.code, body.message, body.retryAfterSeconds);
   }
 
+  if (status === 503) {
+    return securityStoreUnavailablePayload(body?.retryAfterSeconds);
+  }
+
   if (body?.code) {
     return fromCode(body.code, body.message, body.retryAfterSeconds);
   }
@@ -255,6 +264,14 @@ export function signInErrorMessage(error: ParsedSignInError): string {
     );
   }
 
+  if (error.code === "AUTH_SECURITY_STORE_UNAVAILABLE") {
+    return formatRetryAfterMessage(
+      error.retryAfterSeconds,
+      SECURITY_STORE_UNAVAILABLE_FALLBACK,
+      "인증 서비스를 일시적으로 사용할 수 없습니다."
+    );
+  }
+
   if (isSignupIncompleteError(error)) {
     return SIGNUP_INCOMPLETE_GUIDANCE_MESSAGE;
   }
@@ -276,4 +293,23 @@ export function isCaptchaRequiredError(error: ParsedSignInError): boolean {
 
 export function isSignupIncompleteError(error: ParsedSignInError): boolean {
   return error.code === SIGNUP_INCOMPLETE_ERROR_CODE;
+}
+
+export function isSecurityStoreUnavailableApiError(error: {
+  status?: number;
+  code?: string;
+}): boolean {
+  return (
+    error.code === "AUTH_SECURITY_STORE_UNAVAILABLE" || error.status === 503
+  );
+}
+
+export function securityStoreUnavailablePayload(
+  retryAfterSeconds?: number
+): ParsedSignInError {
+  return {
+    code: "AUTH_SECURITY_STORE_UNAVAILABLE",
+    message: SIGN_IN_ERROR_MESSAGES.AUTH_SECURITY_STORE_UNAVAILABLE,
+    ...(retryAfterSeconds !== undefined ? { retryAfterSeconds } : {}),
+  };
 }

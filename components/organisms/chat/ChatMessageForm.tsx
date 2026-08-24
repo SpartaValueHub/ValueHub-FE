@@ -4,11 +4,12 @@ import { useRef, useState } from "react";
 
 import { Icon } from "@/components/atoms/icons";
 import { LocationRegisterDialog } from "@/components/molecules/overlay/LocationRegisterDialog";
+import type { UiLocationSelection } from "@/lib/kakao-maps";
 
 export type ChatOutgoingPayload =
   | { kind: "text"; text: string }
   | { kind: "image"; src: string }
-  | { kind: "location"; placeName: string };
+  | ({ kind: "location" } & UiLocationSelection);
 
 interface ChatMessageFormProps {
   onSend?: (payload: ChatOutgoingPayload) => void;
@@ -91,8 +92,8 @@ export function ChatMessageForm({ onSend }: ChatMessageFormProps) {
         open={placeOpen}
         onOpenChange={setPlaceOpen}
         confirmLabel="전송"
-        onConfirm={(loc) =>
-          onSend?.({ kind: "location", placeName: loc.placeName })
+        onConfirm={(loc: UiLocationSelection) =>
+          onSend?.({ kind: "location", ...loc })
         }
       />
     </>

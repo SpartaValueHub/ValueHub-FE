@@ -5,6 +5,7 @@ import { Client, type IMessage } from "@stomp/stompjs";
 
 import { mapChatMessage } from "@/lib/chat/map-message";
 import { toBrowserStompBrokerUrl } from "@/lib/chat/stomp";
+import type { UiLocationSelection } from "@/lib/kakao-maps";
 import type { ApiChatMessage } from "@/types/chat/api";
 import type { UiChatMessage } from "@/types/chat/ui";
 
@@ -104,5 +105,24 @@ export function useChatRoomSocket({
     return true;
   }
 
-  return { connected, publishText };
+  function publishLocation(selection: UiLocationSelection) {
+    const stomp = clientRef.current;
+    const placeName = selection.placeName.trim();
+    if (!stomp?.connected || !placeName) return false;
+    stomp.publish({
+      destination: `/app/chat.${roomId}`,
+      body: JSON.stringify({
+        messageType: "LOCATION",
+        content: placeName,
+        metadata: {
+          placeName,
+          latitude: selection.latitude,
+          longitude: selection.longitude,
+        },
+      }),
+    });
+    return true;
+  }
+
+  return { connected, publishText, publishLocation };
 }

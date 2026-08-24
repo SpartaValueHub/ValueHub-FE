@@ -101,6 +101,21 @@ export function getProductPostApiUrl() {
   return raw.replace(/\/$/, "");
 }
 
+/** Gateway member-regions-service — 서버 전용 */
+export function getMemberRegionsApiUrl() {
+  assertServerOnlyApiUrl();
+
+  const raw =
+    process.env.MEMBER_REGIONS_API_URL ||
+    (
+      process.env.API_URL ||
+      process.env.API_BASE_URL ||
+      "http://localhost:8000/auth-service"
+    ).replace(/\/auth-service\/?$/, "/member-regions-service");
+
+  return raw.replace(/\/$/, "");
+}
+
 /** Gateway chat-service — 서버 전용 */
 export function getChatApiUrl() {
   assertServerOnlyApiUrl();

@@ -23,6 +23,17 @@ export type KakaoMap = {
   setLevel: (level: number, options?: { animate?: boolean }) => void;
   getLevel: () => number;
   relayout: () => void;
+  setBounds: (
+    bounds: KakaoLatLngBounds,
+    paddingTop?: number,
+    paddingRight?: number,
+    paddingBottom?: number,
+    paddingLeft?: number
+  ) => void;
+};
+
+export type KakaoLatLngBounds = {
+  extend: (latlng: KakaoLatLng) => void;
 };
 
 export type KakaoMarker = {
@@ -34,6 +45,7 @@ export type KakaoMapsNamespace = {
   maps: {
     load: (callback: () => void) => void;
     LatLng: new (lat: number, lng: number) => KakaoLatLng;
+    LatLngBounds: new () => KakaoLatLngBounds;
     Map: new (
       container: HTMLElement,
       options: { center: KakaoLatLng; level: number }
@@ -41,6 +53,8 @@ export type KakaoMapsNamespace = {
     Marker: new (options: {
       position: KakaoLatLng;
       map?: KakaoMap;
+      title?: string;
+      zIndex?: number;
     }) => KakaoMarker;
     event: {
       addListener: (

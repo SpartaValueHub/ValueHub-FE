@@ -58,6 +58,7 @@ export const MOCK_MYPAGE: UiMyPage = {
     nextGradeHint:
       "다음 거래안심등급은 Silver 입니다. 성실한 거래 활동과 긍정적인 거래 이력을 쌓으면 다음 등급으로 승급할 수 있습니다.",
   },
+  memberRegions: [],
   sellItems: MOCK_SELL_ITEMS,
   buyItems: [
     {

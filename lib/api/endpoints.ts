@@ -85,4 +85,23 @@ export const API_ENDPOINTS = {
       `/api/v1/chat/product-posts/${encodeURIComponent(productPostUuid)}/rooms`,
     unreadCount: "/api/v1/chat/unread-count",
   },
+  regions: {
+    list: (keyword?: string) => {
+      const base = "/api/v1/regions";
+      if (!keyword?.trim()) return base;
+      return `${base}?keyword=${encodeURIComponent(keyword.trim())}`;
+    },
+  },
+  memberRegions: {
+    list: "/api/v1/member-regions",
+    create: "/api/v1/member-regions",
+    change: (id: number | string) =>
+      `/api/v1/member-regions/${encodeURIComponent(String(id))}`,
+    setPrimary: (id: number | string) =>
+      `/api/v1/member-regions/${encodeURIComponent(String(id))}/primary`,
+    verify: (id: number | string) =>
+      `/api/v1/member-regions/${encodeURIComponent(String(id))}/verify`,
+    delete: (id: number | string) =>
+      `/api/v1/member-regions/${encodeURIComponent(String(id))}`,
+  },
 } as const;

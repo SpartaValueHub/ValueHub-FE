@@ -1,12 +1,20 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import { verifySelectedRegionAction } from "@/actions/member-regions";
 import { TrustGrade } from "@/components/molecules/listing/TrustGrade";
 import { MyPageGhostButton } from "@/components/molecules/mypage/MyPageGhostButton";
 import { MyPageTradeRow } from "@/components/molecules/mypage/MyPageTradeRow";
 import { MyPageTradeStat } from "@/components/molecules/mypage/MyPageTradeStat";
+import { RegionVerifyDialog } from "@/components/molecules/mypage/RegionVerifyDialog";
+import { AlertDialog } from "@/components/molecules/overlay/AlertDialog";
+import { DialogDescription } from "@/components/molecules/overlay/Dialog";
+import { notifyIfSessionExpiredAction } from "@/lib/auth/session-expired.client";
+import { splitRegionName } from "@/lib/member-regions/region-name";
 import { cn } from "@/lib/utils";
+import type { UiMemberRegion } from "@/types/member-regions/ui";
 import type {
   UiMyPageTradeItem,
   UiMyPageTradeSummary,
@@ -36,17 +44,51 @@ const BUY_STATUS_FILTERS: { id: StatusFilter; label: string }[] = [
 
 interface MyPageTradeSectionProps {
   summary: UiMyPageTradeSummary;
+  memberRegions: UiMemberRegion[];
   sellItems: UiMyPageTradeItem[];
   buyItems: UiMyPageTradeItem[];
 }
 
 export function MyPageTradeSection({
   summary,
+  memberRegions,
   sellItems,
   buyItems,
 }: MyPageTradeSectionProps) {
+  const router = useRouter();
   const [listKind, setListKind] = useState<UiTradeListKind>("sell");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [verifyOpen, setVerifyOpen] = useState(false);
+  const [verifySlot, setVerifySlot] = useState<"primary" | "secondary">(
+    "primary"
+  );
+  const [verifying, setVerifying] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackTitle, setFeedbackTitle] = useState("");
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+
+  const primaryRegion =
+    memberRegions.find((r) => r.primary) ?? memberRegions[0] ?? null;
+  const secondaryRegion =
+    memberRegions.find(
+      (r) => !r.primary && r.memberRegionId !== primaryRegion?.memberRegionId
+    ) ??
+    memberRegions.find(
+      (r) => r.memberRegionId !== primaryRegion?.memberRegionId
+    ) ??
+    null;
+
+  const primaryParts = primaryRegion
+    ? splitRegionName(primaryRegion.regionName)
+    : { regionCity: summary.regionCity, regionDong: summary.regionDong };
+  const secondaryParts = secondaryRegion
+    ? splitRegionName(secondaryRegion.regionName)
+    : null;
+
+  const isPrimaryVerified = primaryRegion?.verified === true;
+  const canAddSecondary = memberRegions.length < 2;
+  const activityHint =
+    primaryParts.regionDong.trim() || primaryParts.regionCity.trim();
 
   const items = listKind === "sell" ? sellItems : buyItems;
   const statusFilters =
@@ -58,6 +100,67 @@ export function MyPageTradeSection({
         : items.filter((item) => item.status === statusFilter),
     [items, statusFilter]
   );
+
+  const showFeedback = (title: string, message: string) => {
+    setFeedbackTitle(title);
+    setFeedbackMessage(message);
+    setFeedbackOpen(true);
+  };
+
+  const openVerify = (slot: "primary" | "secondary") => {
+    if (verifying) return;
+    if (slot === "secondary" && !secondaryRegion && !canAddSecondary) {
+      showFeedback("추가 불가", "동네는 최대 2개까지 등록할 수 있습니다.");
+      return;
+    }
+    setVerifySlot(slot);
+    setVerifyOpen(true);
+  };
+
+  const onConfirmVerify = (payload: {
+    regionCode: number;
+    latitude: number;
+    longitude: number;
+    slot: "primary" | "secondary";
+  }) => {
+    if (verifying) return;
+    setVerifying(true);
+    void (async () => {
+      try {
+        const res = await verifySelectedRegionAction(
+          payload.regionCode,
+          payload.latitude,
+          payload.longitude,
+          payload.slot
+        );
+        if (!res.ok) {
+          notifyIfSessionExpiredAction(res);
+          setVerifyOpen(false);
+          showFeedback(
+            "인증 실패",
+            res.code === "REGION_VERIFICATION_FAILED"
+              ? "선택한 동네 근처에서만 인증할 수 있습니다. 위치를 확인해 주세요."
+              : res.message
+          );
+          return;
+        }
+        setVerifyOpen(false);
+        showFeedback(
+          "동네 인증 완료",
+          `${res.data.regionName} 인증이 완료되었습니다.`
+        );
+        router.refresh();
+      } catch {
+        setVerifyOpen(false);
+        showFeedback(
+          "인증 실패",
+          "동네 인증 중 오류가 발생했습니다. 다시 시도해 주세요."
+        );
+      } finally {
+        setVerifying(false);
+      }
+    })();
+  };
 
   return (
     <section
@@ -103,10 +206,15 @@ export function MyPageTradeSection({
           <div className="flex h-40 min-w-0 flex-1 flex-col items-center gap-[50px] whitespace-nowrap text-[#f5f5f5]">
             <p className="font-sans text-base">활동 지역</p>
             <div className="flex flex-col items-start gap-1">
-              <p className="font-sans text-xl">{summary.regionCity}</p>
+              <p className="font-sans text-xl">{primaryParts.regionCity}</p>
               <p className="font-sans text-[30px] leading-none">
-                {summary.regionDong}
+                {primaryParts.regionDong}
               </p>
+              {primaryParts.regionDong || primaryParts.regionCity ? (
+                <p className="font-sans text-xs text-[#ababab]">
+                  {isPrimaryVerified ? "동네 인증 완료" : "미인증"}
+                </p>
+              ) : null}
             </div>
           </div>
         </div>
@@ -129,49 +237,103 @@ export function MyPageTradeSection({
           <div className="flex flex-col items-center gap-2.5 whitespace-nowrap text-[#f5f5f5]">
             <p className="font-sans text-sm">활동 지역</p>
             <div className="flex flex-col items-start gap-1">
-              <p className="font-sans text-[13px]">{summary.regionCity}</p>
+              <p className="font-sans text-[13px]">{primaryParts.regionCity}</p>
               <p className="font-sans text-base leading-none">
-                {summary.regionDong}
+                {primaryParts.regionDong}
               </p>
+              {primaryParts.regionDong || primaryParts.regionCity ? (
+                <p className="font-sans text-[10px] text-[#ababab]">
+                  {isPrimaryVerified ? "동네 인증 완료" : "미인증"}
+                </p>
+              ) : null}
             </div>
           </div>
         </div>
       </div>
 
+      {/* Figma 263:678 — 현재 활동중인 지역 + 추가된 활동지역 */}
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
         <div className="flex h-[50px] w-full items-start justify-between">
           <p className="font-sans text-sm text-white lg:text-xl">
             현재 활동중인 지역
           </p>
-          <div className="flex h-full w-[220px] items-end justify-between lg:w-[300px]">
+          <div className="flex h-full w-[220px] items-end justify-between gap-[30px] lg:w-auto lg:justify-end">
             <p className="flex flex-col items-start gap-0.5 text-[#f5f5f5] lg:flex-row lg:items-end lg:gap-1.5">
               <span className="font-sans text-xs lg:pb-[3px] lg:text-xl">
-                {summary.regionCity}
+                {primaryParts.regionCity}
               </span>
               <span className="font-sans text-base leading-none lg:text-[30px]">
-                {summary.regionDong}
+                {primaryParts.regionDong}
               </span>
             </p>
-            <MyPageGhostButton className="lg:w-[150px]">
-              <span className="lg:hidden">동네 인증</span>
-              <span className="hidden lg:inline">동네 인증하기</span>
+            <MyPageGhostButton
+              className="shrink-0 lg:w-[150px]"
+              disabled={verifying}
+              onClick={() => openVerify("primary")}
+            >
+              {verifying && verifySlot === "primary"
+                ? "인증 중…"
+                : "동네 인증하기"}
             </MyPageGhostButton>
           </div>
         </div>
-        <div className="flex h-[50px] w-full items-start justify-between">
-          <p className="font-sans text-sm text-white lg:text-xl">
-            활동지역 추가
-          </p>
-          <div className="flex h-full w-[220px] items-end justify-between gap-5 lg:w-[300px] lg:gap-2">
-            <p className="min-w-0 flex-1 font-sans text-xs leading-normal text-white lg:w-[140px] lg:flex-none lg:text-base">
-              최대 2개의 동네를 설정할 수 있습니다.
+
+        {secondaryParts ? (
+          <div className="flex h-[50px] w-full items-start justify-between">
+            <p className="font-sans text-sm text-white lg:text-xl">
+              추가된 활동지역
             </p>
-            <MyPageGhostButton className="lg:w-[150px]">
-              지역 추가
-            </MyPageGhostButton>
+            <div className="flex h-full w-[220px] items-end justify-between gap-[30px] lg:w-auto lg:justify-end">
+              <p className="flex flex-col items-start gap-0.5 text-[#f5f5f5] lg:flex-row lg:items-end lg:gap-1.5">
+                <span className="font-sans text-xs lg:pb-[3px] lg:text-xl">
+                  {secondaryParts.regionCity}
+                </span>
+                <span className="font-sans text-base leading-none lg:text-[30px]">
+                  {secondaryParts.regionDong}
+                </span>
+              </p>
+              <MyPageGhostButton
+                className="shrink-0 lg:w-[150px]"
+                disabled={verifying}
+                onClick={() => openVerify("secondary")}
+              >
+                {verifying && verifySlot === "secondary"
+                  ? "인증 중…"
+                  : "동네 인증하기"}
+              </MyPageGhostButton>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex h-[50px] w-full items-start justify-between">
+            <p className="font-sans text-sm text-white lg:text-xl">
+              활동지역 추가
+            </p>
+            <div className="flex h-full w-[220px] items-end justify-between gap-5 lg:w-[300px] lg:gap-2">
+              <p className="min-w-0 flex-1 font-sans text-xs leading-normal text-white lg:w-[140px] lg:flex-none lg:text-base">
+                최대 2개의 동네를 설정할 수 있습니다.
+                {memberRegions.length > 0
+                  ? ` (현재 ${memberRegions.length}/2)`
+                  : null}
+              </p>
+              <MyPageGhostButton
+                className="shrink-0 lg:w-[150px]"
+                disabled={!canAddSecondary || verifying}
+                onClick={() => openVerify("secondary")}
+              >
+                지역 추가
+              </MyPageGhostButton>
+            </div>
+          </div>
+        )}
       </div>
+
+      {!isPrimaryVerified ? (
+        <p className="font-sans text-sm text-[#ababab]">
+          「동네 인증하기」에서 동을 고른 뒤 GPS로 인증하세요. 인증 완료 후에도
+          같은 버튼으로 동네를 바꿀 수 있습니다. 두 번째 동네는 「지역 추가」로
+          동일하게 인증합니다.
+        </p>
+      ) : null}
 
       <div className="flex w-full flex-col gap-[30px]">
         <div className="flex flex-col gap-2.5">
@@ -248,6 +410,31 @@ export function MyPageTradeSection({
           더보기
         </button>
       </div>
+
+      <RegionVerifyDialog
+        open={verifyOpen}
+        onOpenChange={setVerifyOpen}
+        initialKeyword={
+          verifySlot === "secondary"
+            ? secondaryParts?.regionDong || ""
+            : activityHint
+        }
+        slot={verifySlot}
+        submitting={verifying}
+        onConfirm={onConfirmVerify}
+      />
+
+      <AlertDialog
+        open={feedbackOpen}
+        onOpenChange={setFeedbackOpen}
+        title={feedbackTitle}
+        primaryLabel="확인"
+        onPrimary={() => setFeedbackOpen(false)}
+      >
+        <DialogDescription className="whitespace-pre-wrap text-left text-base leading-[1.5] text-[#323232]">
+          {feedbackMessage}
+        </DialogDescription>
+      </AlertDialog>
     </section>
   );
 }

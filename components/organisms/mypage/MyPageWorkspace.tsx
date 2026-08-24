@@ -32,6 +32,7 @@ export function MyPageWorkspace({ data }: MyPageWorkspaceProps) {
         <MyPageAccountSection account={data.account} />
         <MyPageTradeSection
           summary={data.trade}
+          memberRegions={data.memberRegions}
           sellItems={data.sellItems}
           buyItems={data.buyItems}
         />

@@ -12,6 +12,7 @@ import { applyChatListPatch } from "@/lib/chat/map-list-patch";
 import { Icon, type SystemIconName } from "@/components/atoms/icons";
 import { StatusBadge } from "@/components/atoms/status-badge";
 import { Popover } from "@/components/molecules/overlay/Popover";
+import { SellerProfileDialogHost } from "@/components/molecules/product-posts/SellerProfileDialogHost";
 import { ChatConversation } from "@/components/organisms/chat/ChatConversation";
 import {
   ChatMessageForm,
@@ -76,6 +77,32 @@ const MORE_MENU_ITEMS: {
   { icon: "trash", label: "채팅방 나가기" },
 ];
 
+function PeerHeaderName({
+  name,
+  canOpen,
+  onOpen,
+  className,
+}: {
+  name: string;
+  canOpen: boolean;
+  onOpen: () => void;
+  className?: string;
+}) {
+  if (!canOpen) {
+    return <span className={className}>{name}</span>;
+  }
+  return (
+    <button
+      type="button"
+      aria-label={`${name} 프로필`}
+      className={className}
+      onClick={onOpen}
+    >
+      {name}
+    </button>
+  );
+}
+
 /** 채팅 3단 셸 — 목록 / 대화 / 거래 예약. 모바일은 대화 + 예약 모달 */
 export function ChatRoomWorkspace({
   rooms,
@@ -118,11 +145,18 @@ export function ChatRoomWorkspace({
   const [desktopMoreOpen, setDesktopMoreOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogIntent, setDialogIntent] = useState<"form" | "detail">("form");
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const room = useMemo(
     () => listRooms.find((item) => item.id === roomId) ?? listRooms[0],
     [listRooms, roomId]
   );
+  const peerMemberUuid = room.peerMemberUuid?.trim() ?? "";
+
+  function openPeerProfile() {
+    if (!peerMemberUuid) return;
+    setProfileOpen(true);
+  }
 
   async function handleLoadOlder() {
     const before = messages[0]?.id;
@@ -274,15 +308,18 @@ export function ChatRoomWorkspace({
               type="button"
               aria-label="뒤로 가기"
               className="flex size-[30px] items-center justify-center text-[#323232]"
-              onClick={() => router.back()}
+              onClick={() => router.replace("/chat")}
             >
               <Icon name="chevron-left" size={30} />
             </button>
             <span className="flex h-[30px] items-center gap-0.5 rounded-[45px] bg-white px-3 py-[3px]">
               <Icon name="user-fill" size={12} />
-              <span className="font-sans text-sm font-medium text-[#323232]">
-                {room.peerName}
-              </span>
+              <PeerHeaderName
+                name={room.peerName}
+                canOpen={Boolean(peerMemberUuid)}
+                onOpen={openPeerProfile}
+                className="font-sans text-sm font-medium text-[#323232]"
+              />
             </span>
             {renderMoreMenu(mobileMoreOpen, setMobileMoreOpen)}
           </div>
@@ -338,18 +375,21 @@ export function ChatRoomWorkspace({
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
             <ProductPostLink
               room={room}
-              className="flex min-w-0 flex-1 items-center gap-2.5"
+              className="relative size-16 shrink-0 overflow-hidden rounded-[6px] bg-[#868686]"
             >
-              <span className="relative size-16 shrink-0 overflow-hidden rounded-[6px] bg-[#868686]">
-                <Image
-                  src={room.thumbnail}
-                  alt=""
-                  fill
-                  sizes="64px"
-                  className="object-cover"
-                />
-              </span>
-              <div className="flex min-w-0 flex-col gap-1">
+              <Image
+                src={room.thumbnail}
+                alt=""
+                fill
+                sizes="64px"
+                className="object-cover"
+              />
+            </ProductPostLink>
+            <div className="flex min-w-0 flex-col gap-1">
+              <ProductPostLink
+                room={room}
+                className="flex min-w-0 flex-col gap-1"
+              >
                 <div className="flex items-center gap-1">
                   <p className="truncate font-sans text-sm text-[#323232]">
                     {room.title}
@@ -360,12 +400,16 @@ export function ChatRoomWorkspace({
                   {room.price.toLocaleString("ko-KR")}
                   <span className="ml-0.5 text-base">원</span>
                 </p>
-                <p className="flex items-center gap-0.5 font-sans text-sm text-[#323232]">
-                  <Icon name="user-fill" size={12} />
-                  {room.peerName}
-                </p>
-              </div>
-            </ProductPostLink>
+              </ProductPostLink>
+              <p className="flex items-center gap-0.5 font-sans text-sm text-[#323232]">
+                <Icon name="user-fill" size={12} />
+                <PeerHeaderName
+                  name={room.peerName}
+                  canOpen={Boolean(peerMemberUuid)}
+                  onOpen={openPeerProfile}
+                />
+              </p>
+            </div>
           </div>
           {renderMoreMenu(desktopMoreOpen, setDesktopMoreOpen)}
         </div>
@@ -385,6 +429,7 @@ export function ChatRoomWorkspace({
               loadingOlder={loadingOlder}
               onLoadOlder={handleLoadOlder}
               onViewReservation={openReserveDetail}
+              onPeerProfileClick={peerMemberUuid ? openPeerProfile : undefined}
             />
             <ChatMessageForm onSend={handleSend} />
           </div>
@@ -415,6 +460,16 @@ export function ChatRoomWorkspace({
           }}
           onReserved={handleReserved}
           onCancelReservation={handleCancelReservation}
+        />
+      ) : null}
+
+      {peerMemberUuid ? (
+        <SellerProfileDialogHost
+          open={profileOpen}
+          memberUuid={peerMemberUuid}
+          previewNickname={room.peerName}
+          previewAvatarUrl={room.peerImageUrl}
+          onOpenChange={setProfileOpen}
         />
       ) : null}
     </div>

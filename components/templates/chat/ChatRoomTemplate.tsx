@@ -25,7 +25,7 @@ export function ChatRoomTemplate({
         className
       )}
     >
-      <ChatBackBar className="hidden lg:flex" />
+      <ChatBackBar className="hidden lg:flex" href="/chat" />
       <ChatRoomWorkspace
         key={roomId}
         rooms={rooms}

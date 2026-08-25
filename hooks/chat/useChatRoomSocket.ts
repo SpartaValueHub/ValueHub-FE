@@ -123,5 +123,20 @@ export function useChatRoomSocket({
     return true;
   }
 
-  return { connected, publishText, publishLocation };
+  function publishImage(s3Key: string) {
+    const stomp = clientRef.current;
+    const key = s3Key.trim();
+    if (!stomp?.connected || !key) return false;
+    stomp.publish({
+      destination: `/app/chat.${roomId}`,
+      body: JSON.stringify({
+        messageType: "IMAGE",
+        content: key,
+        metadata: null,
+      }),
+    });
+    return true;
+  }
+
+  return { connected, publishText, publishLocation, publishImage };
 }

@@ -84,6 +84,8 @@ export const API_ENDPOINTS = {
     productRooms: (productPostUuid: string) =>
       `/api/v1/chat/product-posts/${encodeURIComponent(productPostUuid)}/rooms`,
     unreadCount: "/api/v1/chat/unread-count",
+    imagePresignedUrl: (roomId: string) =>
+      `/api/v1/chat/rooms/${encodeURIComponent(roomId)}/images/presigned-url`,
   },
   regions: {
     list: (keyword?: string) => {

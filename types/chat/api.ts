@@ -98,6 +98,19 @@ export interface ApiChatUnreadCount {
   totalUnreadCount: number;
 }
 
+/** POST /rooms/{id}/images/presigned-url */
+export interface ApiChatImagePresignedRequest {
+  contentType: string;
+  fileSize: number;
+}
+
+export interface ApiChatImagePresignedResponse {
+  uploadUrl: string;
+  s3Key?: string;
+  key?: string;
+  objectKey?: string;
+}
+
 export interface ApiChatMessageMetadata {
   fileSize?: string;
   imageWidth?: number;

@@ -23,7 +23,7 @@ export function mapChatMessage(
       id: api.messageId,
       kind: "image",
       from,
-      imageSrc: api.content,
+      imageSrc: api.content.trim(),
       time,
       createdAt,
     };

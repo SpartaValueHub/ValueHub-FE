@@ -16,6 +16,23 @@ function base(overrides: Partial<ApiChatMessage>): ApiChatMessage {
   };
 }
 
+describe("mapChatMessage IMAGE", () => {
+  it("maps IMAGE content as CloudFront src", () => {
+    const ui = mapChatMessage(
+      base({
+        messageType: "IMAGE",
+        content: "https://cdn.example/chat/a.jpg",
+      }),
+      me
+    );
+    expect(ui).toMatchObject({
+      kind: "image",
+      from: "me",
+      imageSrc: "https://cdn.example/chat/a.jpg",
+    });
+  });
+});
+
 describe("mapChatMessage LOCATION", () => {
   it("maps placeName and coordinates from metadata", () => {
     const ui = mapChatMessage(

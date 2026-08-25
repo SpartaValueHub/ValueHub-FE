@@ -24,7 +24,9 @@ interface LocationRegisterDialogProps {
   initialPlaceName?: string;
   initialLatitude?: number | null;
   initialLongitude?: number | null;
-  /** 확정 시 placeName + 위도·경도 (상품·채팅·예약 공통) */
+  initialRegionDong?: string | null;
+  initialRegionGu?: string | null;
+  /** 확정 시 placeName + 좌표 + (가능 시) 동/구 */
   onConfirm: (selection: UiLocationSelection) => void;
   confirmLabel?: string;
 }
@@ -39,6 +41,8 @@ export function LocationRegisterDialog({
   initialPlaceName = "",
   initialLatitude = null,
   initialLongitude = null,
+  initialRegionDong = null,
+  initialRegionGu = null,
   onConfirm,
   confirmLabel = "거래 장소 등록",
 }: LocationRegisterDialogProps) {
@@ -46,11 +50,13 @@ export function LocationRegisterDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       {open ? (
         <LocationRegisterDialogBody
-          key={`${initialPlaceName}-${initialLatitude}-${initialLongitude}`}
+          key={`${initialPlaceName}-${initialLatitude}-${initialLongitude}-${initialRegionDong}-${initialRegionGu}`}
           confirmLabel={confirmLabel}
           initialPlaceName={initialPlaceName}
           initialLatitude={initialLatitude}
           initialLongitude={initialLongitude}
+          initialRegionDong={initialRegionDong}
+          initialRegionGu={initialRegionGu}
           onClose={() => onOpenChange(false)}
           onConfirm={onConfirm}
         />
@@ -64,6 +70,8 @@ function LocationRegisterDialogBody({
   initialPlaceName,
   initialLatitude,
   initialLongitude,
+  initialRegionDong,
+  initialRegionGu,
   onClose,
   onConfirm,
 }: {
@@ -71,6 +79,8 @@ function LocationRegisterDialogBody({
   initialPlaceName: string;
   initialLatitude: number | null;
   initialLongitude: number | null;
+  initialRegionDong: string | null;
+  initialRegionGu: string | null;
   onClose: () => void;
   onConfirm: (selection: UiLocationSelection) => void;
 }) {
@@ -84,6 +94,12 @@ function LocationRegisterDialogBody({
     initialLongitude != null && Number.isFinite(initialLongitude)
       ? initialLongitude
       : null
+  );
+  const [regionDong, setRegionDong] = useState<string | null>(
+    initialRegionDong?.trim() || null
+  );
+  const [regionGu, setRegionGu] = useState<string | null>(
+    initialRegionGu?.trim() || null
   );
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -117,6 +133,8 @@ function LocationRegisterDialogBody({
       placeName: trimmed,
       latitude,
       longitude,
+      regionDong,
+      regionGu,
     });
     onClose();
   };
@@ -140,11 +158,18 @@ function LocationRegisterDialogBody({
         <KakaoMapPicker
           initialLatitude={initialLatitude}
           initialLongitude={initialLongitude}
-          onPick={({ latitude: lat, longitude: lng, suggestedPlaceName }) => {
+          onPick={({
+            latitude: lat,
+            longitude: lng,
+            suggestedPlaceName,
+            regionDong: dong,
+            regionGu: gu,
+          }) => {
             setLatitude(lat);
             setLongitude(lng);
+            setRegionDong(dong);
+            setRegionGu(gu);
             setLocalError(null);
-            // 장소 변경(수정) 시에도 픽한 좌표의 역지오코딩명을 반영
             if (suggestedPlaceName) {
               setPlaceName(suggestedPlaceName);
             }
@@ -159,6 +184,7 @@ function LocationRegisterDialogBody({
         <VhInput
           value={placeName}
           onChange={(event) => {
+            // 4A: placeName만 수정 — 동/구는 마지막 지도 픽 유지
             setPlaceName(event.target.value);
             setLocalError(null);
           }}

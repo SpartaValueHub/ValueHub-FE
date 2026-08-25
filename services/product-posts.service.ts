@@ -2,9 +2,7 @@
  * product-post-service 오케스트레이션.
  * UI/actions → service → lib/api (3-layer).
  */
-import {
-  ALL_CATEGORY_NAV_ID,
-} from "@/constants/categories";
+import { ALL_CATEGORY_NAV_ID } from "@/constants/categories";
 import {
   createProductPost,
   deleteProductPost,
@@ -32,7 +30,9 @@ import type {
   UiProductPostImage,
 } from "@/types/product-posts/ui";
 
-function mapImage(api: ApiProductPostDetail["images"][number]): UiProductPostImage {
+function mapImage(
+  api: ApiProductPostDetail["images"][number]
+): UiProductPostImage {
   return {
     uuid: api.productPostImageUuid,
     url: api.imageUrl,
@@ -65,9 +65,13 @@ export function mapProductPostDetail(
     latitude: api.latitude,
     longitude: api.longitude,
     placeName: api.placeName,
+    regionDong: api.regionDong ?? null,
+    regionGu: api.regionGu ?? null,
     bumpedAt: api.bumpedAt,
     createdAt: api.createdAt,
-    images: [...api.images].sort((a, b) => a.sortOrder - b.sortOrder).map(mapImage),
+    images: [...api.images]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map(mapImage),
     documents: api.documents.map(mapDocument),
   };
 }
@@ -80,6 +84,9 @@ function mapCard(api: ApiProductPostCard): UiProductPostCard {
     tradeStatus: api.tradeStatus,
     listedAt: api.listedAt,
     thumbnailUrl: api.thumbnailUrl,
+    regionDong: api.regionDong ?? null,
+    regionGu: api.regionGu ?? null,
+    placeName: api.placeName?.trim() || "",
   };
 }
 
@@ -151,7 +158,9 @@ async function leavesForParent(
 }
 
 /** 동일 브랜드명이 가방/주얼리 등에 각각 있으면 UI에선 한 줄로 */
-function dedupeBrandsByName(leaves: UiCategorySummary[]): UiBrandFilterOption[] {
+function dedupeBrandsByName(
+  leaves: UiCategorySummary[]
+): UiBrandFilterOption[] {
   const byName = new Map<string, string[]>();
   for (const leaf of leaves) {
     const key = leaf.categoryName.trim();
@@ -191,9 +200,9 @@ export async function resolveProductPostListContext(
     const root = roots.find((item) => item.categoryUuid === categoryUuid);
 
     if (root) {
-      const children = (await listChildCategoriesService(root.categoryUuid)).filter(
-        (item) => item.active
-      );
+      const children = (
+        await listChildCategoriesService(root.categoryUuid)
+      ).filter((item) => item.active);
       const brandParent = subUuid ?? root.categoryUuid;
       const leaves = await leavesForParent(brandParent);
       const brands = dedupeBrandsByName(leaves);
@@ -222,9 +231,9 @@ export async function resolveProductPostListContext(
     }
 
     for (const candidate of roots) {
-      const children = (await listChildCategoriesService(
-        candidate.categoryUuid
-      )).filter((item) => item.active);
+      const children = (
+        await listChildCategoriesService(candidate.categoryUuid)
+      ).filter((item) => item.active);
       const match = children.find((item) => item.categoryUuid === categoryUuid);
       if (match) {
         const leaves = await leavesForParent(categoryUuid);

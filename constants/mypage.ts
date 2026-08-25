@@ -2,6 +2,9 @@ import type { UiMyPage, UiMyPageTradeItem } from "@/types/mypage/ui";
 
 const TRADE_TITLE = "발렌티노 카프스킨 스터드 사인 로퍼 블랙";
 
+/** 마이페이지 판매 목록 페이지 크기 (BE size) */
+export const MYPAGE_SELL_PAGE_SIZE = 10;
+
 const BASE_TRADE = {
   title: TRADE_TITLE,
   date: "2026.07.07",
@@ -60,6 +63,13 @@ export const MOCK_MYPAGE: UiMyPage = {
   },
   memberRegions: [],
   sellItems: MOCK_SELL_ITEMS,
+  sellList: {
+    items: MOCK_SELL_ITEMS,
+    page: 1,
+    totalPages: 1,
+    totalElements: MOCK_SELL_ITEMS.length,
+    hasMore: false,
+  },
   buyItems: [
     {
       id: "buy-1",

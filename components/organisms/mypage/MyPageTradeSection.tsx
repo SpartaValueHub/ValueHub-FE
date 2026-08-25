@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 
 import { verifySelectedRegionAction } from "@/actions/member-regions";
+import { listMySellPostsAction } from "@/actions/mypage";
 import { TrustGrade } from "@/components/molecules/listing/TrustGrade";
 import { MyPageGhostButton } from "@/components/molecules/mypage/MyPageGhostButton";
 import { MyPageTradeRow } from "@/components/molecules/mypage/MyPageTradeRow";
@@ -16,6 +17,7 @@ import { splitRegionName } from "@/lib/member-regions/region-name";
 import { cn } from "@/lib/utils";
 import type { UiMemberRegion } from "@/types/member-regions/ui";
 import type {
+  UiMyPageSellListPage,
   UiMyPageTradeItem,
   UiMyPageTradeSummary,
   UiTradeListKind,
@@ -45,19 +47,23 @@ const BUY_STATUS_FILTERS: { id: StatusFilter; label: string }[] = [
 interface MyPageTradeSectionProps {
   summary: UiMyPageTradeSummary;
   memberRegions: UiMemberRegion[];
-  sellItems: UiMyPageTradeItem[];
+  sellList: UiMyPageSellListPage;
   buyItems: UiMyPageTradeItem[];
 }
 
 export function MyPageTradeSection({
   summary,
   memberRegions,
-  sellItems,
+  sellList: initialSellList,
   buyItems,
 }: MyPageTradeSectionProps) {
   const router = useRouter();
   const [listKind, setListKind] = useState<UiTradeListKind>("sell");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [sellItems, setSellItems] = useState(initialSellList.items);
+  const [sellPage, setSellPage] = useState(initialSellList.page);
+  const [sellHasMore, setSellHasMore] = useState(initialSellList.hasMore);
+  const [sellPending, startSellTransition] = useTransition();
   const [verifyOpen, setVerifyOpen] = useState(false);
   const [verifySlot, setVerifySlot] = useState<"primary" | "secondary">(
     "primary"
@@ -90,21 +96,63 @@ export function MyPageTradeSection({
   const activityHint =
     primaryParts.regionDong.trim() || primaryParts.regionCity.trim();
 
-  const items = listKind === "sell" ? sellItems : buyItems;
-  const statusFilters =
-    listKind === "sell" ? SELL_STATUS_FILTERS : BUY_STATUS_FILTERS;
-  const visibleItems = useMemo(
+  const buyVisibleItems = useMemo(
     () =>
       statusFilter === "all"
-        ? items
-        : items.filter((item) => item.status === statusFilter),
-    [items, statusFilter]
+        ? buyItems
+        : buyItems.filter((item) => item.status === statusFilter),
+    [buyItems, statusFilter]
   );
+
+  const statusFilters =
+    listKind === "sell" ? SELL_STATUS_FILTERS : BUY_STATUS_FILTERS;
+  const visibleItems = listKind === "sell" ? sellItems : buyVisibleItems;
+  const canLoadMore = listKind === "sell" && sellHasMore;
 
   const showFeedback = (title: string, message: string) => {
     setFeedbackTitle(title);
     setFeedbackMessage(message);
     setFeedbackOpen(true);
+  };
+
+  const loadSellPage = (
+    filter: StatusFilter,
+    page: number,
+    append: boolean
+  ) => {
+    startSellTransition(async () => {
+      const res = await listMySellPostsAction(filter, page);
+      if (!res.ok) {
+        notifyIfSessionExpiredAction(res);
+        showFeedback("불러오기 실패", res.message);
+        return;
+      }
+      setSellItems((prev) =>
+        append ? [...prev, ...res.data.items] : res.data.items
+      );
+      setSellPage(res.data.page);
+      setSellHasMore(res.data.hasMore);
+    });
+  };
+
+  const onChangeStatusFilter = (filter: StatusFilter) => {
+    setStatusFilter(filter);
+    if (listKind === "sell") {
+      loadSellPage(filter, 1, false);
+    }
+  };
+
+  const onSwitchListKind = (kind: UiTradeListKind) => {
+    setListKind(kind);
+    setStatusFilter("all");
+    if (kind === "sell") {
+      loadSellPage("all", 1, false);
+    }
+  };
+
+  const onLoadMore = () => {
+    if (!canLoadMore || sellPending) return;
+    loadSellPage(statusFilter, sellPage + 1, true);
   };
 
   const openVerify = (slot: "primary" | "secondary") => {
@@ -251,7 +299,6 @@ export function MyPageTradeSection({
         </div>
       </div>
 
-      {/* Figma 263:678 — 현재 활동중인 지역 + 추가된 활동지역 */}
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
         <div className="flex h-[50px] w-full items-start justify-between">
           <p className="font-sans text-sm text-white lg:text-xl">
@@ -345,10 +392,7 @@ export function MyPageTradeSection({
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => {
-                  setListKind(tab.id);
-                  setStatusFilter("all");
-                }}
+                onClick={() => onSwitchListKind(tab.id)}
                 className={cn(
                   "p-2.5 font-sans text-sm text-white lg:text-xl",
                   listKind === tab.id && "border-b-[1.5px] border-white"
@@ -365,7 +409,7 @@ export function MyPageTradeSection({
               <button
                 key={filter.id}
                 type="button"
-                onClick={() => setStatusFilter(filter.id)}
+                onClick={() => onChangeStatusFilter(filter.id)}
                 className={cn(
                   "border border-white px-3 py-1.5 font-sans text-sm",
                   statusFilter === filter.id
@@ -377,16 +421,23 @@ export function MyPageTradeSection({
               </button>
             ))}
           </div>
-          <button type="button" className="font-sans text-sm text-white">
-            더보기
-          </button>
+          {canLoadMore ? (
+            <button
+              type="button"
+              disabled={sellPending}
+              onClick={onLoadMore}
+              className="font-sans text-sm text-white disabled:opacity-50"
+            >
+              {sellPending ? "불러오는 중…" : "더보기"}
+            </button>
+          ) : null}
         </div>
         <div className="flex items-center gap-2.5 lg:hidden">
           {statusFilters.map((filter) => (
             <button
               key={filter.id}
               type="button"
-              onClick={() => setStatusFilter(filter.id)}
+              onClick={() => onChangeStatusFilter(filter.id)}
               className={cn(
                 "border border-white px-2.5 py-1.5 font-sans text-xs",
                 statusFilter === filter.id
@@ -399,16 +450,27 @@ export function MyPageTradeSection({
           ))}
         </div>
         <div className="flex w-full flex-col lg:gap-[30px]">
+          {visibleItems.length === 0 && !sellPending ? (
+            <p className="py-6 font-sans text-sm text-[#ababab]">
+              {listKind === "sell"
+                ? "판매 목록이 없습니다."
+                : "구매 목록이 없습니다."}
+            </p>
+          ) : null}
           {visibleItems.map((item) => (
             <MyPageTradeRow key={item.id} item={item} listKind={listKind} />
           ))}
         </div>
-        <button
-          type="button"
-          className="mx-auto border-b-[0.5px] border-[#d0d0d0] px-1 py-0.5 font-sans text-xs text-white lg:hidden"
-        >
-          더보기
-        </button>
+        {canLoadMore ? (
+          <button
+            type="button"
+            disabled={sellPending}
+            onClick={onLoadMore}
+            className="mx-auto border-b-[0.5px] border-[#d0d0d0] px-1 py-0.5 font-sans text-xs text-white disabled:opacity-50 lg:hidden"
+          >
+            {sellPending ? "불러오는 중…" : "더보기"}
+          </button>
+        ) : null}
       </div>
 
       <RegionVerifyDialog

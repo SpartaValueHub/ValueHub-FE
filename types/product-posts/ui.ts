@@ -31,6 +31,8 @@ export interface UiProductPostDetail {
   latitude: number | null;
   longitude: number | null;
   placeName: string | null;
+  regionDong: string | null;
+  regionGu: string | null;
   bumpedAt: string | null;
   createdAt: string;
   images: UiProductPostImage[];
@@ -44,6 +46,9 @@ export interface UiProductPostCard {
   tradeStatus: TradeStatus;
   listedAt: string;
   thumbnailUrl: string | null;
+  regionDong: string | null;
+  regionGu: string | null;
+  placeName: string;
 }
 
 export interface UiProductPostCardPage {

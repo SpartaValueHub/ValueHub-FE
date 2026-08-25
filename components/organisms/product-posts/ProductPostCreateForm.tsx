@@ -32,6 +32,7 @@ import {
   productPostPlaceholderImageUrl,
 } from "@/constants/product-posts";
 import { notifyIfSessionExpiredAction } from "@/lib/auth/session-expired.client";
+import { reverseGeocodeAdminRegion } from "@/lib/kakao-maps";
 import { cn } from "@/lib/utils";
 import type { UiCategorySummary } from "@/types/categories/ui";
 import type {
@@ -309,6 +310,12 @@ export function ProductPostCreateForm({
   const [longitude, setLongitude] = useState<number | null>(
     initialValues?.post.longitude ?? null
   );
+  const [regionDong, setRegionDong] = useState<string | null>(
+    initialValues?.post.regionDong?.trim() || null
+  );
+  const [regionGu, setRegionGu] = useState<string | null>(
+    initialValues?.post.regionGu?.trim() || null
+  );
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [description, setDescription] = useState(
     initialValues?.post.description ?? ""
@@ -331,6 +338,41 @@ export function ProductPostCreateForm({
       }
     });
   }, []);
+
+  /**
+   * 수정 모드: 상세에 동/구가 둘 다 없을 때만 lat/lng reverse geocode (1A fallback).
+   * 상세 값이 있으면 useState 초기값으로 충분.
+   */
+  useEffect(() => {
+    if (!isEdit) return;
+
+    const fromDetailDong = initialValues?.post.regionDong?.trim() || null;
+    const fromDetailGu = initialValues?.post.regionGu?.trim() || null;
+    if (fromDetailDong || fromDetailGu) return;
+
+    const lat = initialValues?.post.latitude;
+    const lng = initialValues?.post.longitude;
+    if (lat == null || lng == null) return;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+    let cancelled = false;
+    void (async () => {
+      const admin = await reverseGeocodeAdminRegion(lat, lng);
+      if (cancelled) return;
+      setRegionDong(admin.regionDong);
+      setRegionGu(admin.regionGu);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isEdit,
+    initialValues?.post.regionDong,
+    initialValues?.post.regionGu,
+    initialValues?.post.latitude,
+    initialValues?.post.longitude,
+  ]);
 
   /** 수정 모드: 대·중·브랜드 옵션 로드 후 선택값 유지 */
   useEffect(() => {
@@ -569,6 +611,8 @@ export function ProductPostCreateForm({
             ? post.longitude
             : PRODUCT_POST_DEFAULT_LONGITUDE,
       placeName: placeName.trim(),
+      regionDong: regionDong?.trim() || null,
+      regionGu: regionGu?.trim() || null,
       images: images.map((img, i) => ({
         imageUrl: img.remoteUrl ?? productPostPlaceholderImageUrl(i),
       })),
@@ -1008,10 +1052,14 @@ export function ProductPostCreateForm({
         initialPlaceName={placeName}
         initialLatitude={latitude}
         initialLongitude={longitude}
+        initialRegionDong={regionDong}
+        initialRegionGu={regionGu}
         onConfirm={(loc) => {
           setPlaceName(loc.placeName);
           setLatitude(loc.latitude);
           setLongitude(loc.longitude);
+          setRegionDong(loc.regionDong?.trim() || null);
+          setRegionGu(loc.regionGu?.trim() || null);
           setFieldError(null);
         }}
       />

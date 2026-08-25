@@ -1,22 +1,28 @@
 /**
  * 마이페이지 오케스트레이션.
- * Member `GET /members/me` + Auth `GET /auth/me` 병렬 조회 (서비스 분산).
- * Product-Post 판매/구매 목록 등은 API 준비 후 확장.
+ * Member `GET /members/me` + Auth `GET /auth/me` + Product-Post 판매 목록 병렬.
+ * 구매 목록은 Reservation API 준비 전까지 mock 유지.
  */
-import { MOCK_MYPAGE } from "@/constants/mypage";
+import { MOCK_MYPAGE, MYPAGE_SELL_PAGE_SIZE } from "@/constants/mypage";
+import { resolveTradeLocationLabel } from "@/lib/product-posts/trade-location";
 import { splitRegionName } from "@/lib/member-regions/region-name";
 import { getMyAuthAccountService } from "@/services/auth.service";
 import { getMyMemberProfileService } from "@/services/member.service";
 import { listMyMemberRegionsService } from "@/services/member-regions.service";
+import { listProductPostsService } from "@/services/product-posts.service";
 import type { UiAuthAccount } from "@/types/auth/ui";
 import type { UiMemberProfile } from "@/types/member/ui";
 import type { UiMemberRegion } from "@/types/member-regions/ui";
 import type {
   UiMyPage,
   UiMyPageAccount,
+  UiMyPageSellListPage,
+  UiMyPageTradeItem,
   UiMyPageTradeSummary,
+  UiTradeStatus,
   UiTrustGradeLevel,
 } from "@/types/mypage/ui";
+import type { TradeStatus, UiProductPostCard } from "@/types/product-posts/ui";
 
 const GRADE_ORDER: UiTrustGradeLevel[] = [
   "bronze",
@@ -33,6 +39,9 @@ const GRADE_LABEL: Record<UiTrustGradeLevel, string> = {
   platinum: "Platinum",
   diamond: "Diamond",
 };
+
+export type UiMyPageSellStatusFilter =
+  "all" | "selling" | "reserved" | "completed";
 
 /** BE memberGrade (BRONZE…) → UI trust grade */
 export function mapMemberGradeToTrustGrade(
@@ -91,6 +100,16 @@ export function formatJoinedAtLabel(joinedAt: string): string {
   return `${y}.${m}.${d}일 가입`;
 }
 
+/** listedAt ISO → `2026.07.07` (마이페이지 거래 행) */
+export function formatMyPageTradeDate(listedAt: string): string {
+  const date = new Date(listedAt);
+  if (Number.isNaN(date.getTime())) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}.${m}.${d}`;
+}
+
 /** `01012345678` → `010-1234-5678` (그 외 길이는 원문) */
 export function formatPhoneDisplay(phoneNumber: string): string {
   const digits = phoneNumber.replace(/\D/g, "");
@@ -101,6 +120,72 @@ export function formatPhoneDisplay(phoneNumber: string): string {
     return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
   }
   return phoneNumber.trim();
+}
+
+function mapTradeStatus(status: TradeStatus): UiTradeStatus {
+  if (status === "RESERVED") return "reserved";
+  if (status === "SOLD_OUT") return "completed";
+  return "selling";
+}
+
+function toBeTradeStatus(
+  filter: UiMyPageSellStatusFilter
+): TradeStatus | undefined {
+  if (filter === "selling") return "SELLING";
+  if (filter === "reserved") return "RESERVED";
+  if (filter === "completed") return "SOLD_OUT";
+  return undefined;
+}
+
+export function mapProductCardToSellItem(
+  card: UiProductPostCard
+): UiMyPageTradeItem {
+  return {
+    id: card.productPostUuid,
+    status: mapTradeStatus(card.tradeStatus),
+    title: card.name,
+    date: formatMyPageTradeDate(card.listedAt),
+    location: resolveTradeLocationLabel({
+      regionDong: card.regionDong,
+      regionGu: card.regionGu,
+      placeName: card.placeName,
+    }),
+    price: card.price,
+    review: { kind: "locked" },
+  };
+}
+
+export async function listMySellPostsService(
+  memberUuid: string,
+  filter: UiMyPageSellStatusFilter = "all",
+  page = 1
+): Promise<UiMyPageSellListPage> {
+  const uuid = memberUuid.trim();
+  const tradeStatus = toBeTradeStatus(filter);
+  const result = await listProductPostsService({
+    memberUuid: uuid,
+    page: String(page),
+    size: String(MYPAGE_SELL_PAGE_SIZE),
+    ...(tradeStatus ? { tradeStatus } : {}),
+  });
+
+  return {
+    items: result.items.map(mapProductCardToSellItem),
+    page: result.page,
+    totalPages: result.totalPages,
+    totalElements: result.totalElements,
+    hasMore: result.page < result.totalPages,
+  };
+}
+
+async function countSoldOutPosts(memberUuid: string): Promise<number> {
+  const result = await listProductPostsService({
+    memberUuid: memberUuid.trim(),
+    tradeStatus: "SOLD_OUT",
+    page: "1",
+    size: "1",
+  });
+  return result.totalElements;
 }
 
 function mapAccount(
@@ -120,7 +205,8 @@ function mapAccount(
 
 function mapTradeSummary(
   profile: UiMemberProfile,
-  memberRegions: UiMemberRegion[]
+  memberRegions: UiMemberRegion[],
+  completedCount: number
 ): UiMyPageTradeSummary {
   const trustGrade = mapMemberGradeToTrustGrade(profile.memberGrade);
   const primary =
@@ -132,6 +218,7 @@ function mapTradeSummary(
   return {
     ...MOCK_MYPAGE.trade,
     trustGrade,
+    completedCount,
     regionCity: fromRegion.regionCity || MOCK_MYPAGE.trade.regionCity,
     regionDong: fromRegion.regionDong || MOCK_MYPAGE.trade.regionDong,
     nextGradeHint: nextGradeHint(trustGrade),
@@ -139,21 +226,39 @@ function mapTradeSummary(
 }
 
 /**
- * RSC 읽기 — Auth·Member·member-regions 병렬 호출.
+ * RSC 읽기 — Auth·Member·member-regions·판매목록 병렬.
  * 한쪽 실패해도 가능한 쪽은 표시 (전부 실패 시 page fallback).
  */
-export async function getMyPageService(): Promise<UiMyPage> {
-  const [memberResult, authResult, regionsResult] = await Promise.allSettled([
-    getMyMemberProfileService(),
-    getMyAuthAccountService(),
-    listMyMemberRegionsService(),
-  ]);
+export async function getMyPageService(memberUuid: string): Promise<UiMyPage> {
+  const uuid = memberUuid.trim();
+  const [memberResult, authResult, regionsResult, sellResult, soldCountResult] =
+    await Promise.allSettled([
+      getMyMemberProfileService(),
+      getMyAuthAccountService(),
+      listMyMemberRegionsService(),
+      listMySellPostsService(uuid, "all", 1),
+      countSoldOutPosts(uuid),
+    ]);
 
   const profile =
     memberResult.status === "fulfilled" ? memberResult.value : null;
   const auth = authResult.status === "fulfilled" ? authResult.value : null;
   const memberRegions =
     regionsResult.status === "fulfilled" ? regionsResult.value : [];
+  const sellList =
+    sellResult.status === "fulfilled"
+      ? sellResult.value
+      : {
+          items: [] as UiMyPageTradeItem[],
+          page: 1,
+          totalPages: 0,
+          totalElements: 0,
+          hasMore: false,
+        };
+  const completedCount =
+    soldCountResult.status === "fulfilled"
+      ? soldCountResult.value
+      : MOCK_MYPAGE.trade.completedCount;
 
   if (!profile && !auth) {
     throw new Error("마이페이지 프로필을 불러오지 못했습니다.");
@@ -163,8 +268,10 @@ export async function getMyPageService(): Promise<UiMyPage> {
     ...MOCK_MYPAGE,
     account: mapAccount(profile, auth),
     trade: profile
-      ? mapTradeSummary(profile, memberRegions)
-      : MOCK_MYPAGE.trade,
+      ? mapTradeSummary(profile, memberRegions, completedCount)
+      : { ...MOCK_MYPAGE.trade, completedCount },
     memberRegions,
+    sellItems: sellList.items,
+    sellList,
   };
 }

@@ -31,11 +31,9 @@ function mapSellingProduct(item: {
   productPostUuid: string;
   name: string;
   price: number;
-  tradeStatus: string;
   listedAt: string;
   thumbnailUrl: string | null;
-}): UiUserProfileProduct | null {
-  if (item.tradeStatus !== "SELLING") return null;
+}): UiUserProfileProduct {
   return {
     id: item.productPostUuid,
     name: item.name,
@@ -46,7 +44,7 @@ function mapSellingProduct(item: {
   };
 }
 
-/** 회원 판매글 1페이지 — SELLING만 (BE tradeStatus 쿼리 없음) */
+/** 회원 판매글 — BE tradeStatus=SELLING + 서버 페이징 */
 export async function listUserProfileProductsService(
   memberUuid: string,
   page = 1
@@ -54,22 +52,20 @@ export async function listUserProfileProductsService(
   const size = String(USER_PROFILE_PRODUCTS_PAGE_SIZE);
   const result = await listProductPostsService({
     memberUuid,
+    tradeStatus: "SELLING",
     page: String(page),
     size,
   });
 
-  const products = result.items
-    .map((item) =>
-      mapSellingProduct({
-        productPostUuid: item.productPostUuid,
-        name: item.name,
-        price: item.price,
-        tradeStatus: item.tradeStatus,
-        listedAt: item.listedAt,
-        thumbnailUrl: item.thumbnailUrl,
-      })
-    )
-    .filter((p): p is UiUserProfileProduct => p !== null);
+  const products = result.items.map((item) =>
+    mapSellingProduct({
+      productPostUuid: item.productPostUuid,
+      name: item.name,
+      price: item.price,
+      listedAt: item.listedAt,
+      thumbnailUrl: item.thumbnailUrl,
+    })
+  );
 
   const hasMore = result.page < result.totalPages;
 

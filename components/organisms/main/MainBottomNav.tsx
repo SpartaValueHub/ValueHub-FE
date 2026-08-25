@@ -21,7 +21,7 @@ const navItems: {
   { id: "category", label: "카테고리", href: "#", icon: "grid" },
   { id: "chat", label: "채팅", href: "/chat", icon: "chat" },
   { id: "notification", label: "알림", href: "#", icon: "bell" },
-  { id: "profile", label: "마이", href: "#", icon: "user" },
+  { id: "profile", label: "마이", href: "/mypage", icon: "user" },
 ];
 
 export function MainBottomNav({

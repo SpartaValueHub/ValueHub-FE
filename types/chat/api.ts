@@ -83,7 +83,7 @@ export interface ApiChatRoomList {
   rooms: ApiChatRoomListItem[];
 }
 
-/** STOMP /user/queue/chat-list — 목록 한 줄 패치 */
+/** STOMP /user/queue/chat-list — 목록 한 줄 패치. 새 방은 productPost가 오면 insert */
 export interface ApiChatListPatch {
   roomId: string;
   lastMessage?: ApiChatRoomListLastMessage | string | null;
@@ -91,6 +91,8 @@ export interface ApiChatListPatch {
   updatedAt?: string;
   content?: string;
   createdAt?: string;
+  productPost?: ApiChatRoomListProduct | null;
+  counterpart?: ApiChatCounterpart | ApiChatRoomDetailCounterpart | null;
 }
 
 /** GET /api/v1/chat/unread-count */

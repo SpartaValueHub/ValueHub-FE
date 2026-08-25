@@ -10,6 +10,7 @@ import { requireActionAuth } from "@/lib/session";
 import {
   createChatImagePresignedUrlService,
   createChatRoomService,
+  getChatRoomService,
   getChatUnreadCountService,
   listChatMessagesService,
 } from "@/services/chat.service";
@@ -19,6 +20,7 @@ import { listOlderChatMessagesInputSchema } from "@/types/chat/messages";
 import type {
   UiChatImagePresigned,
   UiChatMessagePage,
+  UiChatRoom,
   UiCreatedChatRoom,
 } from "@/types/chat/ui";
 
@@ -121,6 +123,26 @@ export async function createChatImagePresignedUrlAction(
     return mapActionError(
       e,
       toErrorMessage(e, "이미지 업로드 주소를 받지 못했습니다.")
+    );
+  }
+}
+
+export async function getChatRoomAction(
+  roomId: string
+): Promise<ChatActionResult<UiChatRoom>> {
+  const id = roomId.trim();
+  if (!id) {
+    return { ok: false, message: "채팅방 정보가 올바르지 않습니다." };
+  }
+
+  try {
+    await requireActionAuth();
+    const data = await getChatRoomService(id);
+    return { ok: true, data };
+  } catch (e) {
+    return mapActionError(
+      e,
+      toErrorMessage(e, "채팅방을 불러오지 못했습니다.")
     );
   }
 }

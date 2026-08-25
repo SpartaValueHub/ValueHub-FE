@@ -9,8 +9,8 @@ import {
   createChatImagePresignedUrlAction,
   listOlderChatMessagesAction,
 } from "@/actions/chat";
+import { ingestChatListPatch } from "@/hooks/chat/ingestChatListPatch";
 import { useChatRoomSocket } from "@/hooks/chat/useChatRoomSocket";
-import { applyChatListPatch } from "@/lib/chat/map-list-patch";
 import { putChatImageToS3 } from "@/lib/chat/put-image-s3";
 import { logSafeError } from "@/lib/log/safe-log";
 
@@ -124,6 +124,7 @@ export function ChatRoomWorkspace({
   const [loadingOlder, setLoadingOlder] = useState(false);
   const loadingOlderRef = useRef(false);
   const requestedBeforeRef = useRef<string | null>(null);
+  const listFetchRef = useRef(new Set<string>());
 
   const { publishText, publishLocation, publishImage } = useChatRoomSocket({
     roomId,
@@ -134,9 +135,10 @@ export function ChatRoomWorkspace({
       });
     },
     onListPatch: (patch) => {
-      setListRooms((current) =>
-        applyChatListPatch(current, patch, { activeRoomId: roomId })
-      );
+      ingestChatListPatch(patch, setListRooms, {
+        activeRoomId: roomId,
+        fetching: listFetchRef.current,
+      });
     },
   });
   const [reservation, setReservation] = useState<UiTradeReservation | null>(

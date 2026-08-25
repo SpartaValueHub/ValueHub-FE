@@ -308,7 +308,7 @@ export function ChatRoomWorkspace({
               type="button"
               aria-label="뒤로 가기"
               className="flex size-[30px] items-center justify-center text-[#323232]"
-              onClick={() => router.back()}
+              onClick={() => router.replace("/chat")}
             >
               <Icon name="chevron-left" size={30} />
             </button>

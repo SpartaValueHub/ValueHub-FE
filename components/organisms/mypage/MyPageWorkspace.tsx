@@ -24,7 +24,7 @@ export function MyPageWorkspace({ data }: MyPageWorkspaceProps) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[1440px] flex-col px-2.5 pb-[50px] pt-8 lg:flex-row lg:items-start lg:gap-[90px] lg:px-0 lg:pt-0">
+    <div className="mx-auto flex w-full max-w-[1440px] flex-col px-2.5 pt-5 pb-8 md:pt-8 md:pb-[50px] lg:flex-row lg:items-start lg:gap-[90px] lg:px-0 lg:pt-0">
       <aside className="sticky top-[160px] hidden w-[340px] shrink-0 self-start py-[70px] lg:block">
         <MyPageSidebar active={active} onSelect={onSelect} />
       </aside>

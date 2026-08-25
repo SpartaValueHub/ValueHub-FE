@@ -9,6 +9,13 @@ export const API_ENDPOINTS = {
     signIn: "/api/v1/auth/sign-in",
     refresh: "/api/v1/auth/refresh",
     logout: "/api/v1/auth/logout",
+    /** 내 계정 정보 (logInId·email·phone·joinedAt) */
+    me: "/api/v1/auth/me",
+    /** 타인 프로필용 가입일 (Gateway public) */
+    memberJoinedAt: (memberUuid: string) =>
+      `/api/v1/auth/members/${encodeURIComponent(memberUuid)}/joined-at`,
+    /** PASS 본인인증(WITHDRAWAL) 후 회원 탈퇴 */
+    withdraw: "/api/v1/auth/withdraw",
     checkLoginId: (loginId: string) =>
       `/api/v1/auth/check/login-id?loginId=${encodeURIComponent(loginId)}`,
     checkEmail: (email: string) =>
@@ -20,6 +27,8 @@ export const API_ENDPOINTS = {
   members: {
     create: "/api/v1/members",
     me: "/api/v1/members/me",
+    publicProfile: (memberUuid: string) =>
+      `/api/v1/members/${encodeURIComponent(memberUuid)}/profile`,
     checkNickname: (nickname: string) =>
       `/api/v1/members/check/nickname?nickname=${encodeURIComponent(nickname)}`,
   },
@@ -38,7 +47,12 @@ export const API_ENDPOINTS = {
   },
   productPosts: {
     create: "/api/v1/product-posts",
-    detail: (uuid: string) => `/api/v1/product-posts/${encodeURIComponent(uuid)}`,
+    detail: (uuid: string) =>
+      `/api/v1/product-posts/${encodeURIComponent(uuid)}`,
+    update: (uuid: string) =>
+      `/api/v1/product-posts/${encodeURIComponent(uuid)}`,
+    delete: (uuid: string) =>
+      `/api/v1/product-posts/${encodeURIComponent(uuid)}`,
     list: (params?: Record<string, string | string[]>) => {
       const base = "/api/v1/product-posts";
       if (!params) return base;
@@ -50,5 +64,44 @@ export const API_ENDPOINTS = {
       const qs = sp.toString();
       return qs ? `${base}?${qs}` : base;
     },
+  },
+  chat: {
+    rooms: "/api/v1/chat/rooms",
+    room: (roomId: string) =>
+      `/api/v1/chat/rooms/${encodeURIComponent(roomId)}`,
+    roomMessages: (
+      roomId: string,
+      params?: { before?: string; limit?: number }
+    ) => {
+      const base = `/api/v1/chat/rooms/${encodeURIComponent(roomId)}/messages`;
+      if (!params) return base;
+      const sp = new URLSearchParams();
+      if (params.before) sp.set("before", params.before);
+      if (params.limit != null) sp.set("limit", String(params.limit));
+      const qs = sp.toString();
+      return qs ? `${base}?${qs}` : base;
+    },
+    productRooms: (productPostUuid: string) =>
+      `/api/v1/chat/product-posts/${encodeURIComponent(productPostUuid)}/rooms`,
+    unreadCount: "/api/v1/chat/unread-count",
+  },
+  regions: {
+    list: (keyword?: string) => {
+      const base = "/api/v1/regions";
+      if (!keyword?.trim()) return base;
+      return `${base}?keyword=${encodeURIComponent(keyword.trim())}`;
+    },
+  },
+  memberRegions: {
+    list: "/api/v1/member-regions",
+    create: "/api/v1/member-regions",
+    change: (id: number | string) =>
+      `/api/v1/member-regions/${encodeURIComponent(String(id))}`,
+    setPrimary: (id: number | string) =>
+      `/api/v1/member-regions/${encodeURIComponent(String(id))}/primary`,
+    verify: (id: number | string) =>
+      `/api/v1/member-regions/${encodeURIComponent(String(id))}/verify`,
+    delete: (id: number | string) =>
+      `/api/v1/member-regions/${encodeURIComponent(String(id))}`,
   },
 } as const;

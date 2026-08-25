@@ -4,13 +4,24 @@
  * Product-Post Server Actions.
  * 클라이언트는 이 Action만 호출 — lib/api·services 직접 import 금지.
  */
-import { ApiError, ApiTimeoutError, AuthSessionExpiredError } from "@/lib/api/client";
+import {
+  ApiError,
+  ApiTimeoutError,
+  AuthSessionExpiredError,
+} from "@/lib/api/client";
+import { mapActionError } from "@/lib/auth/map-action-error";
+import { requireActionAuth } from "@/lib/session";
 import {
   createProductPostService,
+  deleteProductPostService,
   getProductPostDetailService,
   listProductPostsService,
+  updateProductPostService,
 } from "@/services/product-posts.service";
-import type { ApiCreateProductPostRequest } from "@/types/product-posts/api";
+import type {
+  ApiCreateProductPostRequest,
+  ApiUpdateProductPostRequest,
+} from "@/types/product-posts/api";
 import type {
   UiProductPostCardPage,
   UiProductPostDetail,
@@ -18,7 +29,7 @@ import type {
 
 export type ProductPostActionResult<T> =
   | { ok: true; data: T }
-  | { ok: false; message: string };
+  | { ok: false; message: string; code?: string };
 
 function toErrorMessage(e: unknown, fallback: string) {
   if (e instanceof ApiTimeoutError) {
@@ -61,15 +72,53 @@ export async function createProductPostAction(
   body: ApiCreateProductPostRequest
 ): Promise<ProductPostActionResult<UiProductPostDetail>> {
   try {
+    await requireActionAuth();
     const data = await createProductPostService(body);
     return { ok: true, data };
   } catch (e) {
     if (e instanceof AuthSessionExpiredError) {
-      return { ok: false, message: e.message };
+      return mapActionError(e, "상품 등록에 실패했습니다.");
     }
     return {
       ok: false,
       message: toErrorMessage(e, "상품 등록에 실패했습니다."),
+    };
+  }
+}
+
+export async function updateProductPostAction(
+  uuid: string,
+  body: ApiUpdateProductPostRequest
+): Promise<ProductPostActionResult<UiProductPostDetail>> {
+  try {
+    await requireActionAuth();
+    const data = await updateProductPostService(uuid, body);
+    return { ok: true, data };
+  } catch (e) {
+    if (e instanceof AuthSessionExpiredError) {
+      return mapActionError(e, "상품 수정에 실패했습니다.");
+    }
+    return {
+      ok: false,
+      message: toErrorMessage(e, "상품 수정에 실패했습니다."),
+    };
+  }
+}
+
+export async function deleteProductPostAction(
+  uuid: string
+): Promise<ProductPostActionResult<null>> {
+  try {
+    await requireActionAuth();
+    await deleteProductPostService(uuid);
+    return { ok: true, data: null };
+  } catch (e) {
+    if (e instanceof AuthSessionExpiredError) {
+      return mapActionError(e, "상품 삭제에 실패했습니다.");
+    }
+    return {
+      ok: false,
+      message: toErrorMessage(e, "상품 삭제에 실패했습니다."),
     };
   }
 }

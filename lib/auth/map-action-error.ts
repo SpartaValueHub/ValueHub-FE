@@ -1,4 +1,5 @@
-import { ApiError } from "@/lib/api/client";
+import { SESSION_EXPIRED_CODE } from "@/constants/auth-session";
+import { ApiError, AuthSessionExpiredError } from "@/lib/api/client";
 
 export type ActionFailure = {
   ok: false;
@@ -13,12 +14,24 @@ export function mapActionError(
   error: unknown,
   fallbackMessage: string
 ): ActionFailure {
-  const message =
-    error instanceof ApiError
-      ? error.message
-      : error instanceof Error
-        ? error.message
-        : fallbackMessage;
+  if (error instanceof AuthSessionExpiredError) {
+    return {
+      ok: false,
+      message: error.message,
+      code: SESSION_EXPIRED_CODE,
+    };
+  }
+
+  if (error instanceof ApiError) {
+    return {
+      ok: false,
+      message: error.message,
+      code: error.code,
+      retryAfterSeconds: error.retryAfterSeconds,
+    };
+  }
+
+  const message = error instanceof Error ? error.message : fallbackMessage;
 
   return { ok: false, message };
 }

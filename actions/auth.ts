@@ -2,11 +2,13 @@
 
 import { mapActionError } from "@/lib/auth/map-action-error";
 import { mapSignupError } from "@/lib/auth/map-signup-error";
+import { requireActionAuth } from "@/lib/session";
 import {
   checkEmailAvailabilityService,
   checkLoginIdAvailabilityService,
   resumeSignupService,
   signupService,
+  withdrawMemberService,
 } from "@/services/auth.service";
 import {
   checkNicknameAvailabilityService,
@@ -288,5 +290,27 @@ export async function checkNicknameAvailabilityAction(nickname: string) {
     };
   } catch (error) {
     return mapActionError(error, "닉네임 중복 확인에 실패했습니다.");
+  }
+}
+
+export type WithdrawMemberActionResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
+/** PASS WITHDRAWAL confirm 후 회원 탈퇴 */
+export async function withdrawMemberAction(
+  requestToken: string
+): Promise<WithdrawMemberActionResult> {
+  const token = requestToken.trim();
+  if (!token) {
+    return { ok: false, message: "본인인증을 먼저 완료해 주세요." };
+  }
+
+  try {
+    await requireActionAuth();
+    await withdrawMemberService(token);
+    return { ok: true };
+  } catch (error) {
+    return mapActionError(error, "회원 탈퇴에 실패했습니다.");
   }
 }

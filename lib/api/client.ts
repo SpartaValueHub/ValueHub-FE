@@ -7,6 +7,7 @@ import {
   buildAuthCookieHeader,
 } from "@/lib/auth/cookie-store";
 import { AUTH_COOKIE_REFRESH } from "@/lib/auth/cookies";
+import { clearExpiredAuthSession } from "@/lib/auth/clear-expired-session";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 
 export class ApiError extends Error {
@@ -96,6 +97,30 @@ export function getProductPostApiUrl() {
   const raw =
     process.env.PRODUCT_POST_API_URL ||
     "http://localhost:8000/product-post-service";
+
+  return raw.replace(/\/$/, "");
+}
+
+/** Gateway member-regions-service — 서버 전용 */
+export function getMemberRegionsApiUrl() {
+  assertServerOnlyApiUrl();
+
+  const raw =
+    process.env.MEMBER_REGIONS_API_URL ||
+    (
+      process.env.API_URL ||
+      process.env.API_BASE_URL ||
+      "http://localhost:8000/auth-service"
+    ).replace(/\/auth-service\/?$/, "/member-regions-service");
+
+  return raw.replace(/\/$/, "");
+}
+
+/** Gateway chat-service — 서버 전용 */
+export function getChatApiUrl() {
+  assertServerOnlyApiUrl();
+
+  const raw = process.env.CHAT_API_URL || "http://localhost:8000/chat-service";
 
   return raw.replace(/\/$/, "");
 }
@@ -283,6 +308,7 @@ export async function apiFetch<T>(
     if (refreshed) {
       return apiFetch<T>(path, { ...options, _retried: true });
     }
+    await clearExpiredAuthSession();
     throw new AuthSessionExpiredError();
   }
 

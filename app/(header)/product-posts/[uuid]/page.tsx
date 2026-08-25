@@ -7,6 +7,8 @@ import {
   getCategoryPathService,
   listSiblingLeafCategoryUuids,
 } from "@/services/categories.service";
+import { listChatRoomsByProductPostService } from "@/services/chat.service";
+import { getMemberPublicProfileService } from "@/services/member.service";
 import {
   getProductPostDetailService,
   listProductPostsService,
@@ -46,10 +48,22 @@ export default async function ProductPostDetailPage({
     post.memberUuid
   );
 
-  const [categoryPath, nearbyCategoryUuids] = await Promise.all([
-    getCategoryPathService(post.categoryUuid),
-    listSiblingLeafCategoryUuids(post.categoryUuid),
-  ]);
+  const [categoryPath, nearbyCategoryUuids, sellerProfileResult] =
+    await Promise.all([
+      getCategoryPathService(post.categoryUuid),
+      listSiblingLeafCategoryUuids(post.categoryUuid),
+      getMemberPublicProfileService(post.memberUuid).then(
+        (profile) => ({ ok: true as const, profile }),
+        () => ({ ok: false as const })
+      ),
+    ]);
+
+  const sellerNickname = sellerProfileResult.ok
+    ? sellerProfileResult.profile.nickname
+    : "";
+  const sellerProfileImageUrl = sellerProfileResult.ok
+    ? sellerProfileResult.profile.profileImageUrl
+    : null;
 
   let nearbyItems: UiProductPostCard[] = [];
   try {
@@ -65,13 +79,27 @@ export default async function ProductPostDetailPage({
     nearbyItems = [];
   }
 
+  let activeChatCount = 0;
+  if (chatRole === "owner") {
+    try {
+      const rooms = await listChatRoomsByProductPostService(
+        post.productPostUuid
+      );
+      activeChatCount = rooms.length;
+    } catch {
+      activeChatCount = 0;
+    }
+  }
+
   return (
     <ProductPostDetailTemplate
       post={post}
       categoryPath={categoryPath}
       nearbyItems={nearbyItems}
       chatRole={chatRole}
-      activeChatCount={0}
+      activeChatCount={activeChatCount}
+      sellerNickname={sellerNickname}
+      sellerProfileImageUrl={sellerProfileImageUrl}
     />
   );
 }

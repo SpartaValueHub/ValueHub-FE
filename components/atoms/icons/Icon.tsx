@@ -10,6 +10,7 @@ export const SYSTEM_ICONS = {
   smile: "/icons/system/emojis/smile.svg",
   "shield-check": "/icons/system/safety/shield-check.svg",
   "calendar-check": "/icons/system/essentials/calendar-check.svg",
+  "calendar-reserved": "/icons/system/essentials/calendar-reserved.svg",
   send: "/icons/system/essentials/send.svg",
   "calendar-minus": "/icons/system/essentials/calendar-minus.svg",
   photo: "/icons/system/essentials/photo.svg",
@@ -41,7 +42,11 @@ export const SYSTEM_ICONS = {
   home: "/icons/system/menus/home.svg",
   grid: "/icons/system/menus/grid.svg",
   user: "/icons/system/essentials/user.svg",
+  "user-fill": "/icons/system/essentials/user-fill.svg",
   star: "/icons/system/essentials/star.svg",
+  "star-fill": "/icons/system/essentials/star-fill.svg",
+  boost: "/icons/system/essentials/boost.svg",
+  link: "/icons/system/essentials/link.svg",
   warning: "/icons/system/essentials/warning.svg",
 } as const;
 

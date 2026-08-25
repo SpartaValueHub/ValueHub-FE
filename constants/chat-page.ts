@@ -1,4 +1,10 @@
-import type { UiChatMessage, UiChatRoom } from "@/types/chat/ui";
+import type {
+  UiChatMessage,
+  UiChatReservationCard,
+  UiChatRoom,
+  UiTradeReservation,
+  UiTradeTimeValue,
+} from "@/types/chat/ui";
 
 const WEEKDAYS = [
   "일요일",
@@ -21,6 +27,8 @@ export const CHAT_ROOMS: UiChatRoom[] = [
     thumbnail: "/main/products/product-1.png",
     timeAgo: "30분 전",
     unreadCount: 99,
+    lastMessage: "우리집에 왜 왔니 왜 왔니 왜 왔니",
+    reserved: true,
     peerName: "해운대김철수",
     price: 2_450_000,
     location: "우동김철수",
@@ -29,8 +37,10 @@ export const CHAT_ROOMS: UiChatRoom[] = [
     id: "room-2",
     title: "루이비통 에삐 쁘띠삭플라 블랙",
     thumbnail: "/main/products/product-3.png",
-    timeAgo: "2026.06.06",
+    timeAgo: "06월 06일",
     unreadCount: 10,
+    lastMessage: "꽃찾으러 왔단다 왔단다 왔단다",
+    reserved: true,
     peerName: "서면이영희",
     price: 1_280_000,
     location: "부전동이영희",
@@ -41,16 +51,18 @@ export const CHAT_ROOMS: UiChatRoom[] = [
     thumbnail: "/main/products/product-4.png",
     timeAgo: "30분 전",
     unreadCount: 1,
+    lastMessage: "무궁화 꽃이 피었습니다.",
     peerName: "남포박민수",
     price: 890_000,
     location: "남포동박민수",
   },
   {
     id: "room-4",
-    title: "버버리 레더 포켓 미니 토트백",
+    title: "발렌티노 카프스킨 스터드 사인 로퍼 블랙",
     thumbnail: "/main/products/product-2.png",
     timeAgo: "30분 전",
     unreadCount: 0,
+    lastMessage: "무궁화 꽃이 피었습니다.",
     peerName: "중앙동홍길동",
     price: 1_500_000,
     location: "중앙동홍길동",
@@ -61,6 +73,7 @@ export const CHAT_ROOMS: UiChatRoom[] = [
     thumbnail: "/main/products/product-3.png",
     timeAgo: "30분 전",
     unreadCount: 0,
+    lastMessage: "무궁화 꽃이 피었습니다.",
     peerName: "센텀최지우",
     price: 3_200_000,
     location: "재송동최지우",
@@ -71,6 +84,7 @@ export const CHAT_ROOMS: UiChatRoom[] = [
     thumbnail: "/main/products/product-4.png",
     timeAgo: "30분 전",
     unreadCount: 0,
+    lastMessage: "무궁화 꽃이 피었습니다.",
     peerName: "광안정하나",
     price: 620_000,
     location: "광안동정하나",
@@ -167,7 +181,35 @@ export const CHAT_ROOMS: UiChatRoom[] = [
   },
 ];
 
-export const CHAT_INITIAL_ROOM_ID = "room-4";
+export const CHAT_RESERVATIONS: UiChatReservationCard[] = [
+  {
+    id: "reservation-1",
+    roomId: "room-2",
+    title: "루이비통 에삐 쁘띠...",
+    dateLabel: "2026.08.26",
+    weekdayLabel: "수요일",
+    timeLabel: "오후 6시 30분",
+    placeName: "부산역 1번출구 앞",
+  },
+  {
+    id: "reservation-2",
+    roomId: "room-1",
+    title: "볼워치 엔지니어3 ...",
+    dateLabel: "2026.08.31",
+    weekdayLabel: "월요일",
+    timeLabel: "오후 6시 30분",
+    placeName: "부산역 1번출구 앞",
+  },
+  {
+    id: "reservation-3",
+    roomId: "room-4",
+    title: "발렌티노 카프스킨 스...",
+    dateLabel: "2026.08.26",
+    weekdayLabel: "수요일",
+    timeLabel: "오후 6시 30분",
+    placeName: "초량동",
+  },
+];
 
 export const CHAT_MESSAGES: UiChatMessage[] = [
   {
@@ -214,8 +256,48 @@ export const CHAT_MESSAGES: UiChatMessage[] = [
 
 export const CHAT_DATE_DIVIDER = "07월 31일 금요일";
 
+const WEEKDAY_SHORT = ["일", "월", "화", "수", "목", "금", "토"] as const;
+
 export function formatReservationDate(date: Date): string {
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${WEEKDAYS[date.getDay()]}`;
+}
+
+export function formatReservationChipDate(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}.${month}.${day}`;
+}
+
+export function formatReservationChipSubline(
+  date: Date,
+  time: UiTradeTimeValue
+): string {
+  const periodLabel = time.period === "am" ? "오전" : "오후";
+  const minute = String(time.minute).padStart(2, "0");
+  return `(${WEEKDAY_SHORT[date.getDay()]}) ${periodLabel} ${time.hour}:${minute}`;
+}
+
+export function parseReservationTimeLabel(label: string): UiTradeTimeValue {
+  const period = label.includes("오전") ? "am" : "pm";
+  const hour = Number(label.match(/(\d+)\s*시/)?.[1] ?? 6);
+  const minute = Number(label.match(/(\d+)\s*분/)?.[1] ?? 0);
+  return { period, hour, minute };
+}
+
+export function reservationFromCard(
+  card: UiChatReservationCard
+): UiTradeReservation {
+  const [year, month, day] = card.dateLabel.split(".").map(Number);
+  const date = new Date(year, month - 1, day);
+  const time = parseReservationTimeLabel(card.timeLabel);
+  return {
+    date,
+    dateLabel: formatReservationDate(date),
+    timeLabel: formatReservationTime(time.period, time.hour, time.minute),
+    time,
+    placeName: card.placeName,
+    mapImage: CHAT_MAP_PREVIEW,
+  };
 }
 
 export function formatReservationDateLine(date: Date): string {

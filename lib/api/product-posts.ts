@@ -4,6 +4,7 @@ import type {
   ApiCreateProductPostRequest,
   ApiProductPostCardPage,
   ApiProductPostDetail,
+  ApiUpdateProductPostRequest,
 } from "@/types/product-posts/api";
 
 /** product-post-service HTTP — lib/api/* 전용. UI·actions에서 import 금지. */
@@ -36,6 +37,33 @@ export function createProductPost(body: ApiCreateProductPostRequest) {
     baseUrl: getProductPostApiUrl(),
     cache: { noStore: true },
     /** Gateway·BE 지연 시 UI가 무한 대기하지 않도록 */
+    timeoutMillis: 12_000,
+  });
+}
+
+/** PUT — 본인 + SELLING만. images/documents 전체 교체 */
+export function updateProductPost(
+  uuid: string,
+  body: ApiUpdateProductPostRequest
+) {
+  return apiFetch<ApiProductPostDetail>(
+    API_ENDPOINTS.productPosts.update(uuid),
+    {
+      method: "PUT",
+      body,
+      baseUrl: getProductPostApiUrl(),
+      cache: { noStore: true },
+      timeoutMillis: 12_000,
+    }
+  );
+}
+
+/** Soft Delete — 204 No Content */
+export async function deleteProductPost(uuid: string): Promise<void> {
+  await apiFetch<null>(API_ENDPOINTS.productPosts.delete(uuid), {
+    method: "DELETE",
+    baseUrl: getProductPostApiUrl(),
+    cache: { noStore: true },
     timeoutMillis: 12_000,
   });
 }

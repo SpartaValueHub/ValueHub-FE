@@ -7,8 +7,10 @@ import {
 } from "@/constants/categories";
 import {
   createProductPost,
+  deleteProductPost,
   getProductPostDetail,
   listProductPosts,
+  updateProductPost,
 } from "@/lib/api/product-posts";
 import {
   listChildCategoriesService,
@@ -19,6 +21,7 @@ import type {
   ApiCreateProductPostRequest,
   ApiProductPostCard,
   ApiProductPostDetail,
+  ApiUpdateProductPostRequest,
 } from "@/types/product-posts/api";
 import type { UiCategorySummary } from "@/types/categories/ui";
 import type {
@@ -105,6 +108,18 @@ export async function createProductPostService(
 ): Promise<UiProductPostDetail> {
   const api = await createProductPost(body);
   return mapProductPostDetail(api);
+}
+
+export async function updateProductPostService(
+  uuid: string,
+  body: ApiUpdateProductPostRequest
+): Promise<UiProductPostDetail> {
+  const api = await updateProductPost(uuid, body);
+  return mapProductPostDetail(api);
+}
+
+export async function deleteProductPostService(uuid: string): Promise<void> {
+  await deleteProductPost(uuid);
 }
 
 export const PRODUCT_POST_LIST_PAGE_SIZE = 20;

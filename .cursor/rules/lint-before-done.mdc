@@ -1,0 +1,33 @@
+---
+description: 기능 구현 시 ESLint를 통과한 뒤에만 끝내기
+alwaysApply: true
+---
+
+# 린트 통과 후 완료
+
+기능을 만들거나 고친 뒤, **커밋·PR 안내 전에** 손댄 파일에 `pnpm exec eslint <files>`를 돌린다. 에러가 있으면 고치고 다시 검사한다. Husky가 막아 주는 걸 기다리지 않는다.
+
+이 레포는 `eslint-config-next`(React 19)다. 자주 걸리는 것:
+
+| 금지 | 대신 |
+|---|---|
+| effect 본문에서 동기 `setState` (`react-hooks/set-state-in-effect`) | 초기값은 `useState(계산)`, 비활성은 `return enabled ? count : 0`. 비동기 `.then`/구독 콜백의 `setState`는 가능 |
+| 렌더 중 `ref.current` 읽기·쓰기 (`react-hooks/refs`) | `useEffect` / 이벤트에서만 |
+
+```ts
+// ❌ effect에서 동기 setState
+useEffect(() => {
+  if (!enabled) {
+    setCount(0);
+    return;
+  }
+  /* fetch */
+}, [enabled]);
+
+// ✅
+useEffect(() => {
+  if (!enabled) return;
+  fetch().then((n) => setCount(n));
+}, [enabled]);
+return enabled ? count : 0;
+```

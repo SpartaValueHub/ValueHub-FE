@@ -4,10 +4,18 @@
 import {
   checkNicknameAvailability,
   createMember,
+  getMemberPublicProfile,
   getMyMemberProfile,
 } from "@/lib/api/members";
-import type { ApiCreateMemberResponse } from "@/types/member/api";
-import type { CreateMemberInput, UiMemberProfile } from "@/types/member/ui";
+import type {
+  ApiCreateMemberResponse,
+  ApiMemberPublicProfileResponse,
+} from "@/types/member/api";
+import type {
+  CreateMemberInput,
+  UiMemberProfile,
+  UiMemberPublicProfile,
+} from "@/types/member/ui";
 
 function mapMemberProfile(response: ApiCreateMemberResponse): UiMemberProfile {
   return {
@@ -53,4 +61,21 @@ export async function getMyMemberProfileService(
 export async function checkNicknameAvailabilityService(nickname: string) {
   const result = await checkNicknameAvailability(nickname);
   return result.available;
+}
+
+function mapPublicProfile(
+  response: ApiMemberPublicProfileResponse
+): UiMemberPublicProfile {
+  return {
+    memberUuid: response.memberUuid,
+    nickname: response.nickname.trim(),
+    profileImageUrl: response.profileImageUrl,
+  };
+}
+
+export async function getMemberPublicProfileService(
+  memberUuid: string
+): Promise<UiMemberPublicProfile> {
+  const response = await getMemberPublicProfile(memberUuid);
+  return mapPublicProfile(response);
 }

@@ -4,11 +4,12 @@ import { useRef, useState } from "react";
 
 import { Icon } from "@/components/atoms/icons";
 import { LocationRegisterDialog } from "@/components/molecules/overlay/LocationRegisterDialog";
+import type { UiLocationSelection } from "@/lib/kakao-maps";
 
 export type ChatOutgoingPayload =
   | { kind: "text"; text: string }
   | { kind: "image"; src: string }
-  | { kind: "location"; placeName: string };
+  | ({ kind: "location" } & UiLocationSelection);
 
 interface ChatMessageFormProps {
   onSend?: (payload: ChatOutgoingPayload) => void;
@@ -39,7 +40,7 @@ export function ChatMessageForm({ onSend }: ChatMessageFormProps) {
   return (
     <>
       <form
-        className="flex items-center gap-5 border-t border-[#f2ca7b] px-[30px] py-5"
+        className="flex flex-col gap-4 border-t-2 border-[#f2ca7b] px-3.5 pt-2.5 pb-5 lg:flex-row lg:items-center lg:gap-5 lg:border-t lg:px-[30px] lg:py-5"
         onSubmit={(event) => {
           event.preventDefault();
           submitText();
@@ -74,12 +75,12 @@ export function ChatMessageForm({ onSend }: ChatMessageFormProps) {
             onChange={handlePhotoChange}
           />
         </div>
-        <div className="flex h-10 min-w-0 flex-1 items-center justify-between rounded-[6px] bg-[#f5f5f5] px-1.5">
+        <div className="flex h-9 min-w-0 flex-1 items-center justify-between rounded-[6px] bg-[#f5f5f5] px-1.5 lg:h-10">
           <input
             value={text}
             onChange={(event) => setText(event.target.value)}
             placeholder="보낼 메시지를 입력하세요."
-            className="h-full min-w-0 flex-1 bg-transparent px-1.5 font-sans text-base tracking-[-0.32px] text-[#323232] outline-none placeholder:text-[#ababab]"
+            className="h-full min-w-0 flex-1 bg-transparent px-1.5 font-sans text-[13px] tracking-[-0.26px] text-[#323232] outline-none placeholder:text-[#ababab] lg:text-base lg:tracking-[-0.32px]"
           />
           <button type="submit" aria-label="전송" className="shrink-0">
             <Icon name="send" size={26} />
@@ -91,7 +92,9 @@ export function ChatMessageForm({ onSend }: ChatMessageFormProps) {
         open={placeOpen}
         onOpenChange={setPlaceOpen}
         confirmLabel="전송"
-        onConfirm={(placeName) => onSend?.({ kind: "location", placeName })}
+        onConfirm={(loc: UiLocationSelection) =>
+          onSend?.({ kind: "location", ...loc })
+        }
       />
     </>
   );

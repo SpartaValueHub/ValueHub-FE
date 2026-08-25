@@ -9,12 +9,15 @@ import {
   listLeafCategoriesAction,
   listRootCategoriesAction,
 } from "@/actions/categories";
-import { createProductPostAction } from "@/actions/product-posts";
+import {
+  createProductPostAction,
+  updateProductPostAction,
+} from "@/actions/product-posts";
 import { Button } from "@/components/atoms/button";
 import { Checkbox } from "@/components/atoms/checkbox";
 import { AlertDialog } from "@/components/molecules/overlay/AlertDialog";
 import { DialogDescription } from "@/components/molecules/overlay/Dialog";
-import { LocationRegisterDialog } from "@/components/molecules/product-posts/LocationRegisterDialog";
+import { LocationRegisterDialog } from "@/components/molecules/overlay/LocationRegisterDialog";
 import {
   PRODUCT_POST_DEFAULT_LATITUDE,
   PRODUCT_POST_DEFAULT_LONGITUDE,
@@ -28,14 +31,24 @@ import {
   PRODUCT_POSTS_PATH,
   productPostPlaceholderImageUrl,
 } from "@/constants/product-posts";
+import { notifyIfSessionExpiredAction } from "@/lib/auth/session-expired.client";
 import { cn } from "@/lib/utils";
 import type { UiCategorySummary } from "@/types/categories/ui";
 import type {
   ApiCreateProductPostDocument,
   ConditionGrade,
 } from "@/types/product-posts/api";
+import type { UiProductPostDetail } from "@/types/product-posts/ui";
 
 const DESCRIPTION_PLACEHOLDER = "상품에 대한 상세정보를 입력하세요.";
+
+function isBlobUrl(url: string) {
+  return url.startsWith("blob:");
+}
+
+function revokeIfBlob(url: string | null | undefined) {
+  if (url && isBlobUrl(url)) URL.revokeObjectURL(url);
+}
 
 const fieldLabelClassName =
   "shrink-0 whitespace-nowrap font-sans text-sm text-white md:w-[120px] md:text-lg md:leading-[1.5] md:tracking-tight";
@@ -89,6 +102,8 @@ type LocalImage = {
   id: string;
   previewUrl: string;
   fileName: string;
+  /** 기존 서버 URL — 있으면 제출 시 placeholder 대신 유지 */
+  remoteUrl?: string;
 };
 
 function ThumbCell({
@@ -111,7 +126,9 @@ function ThumbCell({
         onClick={onSelect}
         className={cn(
           "relative size-full overflow-hidden",
-          isRep ? "border-[3px] border-vh-brand-gold" : "border border-transparent"
+          isRep
+            ? "border-[3px] border-vh-brand-gold"
+            : "border border-transparent"
         )}
       >
         <Image
@@ -144,6 +161,7 @@ type LocalDoc = {
   type: DocUiType;
   previewUrl: string | null;
   fileName: string | null;
+  remoteUrl?: string;
 };
 
 const GRADE_OPTIONS: { value: ConditionGrade; label: string }[] = [
@@ -177,38 +195,130 @@ function isAllowedImage(file: File) {
   return okType && file.size <= PRODUCT_POST_IMAGE_MAX_BYTES;
 }
 
-export function ProductPostCreateForm() {
-  const router = useRouter();
-  const formId = useId();
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const [submitting, setSubmitting] = useState(false);
+export type ProductPostFormMode = "create" | "edit";
 
-  const [roots, setRoots] = useState<UiCategorySummary[]>([]);
-  const [mids, setMids] = useState<UiCategorySummary[]>([]);
-  const [brands, setBrands] = useState<UiCategorySummary[]>([]);
-  const [rootUuid, setRootUuid] = useState("");
-  const [midUuid, setMidUuid] = useState("");
-  const [brandUuid, setBrandUuid] = useState("");
+export type ProductPostFormInitialCategory = {
+  rootUuid: string;
+  midUuid: string;
+  brandUuid: string;
+};
 
-  const [images, setImages] = useState<LocalImage[]>([]);
-  const [name, setName] = useState("");
-  const [grade, setGrade] = useState<ConditionGrade | "">("");
-  const [priceText, setPriceText] = useState("");
-  const [placeName, setPlaceName] = useState("");
-  const [locationModalOpen, setLocationModalOpen] = useState(false);
-  const [description, setDescription] = useState("");
-  const [docs, setDocs] = useState<Record<DocUiType, LocalDoc>>({
+export type ProductPostFormInitialValues = {
+  post: UiProductPostDetail;
+  category: ProductPostFormInitialCategory | null;
+};
+
+interface ProductPostCreateFormProps {
+  mode?: ProductPostFormMode;
+  initialValues?: ProductPostFormInitialValues;
+}
+
+function emptyDocs(): Record<DocUiType, LocalDoc> {
+  return {
     RECEIPT: { type: "RECEIPT", previewUrl: null, fileName: null },
     WARRANTY: { type: "WARRANTY", previewUrl: null, fileName: null },
     APPRAISAL: { type: "APPRAISAL", previewUrl: null, fileName: null },
     OTHER: { type: "OTHER", previewUrl: null, fileName: null },
-  });
-  const [docChecked, setDocChecked] = useState<Record<DocUiType, boolean>>({
+  };
+}
+
+function docsFromPost(post: UiProductPostDetail): {
+  docs: Record<DocUiType, LocalDoc>;
+  checked: Record<DocUiType, boolean>;
+} {
+  const docs = emptyDocs();
+  const checked: Record<DocUiType, boolean> = {
     RECEIPT: false,
     WARRANTY: false,
     APPRAISAL: false,
     OTHER: false,
-  });
+  };
+  for (const doc of post.documents) {
+    const type = doc.type as DocUiType;
+    if (!(type in docs)) continue;
+    docs[type] = {
+      type,
+      previewUrl: doc.url,
+      fileName: doc.type,
+      remoteUrl: doc.url,
+    };
+    checked[type] = true;
+  }
+  return { docs, checked };
+}
+
+export function ProductPostCreateForm({
+  mode = "create",
+  initialValues,
+}: ProductPostCreateFormProps = {}) {
+  const isEdit = mode === "edit";
+  const router = useRouter();
+  const formId = useId();
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [categoryReady, setCategoryReady] = useState(
+    !isEdit || !initialValues?.category
+  );
+
+  const [roots, setRoots] = useState<UiCategorySummary[]>([]);
+  const [mids, setMids] = useState<UiCategorySummary[]>([]);
+  const [brands, setBrands] = useState<UiCategorySummary[]>([]);
+  const [rootUuid, setRootUuid] = useState(
+    initialValues?.category?.rootUuid ?? ""
+  );
+  const [midUuid, setMidUuid] = useState(
+    initialValues?.category?.midUuid ?? ""
+  );
+  const [brandUuid, setBrandUuid] = useState(
+    initialValues?.category?.brandUuid ?? ""
+  );
+
+  const initialDocs = initialValues
+    ? docsFromPost(initialValues.post)
+    : {
+        docs: emptyDocs(),
+        checked: {
+          RECEIPT: false,
+          WARRANTY: false,
+          APPRAISAL: false,
+          OTHER: false,
+        } as Record<DocUiType, boolean>,
+      };
+
+  const [images, setImages] = useState<LocalImage[]>(() =>
+    (initialValues?.post.images ?? []).map((img) => ({
+      id: img.uuid,
+      previewUrl: img.url,
+      fileName: `image-${img.sortOrder + 1}`,
+      remoteUrl: img.url,
+    }))
+  );
+  const [name, setName] = useState(initialValues?.post.name ?? "");
+  const [grade, setGrade] = useState<ConditionGrade | "">(
+    initialValues?.post.conditionGrade ?? ""
+  );
+  const [priceText, setPriceText] = useState(
+    initialValues?.post.price != null ? String(initialValues.post.price) : ""
+  );
+  const [placeName, setPlaceName] = useState(
+    initialValues?.post.placeName ?? ""
+  );
+  const [latitude, setLatitude] = useState<number | null>(
+    initialValues?.post.latitude ?? null
+  );
+  const [longitude, setLongitude] = useState<number | null>(
+    initialValues?.post.longitude ?? null
+  );
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
+  const [description, setDescription] = useState(
+    initialValues?.post.description ?? ""
+  );
+  const [docs, setDocs] = useState<Record<DocUiType, LocalDoc>>(
+    initialDocs.docs
+  );
+  const [docChecked, setDocChecked] = useState<Record<DocUiType, boolean>>(
+    initialDocs.checked
+  );
   const [agreed, setAgreed] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -222,11 +332,39 @@ export function ProductPostCreateForm() {
     });
   }, []);
 
+  /** 수정 모드: 대·중·브랜드 옵션 로드 후 선택값 유지 */
+  useEffect(() => {
+    if (!isEdit || !initialValues?.category) {
+      return;
+    }
+    const { rootUuid: r, midUuid: m, brandUuid: b } = initialValues.category;
+    let cancelled = false;
+    void (async () => {
+      const midRes = await listChildCategoriesAction(r);
+      if (cancelled) return;
+      if (midRes.ok) setMids(midRes.data.filter((c) => c.active));
+      else setMids([]);
+
+      const brandRes = await listLeafCategoriesAction(m);
+      if (cancelled) return;
+      if (brandRes.ok) setBrands(brandRes.data.filter((c) => c.active));
+      else setBrands([]);
+
+      setRootUuid(r);
+      setMidUuid(m);
+      setBrandUuid(b);
+      setCategoryReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isEdit, initialValues?.category]);
+
   useEffect(() => {
     return () => {
-      for (const img of images) URL.revokeObjectURL(img.previewUrl);
+      for (const img of images) revokeIfBlob(img.previewUrl);
       for (const doc of Object.values(docs)) {
-        if (doc.previewUrl) URL.revokeObjectURL(doc.previewUrl);
+        revokeIfBlob(doc.previewUrl);
       }
     };
     // unmount only
@@ -256,9 +394,6 @@ export function ProductPostCreateForm() {
     if (res.ok) {
       const leaves = res.data.filter((c) => c.active);
       setBrands(leaves);
-      if (leaves.length === 0) {
-        /* 중분류가 리프인 경우 — 중분류 UUID를 브랜드로 사용 가능 */
-      }
     } else setBrands([]);
   };
 
@@ -286,7 +421,7 @@ export function ProductPostCreateForm() {
   const removeImage = (id: string) => {
     setImages((prev) => {
       const target = prev.find((i) => i.id === id);
-      if (target) URL.revokeObjectURL(target.previewUrl);
+      if (target) revokeIfBlob(target.previewUrl);
       return prev.filter((i) => i.id !== id);
     });
   };
@@ -307,7 +442,7 @@ export function ProductPostCreateForm() {
     if (!checked) {
       setDocs((prev) => {
         const cur = prev[type];
-        if (cur.previewUrl) URL.revokeObjectURL(cur.previewUrl);
+        revokeIfBlob(cur.previewUrl);
         return {
           ...prev,
           [type]: { type, previewUrl: null, fileName: null },
@@ -324,7 +459,7 @@ export function ProductPostCreateForm() {
     }
     setDocs((prev) => {
       const cur = prev[type];
-      if (cur.previewUrl) URL.revokeObjectURL(cur.previewUrl);
+      revokeIfBlob(cur.previewUrl);
       return {
         ...prev,
         [type]: {
@@ -355,8 +490,7 @@ export function ProductPostCreateForm() {
       return `상품명은 ${PRODUCT_POST_NAME_MIN}~${PRODUCT_POST_NAME_MAX}자여야 합니다.`;
     }
     const categoryUuid =
-      brandUuid ||
-      (brands.length === 0 && midUuid ? midUuid : "");
+      brandUuid || (brands.length === 0 && midUuid ? midUuid : "");
     if (!rootUuid || !midUuid) {
       return "카테고리를 선택해 주세요.";
     }
@@ -398,54 +532,77 @@ export function ProductPostCreateForm() {
     setConfirmOpen(true);
   };
 
-  const submitCreate = () => {
+  const submitForm = () => {
     if (submitting) return;
 
     const categoryUuid =
       brandUuid || (brands.length === 0 && midUuid ? midUuid : "");
     const price = parsePrice();
+    const post = initialValues?.post;
 
     const documents: ApiCreateProductPostDocument[] = DOC_OPTIONS.filter(
       (o) => o.api && docChecked[o.type] && docs[o.type].previewUrl
-    ).map((o, index) => ({
-      documentType: o.type as DocApiType,
-      imageUrl: productPostPlaceholderImageUrl(100 + index),
-    }));
+    ).map((o, index) => {
+      const doc = docs[o.type];
+      return {
+        documentType: o.type as DocApiType,
+        imageUrl: doc.remoteUrl ?? productPostPlaceholderImageUrl(100 + index),
+      };
+    });
+
+    const body = {
+      categoryUuid,
+      productPostName: name.trim(),
+      conditionGrade: grade as ConditionGrade,
+      price,
+      description: description.trim(),
+      latitude:
+        latitude != null
+          ? latitude
+          : post?.latitude != null
+            ? post.latitude
+            : PRODUCT_POST_DEFAULT_LATITUDE,
+      longitude:
+        longitude != null
+          ? longitude
+          : post?.longitude != null
+            ? post.longitude
+            : PRODUCT_POST_DEFAULT_LONGITUDE,
+      placeName: placeName.trim(),
+      images: images.map((img, i) => ({
+        imageUrl: img.remoteUrl ?? productPostPlaceholderImageUrl(i),
+      })),
+      documents: documents.length ? documents : undefined,
+    };
 
     void (async () => {
       setSubmitting(true);
       setError(null);
       try {
-        const result = await createProductPostAction({
-          categoryUuid,
-          productPostName: name.trim(),
-          conditionGrade: grade as ConditionGrade,
-          price,
-          description: description.trim(),
-          latitude: PRODUCT_POST_DEFAULT_LATITUDE,
-          longitude: PRODUCT_POST_DEFAULT_LONGITUDE,
-          placeName: placeName.trim(),
-          images: images.map((_, i) => ({
-            imageUrl: productPostPlaceholderImageUrl(i),
-          })),
-          documents: documents.length ? documents : undefined,
-        });
+        const result = isEdit
+          ? await updateProductPostAction(
+              initialValues!.post.productPostUuid,
+              body
+            )
+          : await createProductPostAction(body);
 
         if (!result.ok) {
           setConfirmOpen(false);
           setError(result.message);
+          notifyIfSessionExpiredAction(result);
           return;
         }
 
         setConfirmOpen(false);
-        // refresh는 RSC를 길게 붙잡을 수 있어 push만 사용
         router.push(`${PRODUCT_POSTS_PATH}/${result.data.productPostUuid}`);
       } catch (e) {
         setConfirmOpen(false);
         setError(
           e instanceof Error
             ? e.message
-            : "상품 등록 중 오류가 발생했습니다. 다시 시도해 주세요."
+            : isEdit
+              ? "상품 수정 중 오류가 발생했습니다. 다시 시도해 주세요."
+              : "상품 등록 중 오류가 발생했습니다. 다시 시도해 주세요."
         );
       } finally {
         setSubmitting(false);
@@ -460,18 +617,13 @@ export function ProductPostCreateForm() {
       className="mx-auto flex w-full max-w-[1280px] flex-col gap-10 px-5 pb-16 pt-4 md:gap-[50px] md:px-8 md:pb-[100px] md:pt-[30px]"
     >
       <h1 className="font-sans text-xl font-medium tracking-tight text-white md:text-[30px] md:tracking-[-1.5px]">
-        상품 등록하기
+        {isEdit ? "상품 수정하기" : "상품 등록하기"}
       </h1>
 
       <div className="flex flex-col gap-10 md:flex-row md:items-start md:gap-[30px]">
         {/* 상품사진 — Figma: label100 + gap10 + upload520 = 630 */}
         <section className="flex w-full min-w-0 flex-col gap-2 md:w-[630px] md:shrink-0 md:flex-row md:items-start md:gap-2.5">
-          <p
-            className={cn(
-              fieldLabelClassName,
-              "md:w-[100px]"
-            )}
-          >
+          <p className={cn(fieldLabelClassName, "md:w-[100px]")}>
             상품사진
             <span className="ml-0.5 text-vh-brand-gold" aria-hidden>
               *
@@ -825,7 +977,10 @@ export function ProductPostCreateForm() {
         />
 
         {fieldError || error ? (
-          <p className="text-center font-sans text-sm text-red-400" role="alert">
+          <p
+            className="text-center font-sans text-sm text-red-400"
+            role="alert"
+          >
             {fieldError ?? error}
           </p>
         ) : null}
@@ -834,10 +989,16 @@ export function ProductPostCreateForm() {
           type="submit"
           variant="brand"
           size="lg"
-          disabled={submitting}
+          disabled={submitting || (isEdit && !categoryReady)}
           className="h-12 w-full max-w-[449px] border-[#d0d0d0] text-base"
         >
-          {submitting ? "등록 중…" : "등록하기"}
+          {submitting
+            ? isEdit
+              ? "수정 중…"
+              : "등록 중…"
+            : isEdit
+              ? "수정하기"
+              : "등록하기"}
         </Button>
       </div>
 
@@ -845,8 +1006,12 @@ export function ProductPostCreateForm() {
         open={locationModalOpen}
         onOpenChange={setLocationModalOpen}
         initialPlaceName={placeName}
-        onConfirm={(name) => {
-          setPlaceName(name);
+        initialLatitude={latitude}
+        initialLongitude={longitude}
+        onConfirm={(loc) => {
+          setPlaceName(loc.placeName);
+          setLatitude(loc.latitude);
+          setLongitude(loc.longitude);
           setFieldError(null);
         }}
       />
@@ -856,17 +1021,20 @@ export function ProductPostCreateForm() {
         onOpenChange={(open) => {
           if (!submitting) setConfirmOpen(open);
         }}
-        title="글을 등록하시겠습니까?"
+        title={isEdit ? "글을 수정하시겠습니까?" : "글을 등록하시겠습니까?"}
         primaryLabel="확인"
         secondaryLabel="취소"
-        onPrimary={submitCreate}
+        onPrimary={submitForm}
         onSecondary={() => {
           if (!submitting) setConfirmOpen(false);
         }}
         primaryPending={submitting}
       >
         <DialogDescription className="whitespace-pre-wrap text-left text-base leading-[1.5] text-[#323232]">
-          {`입력하신 상품 정보와 등록 내용을 확인한 후 게시됩니다.
+          {isEdit
+            ? `입력하신 상품 정보로 판매글이 수정됩니다.
+수정 후에도 상품 정보를 다시 변경할 수 있습니다.`
+            : `입력하신 상품 정보와 등록 내용을 확인한 후 게시됩니다.
 등록 후에도 상품 정보를 수정할 수 있습니다.`}
         </DialogDescription>
       </AlertDialog>

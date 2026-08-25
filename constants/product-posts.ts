@@ -9,6 +9,11 @@ export const PRODUCT_POSTS_PATH = "/product-posts";
 /** 상품 등록 경로 */
 export const PRODUCT_POST_CREATE_PATH = `${PRODUCT_POSTS_PATH}/new`;
 
+/** 상품 수정 경로 */
+export function productPostEditPath(uuid: string) {
+  return `${PRODUCT_POSTS_PATH}/${encodeURIComponent(uuid)}/edit`;
+}
+
 /** 등록 최소가 (원) — BE product-post.policy.min-price 기본값과 동일 */
 export const PRODUCT_POST_MIN_PRICE_WON = 500_000;
 
@@ -69,12 +74,17 @@ export function productPostsHref(categoryId?: string | null) {
 
 /** 공통 헤더 All/Luxury… → 목록 URL */
 export function headerCategoryNavHref(navId: string) {
+  const rootUuid = headerCategoryRootUuid(navId);
+  return rootUuid ? productPostsHref(rootUuid) : productPostsHref();
+}
+
+/** 헤더 대분류 navId → category-service root uuid */
+export function headerCategoryRootUuid(navId: string) {
   if (!navId || navId === "all" || navId === ALL_CATEGORY_NAV_ID) {
-    return productPostsHref();
+    return null;
   }
   const key = HEADER_NAV_ROOT_KEY[navId];
-  if (!key) return productPostsHref();
-  return productPostsHref(HEADER_ROOT_CATEGORY_UUIDS[key]);
+  return key ? HEADER_ROOT_CATEGORY_UUIDS[key] : null;
 }
 
 export function headerCategoryNavIdFromUuid(categoryUuid: string | null) {
@@ -145,9 +155,7 @@ export function parseGradeParams(
     );
 }
 
-export function parseBrandParams(
-  raw: string | string[] | undefined
-): string[] {
+export function parseBrandParams(raw: string | string[] | undefined): string[] {
   const values = Array.isArray(raw) ? raw : raw ? [raw] : [];
   return values
     .flatMap((v) => v.split(","))

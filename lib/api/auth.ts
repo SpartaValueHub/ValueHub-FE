@@ -1,7 +1,9 @@
 import { apiFetch, apiTimeoutFromEnv } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import type {
+  ApiAuthAccountResponse,
   ApiAvailabilityResponse,
+  ApiMemberJoinedAtResponse,
   ApiSignupRequest,
   ApiSignupResponse,
   ApiSignupResumeRequest,
@@ -9,6 +11,28 @@ import type {
 } from "@/types/auth/api";
 
 /** auth-service HTTP — lib/api/* 전용. UI·actions에서 import 금지. */
+
+/** 내 계정 정보 — Gateway JWT → X-Member-Uuid */
+export function getMyAuthAccount() {
+  return apiFetch<ApiAuthAccountResponse>(API_ENDPOINTS.auth.me, {
+    method: "GET",
+    cache: { noStore: true },
+    timeoutMillis: 5_000,
+  });
+}
+
+/** 타인 가입일 — Gateway public, JWT 불필요 */
+export function getMemberJoinedAt(memberUuid: string) {
+  return apiFetch<ApiMemberJoinedAtResponse>(
+    API_ENDPOINTS.auth.memberJoinedAt(memberUuid),
+    {
+      method: "GET",
+      cache: { noStore: true },
+      skipSessionRecovery: true,
+      timeoutMillis: 5_000,
+    }
+  );
+}
 
 export function registerUser(body: ApiSignupRequest) {
   return apiFetch<ApiSignupResponse>(API_ENDPOINTS.auth.signUp, {
@@ -37,6 +61,17 @@ export function logoutUser() {
     trustedOrigin: true,
     skipSessionRecovery: true,
     timeoutMillis: 5_000,
+  });
+}
+
+/** PASS WITHDRAWAL confirm 후 탈퇴 — 204 + 쿠키 만료 */
+export function withdrawMember(body: { requestToken: string }) {
+  return apiFetch<void>(API_ENDPOINTS.auth.withdraw, {
+    method: "POST",
+    body,
+    cache: { noStore: true },
+    trustedOrigin: true,
+    timeoutMillis: 10_000,
   });
 }
 

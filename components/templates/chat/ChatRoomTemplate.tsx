@@ -7,6 +7,7 @@ interface ChatRoomTemplateProps {
   rooms: UiChatRoom[];
   roomId: string;
   messages: UiChatMessage[];
+  hasMoreMessages?: boolean;
   className?: string;
 }
 
@@ -14,6 +15,7 @@ export function ChatRoomTemplate({
   rooms,
   roomId,
   messages,
+  hasMoreMessages = false,
   className,
 }: ChatRoomTemplateProps) {
   return (
@@ -23,12 +25,13 @@ export function ChatRoomTemplate({
         className
       )}
     >
-      <ChatBackBar />
+      <ChatBackBar className="hidden lg:flex" />
       <ChatRoomWorkspace
         key={roomId}
         rooms={rooms}
         roomId={roomId}
         initialMessages={messages}
+        initialHasMoreMessages={hasMoreMessages}
       />
     </main>
   );

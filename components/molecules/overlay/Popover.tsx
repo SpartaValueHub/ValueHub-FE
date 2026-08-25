@@ -68,6 +68,7 @@ export function Popover({
             contentClassName
           )}
           onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
         >
           {children}
         </div>

@@ -40,8 +40,28 @@ export interface ApiAvailabilityResponse {
   available: boolean;
 }
 
+/** GET /api/v1/auth/me */
+export interface ApiAuthAccountResponse {
+  logInId: string;
+  email: string;
+  phoneNumber: string;
+  /** ISO-8601 Instant — auth.created_at */
+  joinedAt: string;
+}
+
+/** GET /api/v1/auth/members/{memberUuid}/joined-at */
+export interface ApiMemberJoinedAtResponse {
+  memberUuid: string;
+  /** ISO-8601 Instant — auth.created_at */
+  joinedAt: string;
+}
+
 export type VerificationPurpose =
-  "SIGN_UP" | "SOCIAL_LINK" | "FIND_ID" | "RESET_PASSWORD";
+  | "SIGN_UP"
+  | "SOCIAL_LINK"
+  | "FIND_ID"
+  | "RESET_PASSWORD"
+  | "WITHDRAWAL";
 
 export interface ApiIdentityVerificationConfirmRequest {
   identityVerificationId: string;

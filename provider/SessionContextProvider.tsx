@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 
 import {
   SessionContext,
   type SessionUserSummary,
 } from "@/context/SessionContext";
+import { SESSION_EXPIRED_EVENT } from "@/lib/auth/session-expired.client";
 import { logSafeError } from "@/lib/log/safe-log";
 
 export type InitialSession = {
@@ -25,13 +26,24 @@ export function SessionContextProvider({
   initialSession,
 }: SessionContextProviderProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState(
     initialSession.isAuthenticated
   );
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<SessionUserSummary | null>(
     initialSession.user
   );
+
+  const expireSessionLocally = useCallback(async () => {
+    setIsAuthenticated(false);
+    setUser(null);
+    try {
+      await signOut({ redirect: false });
+    } catch (error) {
+      logSafeError("Local session expire signOut failed:", error);
+    }
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -48,8 +60,16 @@ export function SessionContextProvider({
         isAuthenticated: boolean;
         user: SessionUserSummary | null;
       };
-      setIsAuthenticated(!!data.isAuthenticated);
+      const nextAuth = !!data.isAuthenticated;
+      setIsAuthenticated(nextAuth);
       setUser(data.user);
+      if (!nextAuth) {
+        try {
+          await signOut({ redirect: false });
+        } catch (error) {
+          logSafeError("Session refresh signOut failed:", error);
+        }
+      }
     } catch (error) {
       logSafeError("Auth status check failed:", error);
       setIsAuthenticated(false);
@@ -59,11 +79,11 @@ export function SessionContextProvider({
     }
   }, []);
 
-  const login = () => {
+  const login = useCallback(() => {
     router.push("/signin");
-  };
+  }, [router]);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await fetch("/api/auth/logout", {
         method: "POST",
@@ -77,27 +97,44 @@ export function SessionContextProvider({
     setUser(null);
     router.push("/");
     router.refresh();
-  };
+  }, [router]);
+
+  /** 루트 layout Provider는 클라이언트 이동 시 언마운트되지 않음 → 경로마다 status 재검증 */
+  useEffect(() => {
+    /* eslint-disable-next-line react-hooks/set-state-in-effect -- Auth status follows the route */
+    void refresh();
+  }, [refresh, pathname]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void refresh();
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [refresh]);
+    function onExpired() {
+      void expireSessionLocally();
+    }
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+  }, [expireSessionLocally]);
+
+  const value = useMemo(
+    () => ({
+      isAuthenticated,
+      isLoading,
+      user,
+      login,
+      logout,
+      refresh,
+      expireSession: expireSessionLocally,
+    }),
+    [
+      isAuthenticated,
+      isLoading,
+      user,
+      login,
+      logout,
+      refresh,
+      expireSessionLocally,
+    ]
+  );
 
   return (
-    <SessionContext.Provider
-      value={{
-        isAuthenticated,
-        isLoading,
-        user,
-        login,
-        logout,
-        refresh,
-      }}
-    >
-      {children}
-    </SessionContext.Provider>
+    <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
   );
 }

@@ -4,7 +4,11 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { signInUserForAuthorize } from "@/lib/api/auth.authorize";
 import { ApiError, ApiTimeoutError } from "@/lib/api/client";
 import { clearAuthCookies } from "@/lib/auth/cookie-store";
-import { SIGNUP_INCOMPLETE_ERROR_CODE } from "@/lib/auth/signin-errors";
+import {
+  SIGNUP_INCOMPLETE_ERROR_CODE,
+  isSecurityStoreUnavailableApiError,
+  securityStoreUnavailablePayload,
+} from "@/lib/auth/signin-errors";
 import { logSafeError } from "@/lib/log/safe-log";
 import { getMyMemberProfileService } from "@/services/member.service";
 
@@ -61,6 +65,12 @@ export async function authorizeCredentials(
           message: error.message,
         })
       );
+    }
+    if (
+      error instanceof ApiError &&
+      isSecurityStoreUnavailableApiError(error)
+    ) {
+      throw new Error(JSON.stringify(securityStoreUnavailablePayload()));
     }
     if (error instanceof Error && error.message.startsWith("{")) {
       throw error;

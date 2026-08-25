@@ -14,6 +14,7 @@ interface VhIconProps {
 function VhIcon({ src, width, height, alt = "", className }: VhIconProps) {
   return (
     <span
+      data-vh-icon
       className={cn("relative inline-block shrink-0 overflow-clip", className)}
       style={{ width, height }}
     >

@@ -1,8 +1,62 @@
-import { redirect } from "next/navigation";
+import { ChatListTemplate } from "@/components/templates/chat/ChatListTemplate";
+import { CHAT_RESERVATIONS } from "@/constants/chat-page";
+import { requireAuth } from "@/lib/session";
+import { resolveProductChatEntryService } from "@/services/chat-entry.service";
+import {
+  listChatRoomsByProductPostService,
+  listChatRoomsService,
+} from "@/services/chat.service";
+import type { UiChatRoom, UiProductChatEntry } from "@/types/chat/ui";
 
-import { CHAT_INITIAL_ROOM_ID } from "@/constants/chat-page";
+interface ChatIndexPageProps {
+  searchParams: Promise<{
+    productPostUuid?: string;
+    sellerMemberUuid?: string;
+    sellerNickname?: string;
+  }>;
+}
 
-/** `/chat`은 목록 진입점 — 실제 화면은 채팅방 ID를 붙인다. */
-export default function ChatIndexPage() {
-  redirect(`/chat/${CHAT_INITIAL_ROOM_ID}`);
+/**
+ * `/chat` 채팅 목록 — GET /api/v1/chat/rooms
+ * `?productPostUuid`만 있으면 상품별 GET /product-posts/{uuid}/rooms
+ * 방 상세는 `/chat/[uuid]`
+ *
+ * 상품 상세 「채팅하기」:
+ * `?productPostUuid&sellerMemberUuid&sellerNickname`(닉은 상세 Member 조회분)
+ * → `pendingProductChatEntry` → Chat `POST /rooms`의 sellerNickname
+ */
+export default async function ChatIndexPage({
+  searchParams,
+}: ChatIndexPageProps) {
+  await requireAuth("/chat");
+
+  const params = await searchParams;
+  const productPostUuid = params.productPostUuid?.trim() ?? "";
+  const sellerMemberUuid = params.sellerMemberUuid?.trim() ?? "";
+  const sellerNickname = params.sellerNickname?.trim() ?? "";
+
+  const roomsPromise = (
+    productPostUuid && !sellerMemberUuid
+      ? listChatRoomsByProductPostService(productPostUuid)
+      : listChatRoomsService()
+  ).catch((): UiChatRoom[] => []);
+
+  let pendingProductChatEntry: UiProductChatEntry | null = null;
+  if (productPostUuid && sellerMemberUuid) {
+    pendingProductChatEntry = await resolveProductChatEntryService({
+      productPostUuid,
+      sellerMemberUuid,
+      sellerNickname,
+    });
+  }
+
+  const rooms = await roomsPromise;
+
+  return (
+    <ChatListTemplate
+      rooms={rooms}
+      reservations={CHAT_RESERVATIONS}
+      pendingProductChatEntry={pendingProductChatEntry}
+    />
+  );
 }

@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useContext } from "react";
 
 import { SideActionButton } from "@/components/molecules/form/SideActionButton";
 import { PRODUCT_POST_CREATE_PATH } from "@/constants/product-posts";
-import { useAppSession } from "@/context/SessionContext";
+import { SessionContext } from "@/context/SessionContext";
 import { cn } from "@/lib/utils";
 
 interface ListingSideActionsProps {
@@ -14,7 +15,9 @@ interface ListingSideActionsProps {
 /** 목록·상세 우측 FAB — SideActionButton 재사용 */
 export function ListingSideActions({ className }: ListingSideActionsProps) {
   const router = useRouter();
-  const { isAuthenticated, isLoading } = useAppSession();
+  const session = useContext(SessionContext);
+  const isAuthenticated = session?.isAuthenticated ?? false;
+  const isLoading = session?.isLoading ?? false;
 
   const onWrite = () => {
     if (isLoading) return;
@@ -30,7 +33,7 @@ export function ListingSideActions({ className }: ListingSideActionsProps) {
   return (
     <div
       className={cn(
-        "fixed bottom-8 right-8 z-40 hidden flex-col gap-6 md:flex",
+        "fixed right-5 bottom-8 z-40 flex flex-col items-end gap-6 md:right-8",
         className
       )}
     >

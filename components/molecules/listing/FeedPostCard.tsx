@@ -79,8 +79,8 @@ export function FeedPostCard({
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-1.5 px-1.5">
-        <p className="line-clamp-2 font-sans text-[13px] leading-snug text-white md:text-sm">
+      <div className="flex flex-col gap-1.5 px-1.5 md:gap-1.5">
+        <p className="line-clamp-2 font-sans text-[13px] leading-normal text-white md:text-sm">
           {name}
         </p>
         <p className="flex items-end gap-0.5 text-white">
@@ -89,7 +89,9 @@ export function FeedPostCard({
           </span>
           <span className="text-sm leading-none">원</span>
         </p>
-        <p className="font-sans text-[10px] text-[#ababab] md:text-xs">{timeAgo}</p>
+        <p className="font-sans text-[10px] text-[#ababab] md:text-xs">
+          {timeAgo}
+        </p>
         {documents.length > 0 ? (
           <div className="flex flex-wrap gap-1.5">
             {documents.map((doc) => (

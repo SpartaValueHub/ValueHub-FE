@@ -60,7 +60,7 @@ export function parseChatListPatch(raw: string): ApiChatListPatch | null {
   }
 }
 
-/** 패치에 상품 스냅샷이 있으면 GET 없이 새 줄 insert 가능 */
+/** 패치에 상품 스냅샷이 있으면 GET 없이 제목·썸네일까지 채울 수 있다 */
 export function canInsertChatListPatch(patch: ApiChatListPatch): boolean {
   const post = patch.productPost;
   return Boolean(
@@ -70,12 +70,22 @@ export function canInsertChatListPatch(patch: ApiChatListPatch): boolean {
   );
 }
 
+export function needsChatRoomHydrate(
+  rooms: UiChatRoom[],
+  patch: ApiChatListPatch
+): boolean {
+  if (canInsertChatListPatch(patch)) return false;
+  const room = rooms.find((item) => item.id === patch.roomId);
+  if (!room) return true;
+  return !room.title?.trim() && !room.productPostUuid;
+}
+
+/** @deprecated needsChatRoomHydrate */
 export function needsChatRoomFetch(
   rooms: UiChatRoom[],
   patch: ApiChatListPatch
 ): boolean {
-  const known = rooms.some((room) => room.id === patch.roomId);
-  return !known && !canInsertChatListPatch(patch);
+  return needsChatRoomHydrate(rooms, patch);
 }
 
 export function mergeRoomWithListPatch(
@@ -95,8 +105,7 @@ export function mergeRoomWithListPatch(
 function roomFromChatListPatch(
   patch: ApiChatListPatch,
   options: { activeRoomId?: string } = {}
-): UiChatRoom | null {
-  if (!canInsertChatListPatch(patch)) return null;
+): UiChatRoom {
   const post = patch.productPost;
   const { text, at } = lastMessageFromPatch(patch);
   const counterpart = patch.counterpart;
@@ -135,7 +144,5 @@ export function applyChatListPatch(
     return [next, ...rest];
   }
 
-  const created = roomFromChatListPatch(patch, options);
-  if (!created) return rooms;
-  return [created, ...rooms];
+  return [roomFromChatListPatch(patch, options), ...rooms];
 }

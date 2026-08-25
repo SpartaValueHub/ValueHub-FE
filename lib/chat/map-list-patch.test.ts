@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyChatListPatch,
+  needsChatRoomHydrate,
   parseChatListPatch,
-  needsChatRoomFetch,
 } from "@/lib/chat/map-list-patch";
 import type { UiChatRoom } from "@/types/chat/ui";
 
@@ -94,12 +94,31 @@ describe("applyChatListPatch", () => {
     expect(next).toHaveLength(3);
   });
 
-  it("does not insert unknown rooms without product snapshot", () => {
-    expect(applyChatListPatch(rooms, { roomId: "z", unreadCount: 1 })).toBe(
-      rooms
-    );
-    expect(needsChatRoomFetch(rooms, { roomId: "z", unreadCount: 1 })).toBe(
+  it("inserts unknown rooms without product snapshot as a stub", () => {
+    const next = applyChatListPatch(rooms, {
+      roomId: "z",
+      unreadCount: 1,
+      content: "첫 메시지",
+    });
+    expect(next[0]?.id).toBe("z");
+    expect(next[0]?.lastMessage).toBe("첫 메시지");
+    expect(next[0]?.unreadCount).toBe(1);
+    expect(next).toHaveLength(3);
+    expect(needsChatRoomHydrate(rooms, { roomId: "z", unreadCount: 1 })).toBe(
       true
     );
+    expect(
+      needsChatRoomHydrate(next, {
+        roomId: "z",
+        unreadCount: 1,
+        productPost: {
+          productPostUuid: "p1",
+          productPostImageUrl: "/z.png",
+          productPostName: "새 상품",
+          price: 1000,
+          tradeStatus: "SELLING",
+        },
+      })
+    ).toBe(false);
   });
 });

@@ -32,6 +32,10 @@ export interface ApiProductPostDetail {
   latitude: number | null;
   longitude: number | null;
   placeName: string | null;
+  /** 거래 희망 동 — 상세/등록·수정 응답 */
+  regionDong: string | null;
+  /** 거래 희망 구 */
+  regionGu: string | null;
   bumpedAt: string | null;
   createdAt: string;
   images: ApiProductPostImage[];
@@ -45,6 +49,12 @@ export interface ApiProductPostCard {
   tradeStatus: TradeStatus;
   listedAt: string;
   thumbnailUrl: string | null;
+  /** 거래 희망 동 — FE 표시 1순위 */
+  regionDong: string | null;
+  /** 거래 희망 구 — FE 표시 2순위 */
+  regionGu: string | null;
+  /** 거래 희망 장소명 — FE 표시 3순위 */
+  placeName: string;
 }
 
 export interface ApiProductPostCardPage {
@@ -74,6 +84,10 @@ export interface ApiCreateProductPostRequest {
   latitude: number;
   longitude: number;
   placeName: string;
+  /** 거래 희망 동 — 선택 */
+  regionDong?: string | null;
+  /** 거래 희망 구 — 선택 */
+  regionGu?: string | null;
   images: ApiCreateProductPostImage[];
   documents?: ApiCreateProductPostDocument[];
 }

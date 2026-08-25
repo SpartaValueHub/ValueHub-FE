@@ -25,6 +25,15 @@ export type UiMyPageTradeItem = {
   review: UiTradeReview;
 };
 
+/** 마이페이지 판매 목록 페이지 (서버 페이징) */
+export type UiMyPageSellListPage = {
+  items: UiMyPageTradeItem[];
+  page: number;
+  totalPages: number;
+  totalElements: number;
+  hasMore: boolean;
+};
+
 export type UiMyPageAccount = {
   nickname: string;
   /** Member `profileImageUrl` — 없으면 UI 기본 아바타 */
@@ -59,6 +68,8 @@ export type UiMyPage = {
   /** member-regions — 최대 2개 */
   memberRegions: UiMemberRegion[];
   sellItems: UiMyPageTradeItem[];
+  /** 판매 목록 초기 페이지 메타 (탭·더보기 Action과 동일 계약) */
+  sellList: UiMyPageSellListPage;
   buyItems: UiMyPageTradeItem[];
   benefit: UiMyPageBenefit;
 };

@@ -155,7 +155,9 @@ export function MyPageTradeRow({
               {item.title}
             </p>
             <p className="font-sans text-xs text-[#ababab] lg:text-sm">
-              {item.date} {item.location}에서 거래
+              {item.location
+                ? `${item.date} ${item.location}에서 거래`
+                : item.date}
             </p>
           </div>
           <p className="shrink-0 font-sans text-white">

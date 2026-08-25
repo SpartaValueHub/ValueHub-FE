@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { hasKakaoMapAppKey, loadKakaoMaps } from "@/lib/kakao-maps";
+import { parseAdminRegionFromCoord2AddressResult } from "@/lib/kakao-maps/parse-admin-region";
 import type {
   KakaoMap,
   KakaoMapsNamespace,
@@ -19,7 +20,43 @@ export type KakaoMapPickResult = {
   longitude: number;
   /** 역지오코딩 장소명 (실패 시 빈 문자열) */
   suggestedPlaceName: string;
+  regionDong: string | null;
+  regionGu: string | null;
 };
+
+function resolvePickLabels(
+  kakao: KakaoMapsNamespace,
+  result: Array<{
+    address?: {
+      address_name?: string;
+      region_2depth_name?: string;
+      region_3depth_name?: string;
+      region_4depth_name?: string;
+    };
+    road_address?: {
+      address_name?: string;
+      building_name?: string;
+    } | null;
+  }>,
+  status: string
+): Pick<KakaoMapPickResult, "suggestedPlaceName" | "regionDong" | "regionGu"> {
+  if (status !== kakao.maps.services.Status.OK || !result[0]) {
+    return { suggestedPlaceName: "", regionDong: null, regionGu: null };
+  }
+  const road = result[0].road_address;
+  const jibun = result[0].address;
+  const suggestedPlaceName =
+    road?.building_name?.trim() ||
+    road?.address_name?.trim() ||
+    jibun?.address_name?.trim() ||
+    "";
+  const admin = parseAdminRegionFromCoord2AddressResult(result[0]);
+  return {
+    suggestedPlaceName,
+    regionDong: admin.regionDong,
+    regionGu: admin.regionGu,
+  };
+}
 
 type KakaoMapPickerProps = {
   className?: string;
@@ -105,20 +142,11 @@ export function KakaoMapPicker({
 
           const geocoder = new kakao.maps.services.Geocoder();
           geocoder.coord2Address(longitude, latitude, (result, status) => {
-            let suggestedPlaceName = "";
-            if (status === kakao.maps.services.Status.OK && result[0]) {
-              const road = result[0].road_address;
-              const jibun = result[0].address;
-              suggestedPlaceName =
-                road?.building_name?.trim() ||
-                road?.address_name?.trim() ||
-                jibun?.address_name?.trim() ||
-                "";
-            }
+            const labels = resolvePickLabels(kakao, result, status);
             onPickRef.current?.({
               latitude,
               longitude,
-              suggestedPlaceName,
+              ...labels,
             });
           });
         };
@@ -128,9 +156,6 @@ export function KakaoMapPicker({
             reverseAndNotify(mouseEvent.latLng);
           });
         }
-
-        // 초기 좌표는 마커·중심만 맞추고 onPick은 호출하지 않음
-        // (수정 모달의 기존 placeName을 열자마자 덮지 않기 위함)
 
         requestAnimationFrame(() => {
           map.relayout();
@@ -153,7 +178,6 @@ export function KakaoMapPicker({
       mapRef.current = null;
       kakaoRef.current = null;
     };
-    // 모달 오픈 시 컨테이너 마운트 기준 — 초기 좌표는 첫 로드만
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -175,20 +199,11 @@ export function KakaoMapPicker({
           pos.coords.longitude,
           pos.coords.latitude,
           (result, status) => {
-            let suggestedPlaceName = "";
-            if (status === kakao.maps.services.Status.OK && result[0]) {
-              const road = result[0].road_address;
-              const jibun = result[0].address;
-              suggestedPlaceName =
-                road?.building_name?.trim() ||
-                road?.address_name?.trim() ||
-                jibun?.address_name?.trim() ||
-                "";
-            }
+            const labels = resolvePickLabels(kakao, result, status);
             onPickRef.current?.({
               latitude: pos.coords.latitude,
               longitude: pos.coords.longitude,
-              suggestedPlaceName,
+              ...labels,
             });
           }
         );

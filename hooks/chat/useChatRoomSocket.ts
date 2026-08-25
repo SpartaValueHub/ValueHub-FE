@@ -3,18 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import { Client, type IMessage } from "@stomp/stompjs";
 
+import {
+  createBrowserStompClient,
+  fetchBrowserStompConfig,
+} from "@/lib/chat/browser-stomp";
+import { parseChatListPatch } from "@/lib/chat/map-list-patch";
 import { mapChatMessage } from "@/lib/chat/map-message";
-import { toBrowserStompBrokerUrl } from "@/lib/chat/stomp";
+import { CHAT_LIST_QUEUE } from "@/lib/chat/stomp";
 import type { UiLocationSelection } from "@/lib/kakao-maps";
-import type { ApiChatMessage } from "@/types/chat/api";
+import type { ApiChatListPatch, ApiChatMessage } from "@/types/chat/api";
 import type { UiChatMessage } from "@/types/chat/ui";
 
-type StompConfig = {
-  wsUrl: string;
-  memberUuid: string;
-};
-
-function parseMessage(frame: IMessage): ApiChatMessage | null {
+function parseRoomMessage(frame: IMessage): ApiChatMessage | null {
   try {
     const body = JSON.parse(frame.body) as ApiChatMessage;
     if (!body?.messageId || !body.senderUuid) return null;
@@ -27,17 +27,24 @@ function parseMessage(frame: IMessage): ApiChatMessage | null {
 export function useChatRoomSocket({
   roomId,
   onMessage,
+  onListPatch,
 }: {
   roomId: string;
   onMessage: (message: UiChatMessage) => void;
+  onListPatch?: (patch: ApiChatListPatch) => void;
 }) {
   const [connected, setConnected] = useState(false);
   const clientRef = useRef<Client | null>(null);
   const onMessageRef = useRef(onMessage);
+  const onListPatchRef = useRef(onListPatch);
 
   useEffect(() => {
     onMessageRef.current = onMessage;
   }, [onMessage]);
+
+  useEffect(() => {
+    onListPatchRef.current = onListPatch;
+  }, [onListPatch]);
 
   useEffect(() => {
     if (!roomId) return;
@@ -46,36 +53,28 @@ export function useChatRoomSocket({
     let client: Client | null = null;
 
     async function connect() {
-      const res = await fetch("/api/chat/stomp", { cache: "no-store" });
-      if (!res.ok) return;
-      const config = (await res.json()) as StompConfig;
-      if (cancelled || !config.wsUrl || !config.memberUuid) return;
+      const config = await fetchBrowserStompConfig();
+      if (cancelled || !config) return;
 
       const viewerUuid = config.memberUuid;
-      const broker = new URL(toBrowserStompBrokerUrl(config.wsUrl));
-      broker.searchParams.set("X-Member-Uuid", viewerUuid);
-      client = new Client({
-        brokerURL: broker.toString(),
-        connectHeaders: { "X-Member-Uuid": viewerUuid },
-        reconnectDelay: 4000,
-        onConnect: () => {
+      client = createBrowserStompClient(config, {
+        onConnect: (stomp) => {
           if (cancelled) return;
-          client?.subscribe(`/topic/chat.${roomId}`, (frame: IMessage) => {
-            const api = parseMessage(frame);
+          stomp.subscribe(`/topic/chat.${roomId}`, (frame: IMessage) => {
+            const api = parseRoomMessage(frame);
             if (!api) return;
             onMessageRef.current(mapChatMessage(api, viewerUuid));
           });
-          client?.subscribe("/user/queue/errors", () => {
+          stomp.subscribe(CHAT_LIST_QUEUE, (frame: IMessage) => {
+            const patch = parseChatListPatch(frame.body);
+            if (patch) onListPatchRef.current?.(patch);
+          });
+          stomp.subscribe("/user/queue/errors", () => {
             /* 전송 실패 — 말풍선은 topic echo만 그린다 */
           });
           setConnected(true);
         },
-        onDisconnect: () => {
-          setConnected(false);
-        },
-        onWebSocketClose: () => {
-          setConnected(false);
-        },
+        onDisconnected: () => setConnected(false),
       });
       clientRef.current = client;
       client.activate();

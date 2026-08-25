@@ -83,6 +83,16 @@ export interface ApiChatRoomList {
   rooms: ApiChatRoomListItem[];
 }
 
+/** STOMP /user/queue/chat-list — 목록 한 줄 패치 */
+export interface ApiChatListPatch {
+  roomId: string;
+  lastMessage?: ApiChatRoomListLastMessage | string | null;
+  unreadCount?: number;
+  updatedAt?: string;
+  content?: string;
+  createdAt?: string;
+}
+
 /** GET /api/v1/chat/unread-count */
 export interface ApiChatUnreadCount {
   totalUnreadCount: number;

@@ -3,6 +3,9 @@ export const CHAT_STOMP_PATH = "/ws-chat";
 /** 브라우저 STOMP — 동일 출처 프록시. 원격 Gateway에는 쿠키가 안 붙는다. */
 export const CHAT_STOMP_PROXY_PATH = "/api/chat/ws-chat";
 
+/** 목록 lastMessage + unreadCount 패치 */
+export const CHAT_LIST_QUEUE = "/user/queue/chat-list";
+
 export function httpToWsUrl(httpUrl: string) {
   const trimmed = httpUrl.replace(/\/$/, "");
   const ws = trimmed.replace(/^http:/, "ws:").replace(/^https:/, "wss:");

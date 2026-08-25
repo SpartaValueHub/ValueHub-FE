@@ -5,11 +5,28 @@ import { useRef, useState } from "react";
 import { Icon } from "@/components/atoms/icons";
 import { LocationRegisterDialog } from "@/components/molecules/overlay/LocationRegisterDialog";
 import type { UiLocationSelection } from "@/lib/kakao-maps";
+import {
+  CHAT_IMAGE_CONTENT_TYPES,
+  CHAT_IMAGE_MAX_BYTES,
+} from "@/types/chat/images";
 
 export type ChatOutgoingPayload =
   | { kind: "text"; text: string }
-  | { kind: "image"; src: string }
+  | { kind: "image"; file: File; contentType: string }
   | ({ kind: "location" } & UiLocationSelection);
+
+function normalizeChatImageType(type: string) {
+  if (type === "image/jpg") return "image/jpeg";
+  return type;
+}
+
+function isAllowedChatImage(file: File, contentType: string) {
+  return (
+    (CHAT_IMAGE_CONTENT_TYPES as readonly string[]).includes(contentType) &&
+    file.size > 0 &&
+    file.size <= CHAT_IMAGE_MAX_BYTES
+  );
+}
 
 interface ChatMessageFormProps {
   onSend?: (payload: ChatOutgoingPayload) => void;
@@ -32,8 +49,9 @@ export function ChatMessageForm({ onSend }: ChatMessageFormProps) {
     const files = Array.from(event.target.files ?? []);
     event.target.value = "";
     for (const file of files) {
-      if (!file.type.startsWith("image/")) continue;
-      onSend?.({ kind: "image", src: URL.createObjectURL(file) });
+      const contentType = normalizeChatImageType(file.type);
+      if (!isAllowedChatImage(file, contentType)) continue;
+      onSend?.({ kind: "image", file, contentType });
     }
   }
 

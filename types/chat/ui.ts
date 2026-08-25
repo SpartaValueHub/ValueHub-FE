@@ -52,6 +52,12 @@ export type UiChatMessagePage = {
   hasMore: boolean;
 };
 
+/** presign 응답 — 브라우저가 S3에 PUT한 뒤 STOMP content에 s3Key */
+export type UiChatImagePresigned = {
+  uploadUrl: string;
+  s3Key: string;
+};
+
 export type UiTradeReservation = {
   date: Date;
   dateLabel: string;

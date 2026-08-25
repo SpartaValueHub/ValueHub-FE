@@ -5,9 +5,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { listOlderChatMessagesAction } from "@/actions/chat";
+import {
+  createChatImagePresignedUrlAction,
+  listOlderChatMessagesAction,
+} from "@/actions/chat";
 import { useChatRoomSocket } from "@/hooks/chat/useChatRoomSocket";
 import { applyChatListPatch } from "@/lib/chat/map-list-patch";
+import { putChatImageToS3 } from "@/lib/chat/put-image-s3";
+import { logSafeError } from "@/lib/log/safe-log";
 
 import { Icon, type SystemIconName } from "@/components/atoms/icons";
 import { StatusBadge } from "@/components/atoms/status-badge";
@@ -120,7 +125,7 @@ export function ChatRoomWorkspace({
   const loadingOlderRef = useRef(false);
   const requestedBeforeRef = useRef<string | null>(null);
 
-  const { publishText, publishLocation } = useChatRoomSocket({
+  const { publishText, publishLocation, publishImage } = useChatRoomSocket({
     roomId,
     onMessage: (incoming) => {
       setMessages((current) => {
@@ -234,20 +239,26 @@ export function ChatRoomWorkspace({
       return;
     }
 
-    const base = {
-      id: `msg-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      from: "me" as const,
-      time: "방금",
-      createdAt: new Date().toISOString(),
-    };
+    void sendChatImage(payload.file, payload.contentType);
+  }
 
-    setMessages((current) => {
-      const withoutTyping = current.filter((item) => item.kind !== "typing");
-      return [
-        ...withoutTyping,
-        { ...base, kind: "image", imageSrc: payload.src },
-      ];
+  async function sendChatImage(file: File, contentType: string) {
+    const result = await createChatImagePresignedUrlAction({
+      roomId,
+      contentType,
+      fileSize: file.size,
     });
+    if (!result.ok) {
+      logSafeError("Chat image presign failed:", result.message);
+      return;
+    }
+    try {
+      await putChatImageToS3(result.data.uploadUrl, file, contentType);
+    } catch (error) {
+      logSafeError("Chat image S3 PUT failed:", error);
+      return;
+    }
+    publishImage(result.data.s3Key);
   }
 
   function renderMoreMenu(

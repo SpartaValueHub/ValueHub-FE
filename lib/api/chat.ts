@@ -1,6 +1,8 @@
 import { apiFetch, getChatApiUrl } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import type {
+  ApiChatImagePresignedRequest,
+  ApiChatImagePresignedResponse,
   ApiChatMessageList,
   ApiChatRoomDetail,
   ApiChatRoomList,
@@ -56,4 +58,14 @@ export function listChatMessages(
 
 export function getChatUnreadCount() {
   return chatFetch<ApiChatUnreadCount>(API_ENDPOINTS.chat.unreadCount);
+}
+
+export function createChatImagePresignedUrl(
+  roomId: string,
+  body: ApiChatImagePresignedRequest
+) {
+  return chatFetch<ApiChatImagePresignedResponse>(
+    API_ENDPOINTS.chat.imagePresignedUrl(roomId),
+    { method: "POST", body }
+  );
 }

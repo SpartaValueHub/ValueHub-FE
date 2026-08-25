@@ -5,12 +5,14 @@
  */
 import {
   createChatRoom,
+  createChatImagePresignedUrl,
   getChatRoom,
   getChatUnreadCount,
   listChatMessages,
   listChatRooms,
   listChatRoomsByProductPost,
 } from "@/lib/api/chat";
+import { mapChatImagePresigned } from "@/lib/chat/map-image-presign";
 import { mapChatMessage } from "@/lib/chat/map-message";
 import { formatListedAt } from "@/lib/format-listed-at";
 import { getMemberPublicProfileService } from "@/services/member.service";
@@ -23,6 +25,7 @@ import type {
 } from "@/types/chat/api";
 import {
   CHAT_MESSAGE_PAGE_SIZE,
+  type UiChatImagePresigned,
   type UiChatMessagePage,
   type UiChatRoom,
   type UiCreatedChatRoom,
@@ -186,4 +189,12 @@ export async function listChatMessagesService(
     messages,
     hasMore: messages.length >= limit && messages.length > 0,
   };
+}
+
+export async function createChatImagePresignedUrlService(
+  roomId: string,
+  body: { contentType: string; fileSize: number }
+): Promise<UiChatImagePresigned> {
+  const api = await createChatImagePresignedUrl(roomId, body);
+  return mapChatImagePresigned(api);
 }

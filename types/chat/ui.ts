@@ -6,6 +6,8 @@ export type UiChatRoom = {
   unreadCount: number;
   peerName: string;
   peerImageUrl?: string | null;
+  /** GET /rooms/{id} counterpart — 프로필 모달 */
+  peerMemberUuid?: string;
   productPostUuid?: string;
   price: number;
   location: string;

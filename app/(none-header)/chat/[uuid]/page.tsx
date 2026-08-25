@@ -40,6 +40,7 @@ export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
           ...item,
           peerName: room.peerName,
           peerImageUrl: room.peerImageUrl,
+          peerMemberUuid: room.peerMemberUuid ?? item.peerMemberUuid,
           productPostUuid: room.productPostUuid ?? item.productPostUuid,
         }
       : item

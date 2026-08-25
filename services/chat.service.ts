@@ -56,6 +56,7 @@ export function mapChatRoomDetail(api: ApiChatRoomDetail): UiChatRoom {
     unreadCount: 0,
     peerName: api.counterpart?.nickname?.trim() ?? "",
     peerImageUrl: api.counterpart?.profileImageUrl?.trim() || null,
+    peerMemberUuid: api.counterpart?.memberUuid?.trim() || undefined,
     productPostUuid: post?.productPostUuid?.trim() || undefined,
     price: post?.price ?? 0,
     location: "",
@@ -75,6 +76,7 @@ export function mapChatRoomListItem(api: ApiChatRoomListItem): UiChatRoom {
     timeAgo: stamp ? formatListedAt(stamp) : "",
     unreadCount: api.unreadCount ?? 0,
     peerName: "",
+    peerMemberUuid: api.counterpart?.memberUuid?.trim() || undefined,
     productPostUuid: post?.productPostUuid?.trim() || undefined,
     price: post?.price ?? 0,
     location: "",
@@ -142,7 +144,21 @@ export async function listChatRoomsByProductPostService(
 
 export async function getChatRoomService(roomId: string): Promise<UiChatRoom> {
   const api = await getChatRoom(roomId);
-  return mapChatRoomDetail(api);
+  const room = mapChatRoomDetail(api);
+  const memberUuid = room.peerMemberUuid?.trim();
+  if (!memberUuid) return room;
+
+  try {
+    const profile = await getMemberPublicProfileService(memberUuid);
+    const imageUrl = profile.profileImageUrl?.trim() || null;
+    return {
+      ...room,
+      peerName: room.peerName || profile.nickname,
+      peerImageUrl: imageUrl ?? room.peerImageUrl,
+    };
+  } catch {
+    return room;
+  }
 }
 
 export async function getChatUnreadCountService(): Promise<number> {

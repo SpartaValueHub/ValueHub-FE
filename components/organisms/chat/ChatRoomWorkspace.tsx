@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 
 import { listOlderChatMessagesAction } from "@/actions/chat";
 import { useChatRoomSocket } from "@/hooks/chat/useChatRoomSocket";
+import { applyChatListPatch } from "@/lib/chat/map-list-patch";
 
 import { Icon, type SystemIconName } from "@/components/atoms/icons";
 import { StatusBadge } from "@/components/atoms/status-badge";
@@ -83,6 +84,7 @@ export function ChatRoomWorkspace({
   initialHasMoreMessages = false,
 }: ChatRoomWorkspaceProps) {
   const router = useRouter();
+  const [listRooms, setListRooms] = useState(rooms);
   const [messages, setMessages] = useState(initialMessages);
   const [hasMoreMessages, setHasMoreMessages] = useState(
     initialHasMoreMessages
@@ -99,6 +101,11 @@ export function ChatRoomWorkspace({
         return [...current, incoming];
       });
     },
+    onListPatch: (patch) => {
+      setListRooms((current) =>
+        applyChatListPatch(current, patch, { activeRoomId: roomId })
+      );
+    },
   });
   const [reservation, setReservation] = useState<UiTradeReservation | null>(
     () => {
@@ -113,8 +120,8 @@ export function ChatRoomWorkspace({
   const [dialogIntent, setDialogIntent] = useState<"form" | "detail">("form");
 
   const room = useMemo(
-    () => rooms.find((item) => item.id === roomId) ?? rooms[0],
-    [rooms, roomId]
+    () => listRooms.find((item) => item.id === roomId) ?? listRooms[0],
+    [listRooms, roomId]
   );
 
   async function handleLoadOlder() {
@@ -257,7 +264,7 @@ export function ChatRoomWorkspace({
   return (
     <div className="flex min-h-0 flex-1 overflow-hidden bg-[#fbefd8]">
       <div className="hidden h-full lg:flex">
-        <ChatRoomList rooms={rooms} selectedId={room.id} />
+        <ChatRoomList rooms={listRooms} selectedId={room.id} />
       </div>
 
       <section className="flex min-h-0 min-w-0 flex-1 flex-col">

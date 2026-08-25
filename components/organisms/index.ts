@@ -15,6 +15,7 @@ export { SignupForm } from "./auth/SignupForm";
 export { SocialLoginGroup } from "./auth/SocialLoginGroup";
 export { TermsAgreementSection } from "./auth/TermsAgreementSection";
 export { MyPageWorkspace } from "./mypage/MyPageWorkspace";
+export { ChatListLive } from "./chat/ChatListLive";
 export { ChatListSection } from "./chat/ChatListSection";
 export { ChatMessageForm } from "./chat/ChatMessageForm";
 export { ChatReservationSection } from "./chat/ChatReservationSection";

@@ -28,8 +28,7 @@ export const PRODUCT_POST_IMAGE_MAX = 10;
 export const PRODUCT_POST_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 
 /**
- * S3 업로드 API 전 — 제출용 placeholder URL (≤500자).
- * 미리보기는 로컬 object URL, 서버에는 이 패턴만 전달.
+ * @deprecated S3 Presign 연동 후 미사용. 제출은 CloudFront publicUrl만 사용.
  */
 export function productPostPlaceholderImageUrl(index: number) {
   return `https://placehold.co/800x800/png?text=vh-${index + 1}`;

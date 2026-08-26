@@ -6,7 +6,13 @@ import type {
   ApiMemberAvailabilityResponse,
   ApiMemberProfileResponse,
   ApiMemberPublicProfileResponse,
+  ApiUpdateMemberRequest,
+  ApiUpdateMemberResponse,
 } from "@/types/member/api";
+import type {
+  ApiMediaPresignedRequest,
+  ApiMediaPresignedResponse,
+} from "@/types/media/api";
 
 /** member-service HTTP — lib/api/* 전용. UI·actions에서 import 금지. */
 
@@ -63,4 +69,29 @@ export function getMemberPublicProfile(memberUuid: string) {
       timeoutMillis: 5_000,
     }
   );
+}
+
+/** POST /members/me/media/presigned-url */
+export function createMemberMediaPresignedUrl(body: ApiMediaPresignedRequest) {
+  return apiFetch<ApiMediaPresignedResponse>(
+    API_ENDPOINTS.members.mediaPresignedUrl,
+    {
+      method: "POST",
+      body,
+      baseUrl: getMemberApiUrl(),
+      cache: { noStore: true },
+      timeoutMillis: 8_000,
+    }
+  );
+}
+
+/** PATCH /members/me */
+export function updateMyMember(body: ApiUpdateMemberRequest) {
+  return apiFetch<ApiUpdateMemberResponse>(API_ENDPOINTS.members.me, {
+    method: "PATCH",
+    body,
+    baseUrl: getMemberApiUrl(),
+    cache: { noStore: true },
+    timeoutMillis: 8_000,
+  });
 }

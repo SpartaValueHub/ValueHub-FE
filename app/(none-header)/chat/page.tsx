@@ -1,12 +1,18 @@
 import { ChatListTemplate } from "@/components/templates/chat/ChatListTemplate";
-import { CHAT_RESERVATIONS } from "@/constants/chat-page";
+import { reservationCardFromListItem } from "@/constants/chat-page";
 import { requireAuth } from "@/lib/session";
 import { resolveProductChatEntryService } from "@/services/chat-entry.service";
 import {
   listChatRoomsByProductPostService,
   listChatRoomsService,
 } from "@/services/chat.service";
-import type { UiChatRoom, UiProductChatEntry } from "@/types/chat/ui";
+import { listMyReservationsService } from "@/services/reservations.service";
+import type {
+  UiChatReservationCard,
+  UiChatRoom,
+  UiProductChatEntry,
+} from "@/types/chat/ui";
+import type { UiReservationListItem } from "@/types/reservations/ui";
 
 interface ChatIndexPageProps {
   searchParams: Promise<{
@@ -24,6 +30,8 @@ interface ChatIndexPageProps {
  * 상품 상세 「채팅하기」:
  * `?productPostUuid&sellerMemberUuid&sellerNickname`(닉은 상세 Member 조회분)
  * → `pendingProductChatEntry` → Chat `POST /rooms`의 sellerNickname
+ *
+ * 예약 카드: GET /api/v1/reservations/me → chatRoomId로 채팅 이동
  */
 export default async function ChatIndexPage({
   searchParams,
@@ -41,6 +49,10 @@ export default async function ChatIndexPage({
       : listChatRoomsService()
   ).catch((): UiChatRoom[] => []);
 
+  const reservationsPromise = listMyReservationsService().catch(
+    (): UiReservationListItem[] => []
+  );
+
   let pendingProductChatEntry: UiProductChatEntry | null = null;
   if (productPostUuid && sellerMemberUuid) {
     pendingProductChatEntry = await resolveProductChatEntryService({
@@ -50,12 +62,23 @@ export default async function ChatIndexPage({
     });
   }
 
-  const rooms = await roomsPromise;
+  const [rooms, reservationItems] = await Promise.all([
+    roomsPromise,
+    reservationsPromise,
+  ]);
+
+  const roomTitleById = new Map(rooms.map((room) => [room.id, room.title]));
+  const reservations: UiChatReservationCard[] = reservationItems.map((item) =>
+    reservationCardFromListItem(
+      item,
+      roomTitleById.get(item.chatRoomId)?.trim() || item.placeName
+    )
+  );
 
   return (
     <ChatListTemplate
       rooms={rooms}
-      reservations={CHAT_RESERVATIONS}
+      reservations={reservations}
       pendingProductChatEntry={pendingProductChatEntry}
     />
   );

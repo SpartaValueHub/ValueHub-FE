@@ -125,6 +125,21 @@ export function getChatApiUrl() {
   return raw.replace(/\/$/, "");
 }
 
+/** Gateway reservations-service — 서버 전용 */
+export function getReservationsApiUrl() {
+  assertServerOnlyApiUrl();
+
+  const raw =
+    process.env.RESERVATIONS_API_URL ||
+    (
+      process.env.API_URL ||
+      process.env.API_BASE_URL ||
+      "http://localhost:8000/auth-service"
+    ).replace(/\/auth-service\/?$/, "/reservations-service");
+
+  return raw.replace(/\/$/, "");
+}
+
 type FetchCacheOpts = {
   tags?: string[];
   revalidate?: number | false;

@@ -67,6 +67,21 @@ export const API_ENDPOINTS = {
       return qs ? `${base}?${qs}` : base;
     },
   },
+  reservations: {
+    create: "/api/v1/reservations",
+    me: (status?: string) => {
+      const base = "/api/v1/reservations/me";
+      if (!status) return base;
+      return `${base}?status=${encodeURIComponent(status)}`;
+    },
+    byChatRoom: (chatRoomId: string, productPostUuid?: string) => {
+      const base = `/api/v1/reservations/by-chat-room/${encodeURIComponent(chatRoomId)}`;
+      if (!productPostUuid) return base;
+      return `${base}?productPostUuid=${encodeURIComponent(productPostUuid)}`;
+    },
+    detail: (reservationId: string) =>
+      `/api/v1/reservations/${encodeURIComponent(reservationId)}`,
+  },
   chat: {
     rooms: "/api/v1/chat/rooms",
     room: (roomId: string) =>

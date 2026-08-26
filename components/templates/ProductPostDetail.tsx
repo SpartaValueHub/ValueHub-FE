@@ -11,7 +11,10 @@ import {
 } from "@/components/molecules/product-posts/ProductChatCta";
 import { ProductOwnerOptionsMenu } from "@/components/molecules/product-posts/ProductOwnerOptionsMenu";
 import { SellerProfileDialogHost } from "@/components/molecules/product-posts/SellerProfileDialogHost";
-import { ProductImageSlider } from "@/components/molecules/ProductImageSlider";
+import {
+  ProductImageSlider,
+  type ProductSliderSlide,
+} from "@/components/molecules/ProductImageSlider";
 import { cn } from "@/lib/utils";
 import type {
   ConditionGrade,
@@ -40,6 +43,31 @@ const DOC_TYPES = [
   { type: "WARRANTY" as const, label: "보증서" },
   { type: "APPRAISAL" as const, label: "감정서" },
 ];
+
+/** 상품 이미지(sortOrder) 뒤에 영수증→보증서→감정서. OTHER 제외 */
+function buildDetailSliderSlides(
+  post: UiProductPostDetail
+): ProductSliderSlide[] {
+  const productSlides: ProductSliderSlide[] = [...post.images]
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((img) => ({
+      id: img.uuid,
+      url: img.url,
+    }));
+
+  const documentSlides: ProductSliderSlide[] = [];
+  for (const { type, label } of DOC_TYPES) {
+    const doc = post.documents.find((d) => d.type === type);
+    if (!doc?.url.trim()) continue;
+    documentSlides.push({
+      id: doc.uuid,
+      url: doc.url,
+      label,
+    });
+  }
+
+  return [...productSlides, ...documentSlides];
+}
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat("ko-KR").format(price);
@@ -94,11 +122,7 @@ function SellerProfile({
             <span className="font-sans text-base font-medium text-white md:text-2xl md:font-normal">
               {displayName}
             </span>
-            <Icon
-              name="chevron-right"
-              size={20}
-              className="md:hidden"
-            />
+            <Icon name="chevron-right" size={20} className="md:hidden" />
             <Icon
               name="chevron-right"
               size={26}
@@ -109,11 +133,7 @@ function SellerProfile({
             <span className="font-sans text-[10px] tracking-[-0.5px] text-[#ababab] md:text-[13px] md:tracking-[-0.65px]">
               {SELLER_ACTIVITY_LOCATION}
             </span>
-            <Icon
-              name="shield-check"
-              size={16}
-              className="text-[#ababab]"
-            />
+            <Icon name="shield-check" size={16} className="text-[#ababab]" />
           </span>
         </span>
       </button>
@@ -153,12 +173,13 @@ export function ProductPostDetail({
   const attached = new Set(post.documents.map((d) => d.type));
   const badge = tradeBadgeStatus(post.tradeStatus);
   const displayNickname = sellerNickname.trim() || SELLER_FALLBACK_NICKNAME;
+  const sliderSlides = buildDetailSliderSlides(post);
 
   return (
     <div className="flex w-full flex-col gap-[30px] md:gap-[50px]">
       <div className="flex flex-col items-start gap-[30px] md:gap-[50px] lg:flex-row">
         <ProductImageSlider
-          images={post.images}
+          slides={sliderSlides}
           productName={post.name}
           className="mx-auto w-full shrink-0 max-w-none md:max-w-[600px] lg:mx-0"
         />
@@ -212,7 +233,11 @@ export function ProductPostDetail({
                     className="flex items-center gap-0.5 font-sans text-sm tracking-[-0.7px] text-white md:gap-1.5 md:text-lg md:tracking-[-0.9px]"
                   >
                     {post.placeName}
-                    <Icon name="chevron-right" size={20} className="md:hidden" />
+                    <Icon
+                      name="chevron-right"
+                      size={20}
+                      className="md:hidden"
+                    />
                     <Icon
                       name="chevron-right"
                       size={26}
@@ -269,8 +294,8 @@ export function ProductPostDetail({
               </div>
 
               <p className="font-sans text-xs leading-[1.4] text-[#ababab] md:text-sm">
-                등록된 보증서, 영수증, 감정서 등은 판매자가 제공한 자료입니다. 본
-                플랫폼은 해당 자료 및 상품의 정품 여부를 보증하거나 인증하지
+                등록된 보증서, 영수증, 감정서 등은 판매자가 제공한 자료입니다.
+                본 플랫폼은 해당 자료 및 상품의 정품 여부를 보증하거나 인증하지
                 않으며, 거래에 대한 최종 판단과 확인 책임은 구매자에게 있습니다.
                 구매 전 상품 상태와 인증 서류를 꼼꼼히 확인한 후 안전하게
                 거래하시기 바랍니다.

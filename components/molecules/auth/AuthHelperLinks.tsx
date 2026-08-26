@@ -11,7 +11,7 @@ export function AuthHelperLinks({ className }: AuthHelperLinksProps) {
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center justify-center gap-2 text-xs text-vh-gray-500",
+        "flex flex-wrap items-center justify-center gap-5 text-xs text-[#d0d0d0] md:gap-2 md:text-vh-gray-500",
         className
       )}
     >

@@ -5,21 +5,23 @@ interface SigninAuthHeaderProps {
   className?: string;
 }
 
-/** 로그인 — 에셋 로고 + 2줄 Welcome (좌측 정렬) */
+/** 로그인 — 모바일 중앙 타이틀 / PC 로고+좌측 Welcome */
 export function SigninAuthHeader({ className }: SigninAuthHeaderProps) {
   return (
     <header className={cn("w-full", className)}>
-      <div className="inline-grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-0.5">
-        <BrandLogoIcon size="lg" className="row-span-2 self-center" />
+      <div className="flex flex-col items-center text-center md:inline-grid md:grid-cols-[auto_1fr] md:items-center md:gap-x-4 md:gap-y-0.5 md:text-left">
+        <BrandLogoIcon
+          size="lg"
+          className="hidden md:row-span-2 md:block md:self-center"
+        />
 
-        <h1 className="font-serif text-[1.75rem] font-semibold leading-snug tracking-tight text-vh-brand-gold md:text-[1.85rem]">
+        <h1 className="font-serif text-2xl font-bold leading-[1.4] tracking-tight text-vh-brand-gold md:row-span-2 md:self-center md:text-[1.85rem] md:font-semibold md:leading-snug">
           Welcome to
-        </h1>
-        <h1 className="font-serif text-[1.75rem] font-semibold leading-snug tracking-tight text-vh-brand-gold md:text-[1.85rem]">
+          <br />
           Value hub
         </h1>
 
-        <p className="col-start-2 row-start-3 mt-3 font-sans text-sm text-vh-gray-500 md:text-vh-base">
+        <p className="mt-2.5 font-sans text-xs tracking-[-0.6px] text-[#ababab] md:col-start-2 md:row-start-3 md:mt-3 md:text-vh-base md:tracking-normal md:text-vh-gray-500">
           회원 서비스 이용을 위해 로그인 해주세요.
         </p>
       </div>

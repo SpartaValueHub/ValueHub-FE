@@ -254,8 +254,6 @@ export const CHAT_MESSAGES: UiChatMessage[] = [
   { id: "m7", kind: "typing", from: "peer" },
 ];
 
-export const CHAT_DATE_DIVIDER = "07월 31일 금요일";
-
 const WEEKDAY_SHORT = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
 export function formatReservationDate(date: Date): string {

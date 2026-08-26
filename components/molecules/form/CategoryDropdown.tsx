@@ -51,12 +51,22 @@ export function CategoryDropdown({
       trigger={
         <button
           type="button"
-          className="flex w-full items-center justify-between border border-[#d0d0d0] py-2.5 pl-2.5 pr-1 font-sans text-base leading-[1.4]"
+          className="flex w-full min-w-0 items-center justify-between border border-[#d0d0d0] py-2.5 pl-2.5 pr-1 font-sans text-base leading-[1.4]"
         >
-          <span className={selected ? "text-vh-gray-100" : "text-[#ababab]"}>
+          <span
+            className={cn(
+              "min-w-0 truncate",
+              selected ? "text-[#323232]" : "text-[#ababab]"
+            )}
+          >
             {selected?.title ?? placeholder}
           </span>
-          <VhIcon src="/icons/dropdown-chevron.svg" width={22} height={22} />
+          <VhIcon
+            src="/icons/dropdown-chevron.svg"
+            width={22}
+            height={22}
+            className="shrink-0"
+          />
         </button>
       }
     >

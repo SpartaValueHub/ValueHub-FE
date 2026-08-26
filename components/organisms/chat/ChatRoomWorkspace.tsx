@@ -132,6 +132,14 @@ export function ChatRoomWorkspace({
         if (current.some((item) => item.id === incoming.id)) return current;
         return [...current, incoming];
       });
+      if (incoming.kind === "system-reservation") {
+        setPostReserved(true);
+        setListRooms((current) =>
+          current.map((item) =>
+            item.id === roomId ? { ...item, reserved: true } : item
+          )
+        );
+      }
     },
     onListPatch: (patch) => {
       ingestChatListPatch(patch, setListRooms, {
@@ -192,8 +200,12 @@ export function ChatRoomWorkspace({
 
   function handleReservationChange(next: UiReservation | null) {
     const confirmed = next?.status === "CONFIRMED" ? next : null;
+    const reserved = Boolean(confirmed);
     setReservation(confirmed);
-    setPostReserved(Boolean(confirmed));
+    setPostReserved(reserved);
+    setListRooms((rooms) =>
+      rooms.map((item) => (item.id === roomId ? { ...item, reserved } : item))
+    );
   }
 
   function openReserveForm() {
@@ -344,9 +356,14 @@ export function ChatRoomWorkspace({
                 />
               </span>
               <div className="flex min-w-0 flex-col justify-center gap-0.5">
-                <p className="truncate font-sans text-xs tracking-[-0.24px] text-[#323232]">
-                  {room.title}
-                </p>
+                <div className="flex min-w-0 items-center gap-1">
+                  <p className="truncate font-sans text-xs tracking-[-0.24px] text-[#323232]">
+                    {room.title}
+                  </p>
+                  {postReserved ? (
+                    <StatusBadge status="reserved" className="shrink-0" />
+                  ) : null}
+                </div>
                 <p className="font-sans text-sm font-medium text-[#323232]">
                   {room.price.toLocaleString("ko-KR")}
                   <span className="ml-0.5 text-xs">원</span>
@@ -395,11 +412,13 @@ export function ChatRoomWorkspace({
                 room={room}
                 className="flex min-w-0 flex-col gap-1"
               >
-                <div className="flex items-center gap-1">
+                <div className="flex min-w-0 items-center gap-1">
                   <p className="truncate font-sans text-sm text-[#323232]">
                     {room.title}
                   </p>
-                  {postReserved ? <StatusBadge status="reserved" /> : null}
+                  {postReserved ? (
+                    <StatusBadge status="reserved" className="shrink-0" />
+                  ) : null}
                 </div>
                 <p className="font-sans text-lg text-[#323232]">
                   {room.price.toLocaleString("ko-KR")}

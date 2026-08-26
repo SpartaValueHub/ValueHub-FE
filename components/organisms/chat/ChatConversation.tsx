@@ -205,10 +205,11 @@ function MessageBody({
         >
           <span className="pointer-events-none relative h-[120px] w-full overflow-hidden bg-[#d9d9d9]">
             <KakaoMapPicker
+              fill
               interactive={false}
               initialLatitude={message.latitude}
               initialLongitude={message.longitude}
-              className="h-[120px] min-h-[120px] w-full sm:h-[120px] sm:min-h-[120px] sm:w-full sm:size-auto"
+              className="h-full w-full"
             />
           </span>
           <span className="flex items-center gap-1 font-sans text-sm">

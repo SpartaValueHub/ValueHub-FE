@@ -246,7 +246,8 @@ export function TradeReservationPanel({
 
   const confirmCopy: Record<ConfirmKind, { message: string; label: string }> = {
     create: {
-      message: "이 내용으로 거래 예약을 할까요?",
+      message:
+        "이 내용으로 거래 예약을 할까요?\n상품 거래 상태도 예약중으로 바꿀까요?",
       label: "예약하기",
     },
     update: {
@@ -294,13 +295,14 @@ export function TradeReservationPanel({
         <div
           className={cn(
             "relative w-full overflow-hidden bg-[#d9d9d9]",
-            isDialog ? "h-[173px]" : "h-[130px]"
+            isDialog ? "h-[173px] min-h-[173px]" : "h-[130px] min-h-[130px]"
           )}
         >
           {hasKakaoMapAppKey() ? (
             <KakaoMapPicker
               key={`${viewLat}-${viewLng}`}
-              className="h-full min-h-0 w-full sm:size-auto sm:min-h-0"
+              fill
+              className="h-full w-full"
               initialLatitude={viewLat}
               initialLongitude={viewLng}
               interactive={false}
@@ -354,14 +356,21 @@ export function TradeReservationPanel({
     ) : (
       <div className="flex h-full flex-col gap-[30px]">
         <div className="flex flex-col gap-1.5">
-          <h2
-            className={cn(
-              "font-sans text-[#323232]",
-              isDialog && phase === "confirmed" ? "text-base" : "text-xl"
-            )}
-          >
-            {phase === "confirmed" ? "거래가 예약되었습니다." : "거래 예약하기"}
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2
+              className={cn(
+                "font-sans text-[#323232]",
+                isDialog && phase === "confirmed" ? "text-base" : "text-xl"
+              )}
+            >
+              {phase === "confirmed"
+                ? "거래가 예약되었습니다."
+                : "거래 예약하기"}
+            </h2>
+            {phase === "confirmed" && postReserved ? (
+              <StatusBadge status="reserved" className="shrink-0" />
+            ) : null}
+          </div>
           {phase === "form" ? (
             <p className="font-sans text-sm leading-[1.5] text-[#323232] lg:text-base">
               거래 날짜, 시간, 장소를 설정하세요.
@@ -385,7 +394,9 @@ export function TradeReservationPanel({
                 <p className="min-w-0 flex-1 font-sans text-sm text-[#323232]">
                   {product.title}
                 </p>
-                {postReserved ? <StatusBadge status="reserved" /> : null}
+                {postReserved ? (
+                  <StatusBadge status="reserved" className="shrink-0" />
+                ) : null}
               </div>
               <p className="font-sans text-lg font-medium text-[#323232]">
                 {product.price.toLocaleString("ko-KR")}

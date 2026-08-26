@@ -9,8 +9,10 @@ import {
   createChatImagePresignedUrlAction,
   listOlderChatMessagesAction,
 } from "@/actions/chat";
+import { getReservationByChatRoomAction } from "@/actions/reservations";
 import { ingestChatListPatch } from "@/hooks/chat/ingestChatListPatch";
 import { useChatRoomSocket } from "@/hooks/chat/useChatRoomSocket";
+import { alignReservationMessage } from "@/lib/chat/map-message";
 import { putChatImageToS3 } from "@/lib/chat/put-image-s3";
 import { logSafeError } from "@/lib/log/safe-log";
 
@@ -67,6 +69,39 @@ function ProductPostLink({
   );
 }
 
+const RESERVATION_SYNC_DELAYS_MS = [0, 400, 1000];
+
+function wait(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function syncReservationPanel(
+  roomId: string,
+  productPostUuid: string | undefined,
+  apply: (next: UiReservation | null) => void
+) {
+  let last: UiReservation | null = null;
+  for (const delay of RESERVATION_SYNC_DELAYS_MS) {
+    if (delay) await wait(delay);
+    const result = await getReservationByChatRoomAction(
+      roomId,
+      productPostUuid
+    );
+    if (!result.ok) {
+      logSafeError("Reservation panel sync failed:", result.message);
+      return;
+    }
+    last = result.data;
+    if (last?.status === "CONFIRMED") {
+      apply(last);
+      return;
+    }
+  }
+  apply(last);
+}
+
 const MORE_MENU_ITEMS: {
   icon: SystemIconName;
   label: string;
@@ -116,7 +151,11 @@ export function ChatRoomWorkspace({
 }: ChatRoomWorkspaceProps) {
   const router = useRouter();
   const [listRooms, setListRooms] = useState(rooms);
-  const [messages, setMessages] = useState(initialMessages);
+  const [messages, setMessages] = useState(() =>
+    initialMessages.map((item) =>
+      alignReservationMessage(item, canManageReservation)
+    )
+  );
   const [hasMoreMessages, setHasMoreMessages] = useState(
     initialHasMoreMessages
   );
@@ -124,22 +163,42 @@ export function ChatRoomWorkspace({
   const loadingOlderRef = useRef(false);
   const requestedBeforeRef = useRef<string | null>(null);
   const listFetchRef = useRef(new Set<string>());
+  const [reservation, setReservation] = useState<UiReservation | null>(() =>
+    initialReservation?.status === "CONFIRMED" ? initialReservation : null
+  );
+  const [postReserved, setPostReserved] = useState(
+    () =>
+      initialReservation?.status === "CONFIRMED" ||
+      Boolean(rooms.find((item) => item.id === roomId)?.reserved)
+  );
+
+  function handleReservationChange(next: UiReservation | null) {
+    const confirmed = next?.status === "CONFIRMED" ? next : null;
+    const reserved = Boolean(confirmed);
+    setReservation(confirmed);
+    setPostReserved(reserved);
+    setListRooms((current) =>
+      current.map((item) => (item.id === roomId ? { ...item, reserved } : item))
+    );
+  }
 
   const { publishText, publishLocation, publishImage } = useChatRoomSocket({
     roomId,
     onMessage: (incoming) => {
+      const mapped = alignReservationMessage(incoming, canManageReservation);
       setMessages((current) => {
-        if (current.some((item) => item.id === incoming.id)) return current;
-        return [...current, incoming];
+        if (current.some((item) => item.id === mapped.id)) return current;
+        return [...current, mapped];
       });
-      if (incoming.kind === "system-reservation") {
-        setPostReserved(true);
-        setListRooms((current) =>
-          current.map((item) =>
-            item.id === roomId ? { ...item, reserved: true } : item
-          )
-        );
-      }
+      if (mapped.kind !== "system-reservation") return;
+      const productPostUuid =
+        listRooms.find((item) => item.id === roomId)?.productPostUuid ??
+        rooms.find((item) => item.id === roomId)?.productPostUuid;
+      void syncReservationPanel(
+        roomId,
+        productPostUuid,
+        handleReservationChange
+      );
     },
     onListPatch: (patch) => {
       ingestChatListPatch(patch, setListRooms, {
@@ -154,14 +213,6 @@ export function ChatRoomWorkspace({
       }
     },
   });
-  const [reservation, setReservation] = useState<UiReservation | null>(() =>
-    initialReservation?.status === "CONFIRMED" ? initialReservation : null
-  );
-  const [postReserved, setPostReserved] = useState(
-    () =>
-      initialReservation?.status === "CONFIRMED" ||
-      Boolean(rooms.find((item) => item.id === roomId)?.reserved)
-  );
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [desktopMoreOpen, setDesktopMoreOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -196,22 +247,17 @@ export function ChatRoomWorkspace({
         requestedBeforeRef.current = null;
         return;
       }
-      setMessages((current) => [...result.data.messages, ...current]);
+      setMessages((current) => [
+        ...result.data.messages.map((item) =>
+          alignReservationMessage(item, canManageReservation)
+        ),
+        ...current,
+      ]);
       setHasMoreMessages(result.data.hasMore);
     } finally {
       loadingOlderRef.current = false;
       setLoadingOlder(false);
     }
-  }
-
-  function handleReservationChange(next: UiReservation | null) {
-    const confirmed = next?.status === "CONFIRMED" ? next : null;
-    const reserved = Boolean(confirmed);
-    setReservation(confirmed);
-    setPostReserved(reserved);
-    setListRooms((rooms) =>
-      rooms.map((item) => (item.id === roomId ? { ...item, reserved } : item))
-    );
   }
 
   function openReserveForm() {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { Icon } from "@/components/atoms/icons";
 import { Spinner } from "@/components/atoms/spinner";
@@ -13,7 +13,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/molecules/overlay/Dialog";
-import { CHAT_DATE_DIVIDER } from "@/constants/chat-page";
+import { formatChatDateLabel, isSameChatDay } from "@/lib/chat/map-message";
 import { cn } from "@/lib/utils";
 import type { UiChatMessage } from "@/types/chat/ui";
 
@@ -307,42 +307,81 @@ export function ChatConversation({
               <Spinner size="sm" label="이전 메시지" inline />
             </div>
           ) : null}
-          <ChatDateDivider label={CHAT_DATE_DIVIDER} />
           {messages.map((message, index) => {
+            const prev = messages[index - 1];
+            const dateLabel =
+              message.createdAt &&
+              (!prev || !isSameChatDay(prev.createdAt, message.createdAt))
+                ? formatChatDateLabel(message.createdAt)
+                : "";
+            const dateDivider = dateLabel ? (
+              <ChatDateDivider label={dateLabel} />
+            ) : null;
+
             if (
               message.kind === "system-reservation" &&
               message.reservationSummary
             ) {
-              return (
+              const notice = (
                 <ChatReservationNotice
-                  key={message.id}
+                  from={message.from}
                   dateLine={message.reservationSummary.dateLine}
                   timePlaceLine={message.reservationSummary.timePlaceLine}
                   time={message.time}
                   onViewDetails={onViewReservation}
                 />
               );
+              if (message.from === "peer") {
+                return (
+                  <Fragment key={message.id}>
+                    {dateDivider}
+                    <div className="flex items-start gap-2.5 lg:gap-3.5">
+                      <PeerAvatar
+                        src={peerImageUrl}
+                        name={peerName}
+                        onClick={onPeerProfileClick}
+                      />
+                      <div className="flex min-w-0 flex-col gap-3.5">
+                        <PeerName
+                          name={peerName}
+                          onClick={onPeerProfileClick}
+                        />
+                        {notice}
+                      </div>
+                    </div>
+                  </Fragment>
+                );
+              }
+              return (
+                <Fragment key={message.id}>
+                  {dateDivider}
+                  {notice}
+                </Fragment>
+              );
             }
 
             if (message.kind === "typing") {
               return (
-                <div key={message.id} className="flex items-start gap-2.5">
-                  <PeerAvatar
-                    src={peerImageUrl}
-                    name={peerName}
-                    onClick={onPeerProfileClick}
-                  />
-                  <div className="flex flex-col gap-2.5">
-                    <PeerName name={peerName} onClick={onPeerProfileClick} />
-                    <div className="flex h-[39px] items-center justify-center rounded-[10px] bg-[rgba(134,134,134,0.1)] px-4">
-                      <span className="flex gap-1">
-                        <span className="size-1.5 rounded-full bg-[#868686]" />
-                        <span className="size-1.5 rounded-full bg-[#868686]" />
-                        <span className="size-1.5 rounded-full bg-[#868686]" />
-                      </span>
+                <Fragment key={message.id}>
+                  {dateDivider}
+                  <div className="flex items-start gap-2.5">
+                    <PeerAvatar
+                      src={peerImageUrl}
+                      name={peerName}
+                      onClick={onPeerProfileClick}
+                    />
+                    <div className="flex flex-col gap-2.5">
+                      <PeerName name={peerName} onClick={onPeerProfileClick} />
+                      <div className="flex h-[39px] items-center justify-center rounded-[10px] bg-[rgba(134,134,134,0.1)] px-4">
+                        <span className="flex gap-1">
+                          <span className="size-1.5 rounded-full bg-[#868686]" />
+                          <span className="size-1.5 rounded-full bg-[#868686]" />
+                          <span className="size-1.5 rounded-full bg-[#868686]" />
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </Fragment>
               );
             }
 
@@ -361,35 +400,43 @@ export function ChatConversation({
             if (message.from === "peer") {
               const showMeta = shouldShowPeerMeta(messages, index);
               return (
-                <div
-                  key={message.id}
-                  className="flex items-start gap-2.5 lg:gap-3.5"
-                >
-                  <span
-                    className={cn(
-                      PEER_AVATAR_SIZE_CLASS,
-                      "overflow-hidden",
-                      !showMeta && "invisible"
-                    )}
-                    aria-hidden={!showMeta}
-                  >
-                    <PeerAvatar
-                      src={peerImageUrl}
-                      name={peerName}
-                      onClick={showMeta ? onPeerProfileClick : undefined}
-                    />
-                  </span>
-                  <div className="flex min-w-0 flex-col gap-3.5">
-                    {showMeta ? (
-                      <PeerName name={peerName} onClick={onPeerProfileClick} />
-                    ) : null}
-                    {body}
+                <Fragment key={message.id}>
+                  {dateDivider}
+                  <div className="flex items-start gap-2.5 lg:gap-3.5">
+                    <span
+                      className={cn(
+                        PEER_AVATAR_SIZE_CLASS,
+                        "overflow-hidden",
+                        !showMeta && "invisible"
+                      )}
+                      aria-hidden={!showMeta}
+                    >
+                      <PeerAvatar
+                        src={peerImageUrl}
+                        name={peerName}
+                        onClick={showMeta ? onPeerProfileClick : undefined}
+                      />
+                    </span>
+                    <div className="flex min-w-0 flex-col gap-3.5">
+                      {showMeta ? (
+                        <PeerName
+                          name={peerName}
+                          onClick={onPeerProfileClick}
+                        />
+                      ) : null}
+                      {body}
+                    </div>
                   </div>
-                </div>
+                </Fragment>
               );
             }
 
-            return <div key={message.id}>{body}</div>;
+            return (
+              <Fragment key={message.id}>
+                {dateDivider}
+                <div>{body}</div>
+              </Fragment>
+            );
           })}
         </div>
       </div>

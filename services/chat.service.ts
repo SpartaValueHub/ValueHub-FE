@@ -18,11 +18,13 @@ import { formatListedAt } from "@/lib/format-listed-at";
 import { getMemberPublicProfileService } from "@/services/member.service";
 import { getProductPostDetailService } from "@/services/product-posts.service";
 import type {
+  ApiChatProductPostStatus,
   ApiChatRoomDetail,
   ApiChatRoomListItem,
   ApiChatTradeStatus,
   ApiCreateChatRoomResponse,
 } from "@/types/chat/api";
+import type { ProductPostStatus } from "@/types/product-posts/ui";
 import {
   CHAT_MESSAGE_PAGE_SIZE,
   type UiChatImagePresigned,
@@ -47,6 +49,13 @@ function mapCreatedChatRoom(api: ApiCreateChatRoomResponse): UiCreatedChatRoom {
 function toTradeStatus(value: string): ApiChatTradeStatus {
   if (value === "RESERVED" || value === "SOLD_OUT") return value;
   return "SELLING";
+}
+
+function toProductPostStatus(
+  value: ProductPostStatus | string
+): ApiChatProductPostStatus {
+  if (value === "HIDDEN" || value === "DELETED") return value;
+  return "PUBLIC";
 }
 
 export function mapChatRoomDetail(api: ApiChatRoomDetail): UiChatRoom {
@@ -127,6 +136,7 @@ export async function createChatRoomService(input: {
     productPostName: post.name,
     price: post.price,
     tradeStatus: toTradeStatus(post.tradeStatus),
+    productPostStatus: toProductPostStatus(post.productPostStatus),
     sellerNickname,
   });
 

@@ -18,6 +18,7 @@ export interface UiProductPostDocument {
 
 export type ConditionGrade = "S" | "A" | "B" | "C";
 export type TradeStatus = "SELLING" | "RESERVED" | "SOLD_OUT";
+export type ProductPostStatus = "PUBLIC" | "HIDDEN" | "DELETED";
 
 export interface UiProductPostDetail {
   productPostUuid: string;
@@ -28,6 +29,8 @@ export interface UiProductPostDetail {
   price: number;
   description: string;
   tradeStatus: TradeStatus;
+  /** Product-Post 노출 상태 — 채팅방 생성 스냅샷 전달용 */
+  productPostStatus: ProductPostStatus;
   latitude: number | null;
   longitude: number | null;
   placeName: string | null;

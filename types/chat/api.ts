@@ -5,6 +5,9 @@
 
 export type ApiChatTradeStatus = "SELLING" | "RESERVED" | "SOLD_OUT";
 
+/** Product-Post 노출 상태 — 방 생성 스냅샷 */
+export type ApiChatProductPostStatus = "PUBLIC" | "HIDDEN" | "DELETED";
+
 export type ApiChatMessageType = "TEXT" | "IMAGE" | "LOCATION" | "RESERVATION";
 
 export interface ApiCreateChatRoomRequest {
@@ -14,6 +17,7 @@ export interface ApiCreateChatRoomRequest {
   productPostName: string;
   price: number;
   tradeStatus: ApiChatTradeStatus;
+  productPostStatus: ApiChatProductPostStatus;
   sellerNickname: string;
 }
 

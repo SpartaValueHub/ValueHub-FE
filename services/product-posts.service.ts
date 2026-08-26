@@ -62,6 +62,7 @@ export function mapProductPostDetail(
     price: api.price,
     description: api.description,
     tradeStatus: api.tradeStatus,
+    productPostStatus: api.productPostStatus,
     latitude: api.latitude,
     longitude: api.longitude,
     placeName: api.placeName,

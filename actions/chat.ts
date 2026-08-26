@@ -8,13 +8,21 @@ import { ApiError, ApiTimeoutError } from "@/lib/api/client";
 import { mapActionError } from "@/lib/auth/map-action-error";
 import { requireActionAuth } from "@/lib/session";
 import {
+  createChatImagePresignedUrlService,
   createChatRoomService,
+  getChatRoomService,
   getChatUnreadCountService,
   listChatMessagesService,
 } from "@/services/chat.service";
 import { createChatRoomInputSchema } from "@/types/chat/create";
+import { chatImagePresignedInputSchema } from "@/types/chat/images";
 import { listOlderChatMessagesInputSchema } from "@/types/chat/messages";
-import type { UiChatMessagePage, UiCreatedChatRoom } from "@/types/chat/ui";
+import type {
+  UiChatImagePresigned,
+  UiChatMessagePage,
+  UiChatRoom,
+  UiCreatedChatRoom,
+} from "@/types/chat/ui";
 
 export type ChatActionResult<T> =
   { ok: true; data: T } | { ok: false; message: string; code?: string };
@@ -88,6 +96,53 @@ export async function getChatUnreadCountAction(): Promise<
     return mapActionError(
       e,
       toErrorMessage(e, "미읽음 수를 불러오지 못했습니다.")
+    );
+  }
+}
+
+export async function createChatImagePresignedUrlAction(
+  input: unknown
+): Promise<ChatActionResult<UiChatImagePresigned>> {
+  const parsed = chatImagePresignedInputSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message:
+        parsed.error.issues[0]?.message ?? "이미지 정보가 올바르지 않습니다.",
+    };
+  }
+
+  try {
+    await requireActionAuth();
+    const data = await createChatImagePresignedUrlService(parsed.data.roomId, {
+      contentType: parsed.data.contentType,
+      fileSize: parsed.data.fileSize,
+    });
+    return { ok: true, data };
+  } catch (e) {
+    return mapActionError(
+      e,
+      toErrorMessage(e, "이미지 업로드 주소를 받지 못했습니다.")
+    );
+  }
+}
+
+export async function getChatRoomAction(
+  roomId: string
+): Promise<ChatActionResult<UiChatRoom>> {
+  const id = roomId.trim();
+  if (!id) {
+    return { ok: false, message: "채팅방 정보가 올바르지 않습니다." };
+  }
+
+  try {
+    await requireActionAuth();
+    const data = await getChatRoomService(id);
+    return { ok: true, data };
+  } catch (e) {
+    return mapActionError(
+      e,
+      toErrorMessage(e, "채팅방을 불러오지 못했습니다.")
     );
   }
 }

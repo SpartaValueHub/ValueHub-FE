@@ -15,9 +15,7 @@ interface ProductPostGridProps {
   className?: string;
 }
 
-function toFeedStatus(
-  status: TradeStatus
-): "reserved" | "sold" | undefined {
+function toFeedStatus(status: TradeStatus): "reserved" | "sold" | undefined {
   if (status === "RESERVED") return "reserved";
   if (status === "SOLD_OUT") return "sold";
   return undefined;
@@ -27,11 +25,11 @@ function CardLink({ item }: { item: UiProductPostCard }) {
   return (
     <Link
       href={`${PRODUCT_POSTS_PATH}/${item.productPostUuid}`}
-      className="min-w-0"
+      className="min-w-0 w-full max-w-[175px] md:max-w-[230px]"
     >
       <FeedPostCard
-        className="w-full max-w-[230px]"
-        imageClassName="h-[200px] md:h-[280px]"
+        className="w-full gap-4 md:gap-4"
+        imageClassName="h-[213px] md:h-[280px]"
         name={item.name}
         image={item.thumbnailUrl}
         price={item.price}
@@ -62,15 +60,15 @@ export function ProductPostGrid({
   const tail = banner ? items.slice(bannerAfter) : [];
 
   return (
-    <div className={cn("flex flex-col gap-8", className)}>
-      <div className="grid grid-cols-2 gap-x-[30px] gap-y-10 md:grid-cols-4">
+    <div className={cn("flex flex-col gap-3.5 md:gap-8", className)}>
+      <div className="grid grid-cols-2 justify-items-center gap-x-1.5 gap-y-3.5 md:grid-cols-4 md:gap-x-[30px] md:gap-y-10">
         {head.map((item) => (
           <CardLink key={item.productPostUuid} item={item} />
         ))}
       </div>
       {banner ? banner : null}
       {tail.length > 0 ? (
-        <div className="grid grid-cols-2 gap-x-[30px] gap-y-10 md:grid-cols-4">
+        <div className="grid grid-cols-2 justify-items-center gap-x-1.5 gap-y-3.5 md:grid-cols-4 md:gap-x-[30px] md:gap-y-10">
           {tail.map((item) => (
             <CardLink key={item.productPostUuid} item={item} />
           ))}

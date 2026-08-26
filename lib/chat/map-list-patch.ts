@@ -2,6 +2,8 @@ import { formatListedAt } from "@/lib/format-listed-at";
 import type { ApiChatListPatch } from "@/types/chat/api";
 import type { UiChatRoom } from "@/types/chat/ui";
 
+const PRODUCT_THUMBNAIL_FALLBACK = "/main/products/product-1.png";
+
 function lastMessageFromPatch(patch: ApiChatListPatch): {
   text?: string;
   at?: string;
@@ -25,6 +27,21 @@ function lastMessageFromPatch(patch: ApiChatListPatch): {
   };
 }
 
+function unreadFromPatch(
+  patch: ApiChatListPatch,
+  fallback: number,
+  activeRoomId?: string
+) {
+  if (activeRoomId === patch.roomId) return 0;
+  if (
+    typeof patch.unreadCount === "number" &&
+    Number.isFinite(patch.unreadCount)
+  ) {
+    return Math.max(0, patch.unreadCount);
+  }
+  return fallback;
+}
+
 export function parseChatListPatch(raw: string): ApiChatListPatch | null {
   try {
     const body = JSON.parse(raw) as ApiChatListPatch & {
@@ -43,31 +60,89 @@ export function parseChatListPatch(raw: string): ApiChatListPatch | null {
   }
 }
 
+/** 패치에 상품 스냅샷이 있으면 GET 없이 제목·썸네일까지 채울 수 있다 */
+export function canInsertChatListPatch(patch: ApiChatListPatch): boolean {
+  const post = patch.productPost;
+  return Boolean(
+    post?.productPostName?.trim() ||
+    post?.productPostUuid?.trim() ||
+    post?.productPostImageUrl?.trim()
+  );
+}
+
+export function needsChatRoomHydrate(
+  rooms: UiChatRoom[],
+  patch: ApiChatListPatch
+): boolean {
+  if (canInsertChatListPatch(patch)) return false;
+  const room = rooms.find((item) => item.id === patch.roomId);
+  if (!room) return true;
+  return !room.title?.trim() && !room.productPostUuid;
+}
+
+/** @deprecated needsChatRoomHydrate */
+export function needsChatRoomFetch(
+  rooms: UiChatRoom[],
+  patch: ApiChatListPatch
+): boolean {
+  return needsChatRoomHydrate(rooms, patch);
+}
+
+export function mergeRoomWithListPatch(
+  room: UiChatRoom,
+  patch: ApiChatListPatch,
+  options: { activeRoomId?: string } = {}
+): UiChatRoom {
+  const { text, at } = lastMessageFromPatch(patch);
+  return {
+    ...room,
+    lastMessage: text ?? room.lastMessage,
+    unreadCount: unreadFromPatch(patch, room.unreadCount, options.activeRoomId),
+    timeAgo: (at ? formatListedAt(at) : "") || room.timeAgo || "방금 전",
+  };
+}
+
+function roomFromChatListPatch(
+  patch: ApiChatListPatch,
+  options: { activeRoomId?: string } = {}
+): UiChatRoom {
+  const post = patch.productPost;
+  const { text, at } = lastMessageFromPatch(patch);
+  const counterpart = patch.counterpart;
+  const nickname =
+    counterpart && "nickname" in counterpart
+      ? (counterpart.nickname?.trim() ?? "")
+      : "";
+
+  return {
+    id: patch.roomId,
+    title: post?.productPostName?.trim() ?? "",
+    thumbnail: post?.productPostImageUrl?.trim() || PRODUCT_THUMBNAIL_FALLBACK,
+    timeAgo: (at ? formatListedAt(at) : "") || "방금 전",
+    unreadCount: unreadFromPatch(patch, 1, options.activeRoomId),
+    peerName: nickname,
+    peerMemberUuid: counterpart?.memberUuid?.trim() || undefined,
+    productPostUuid: post?.productPostUuid?.trim() || undefined,
+    price: post?.price ?? 0,
+    location: "",
+    lastMessage: text,
+    reserved: post?.tradeStatus === "RESERVED",
+  };
+}
+
 export function applyChatListPatch(
   rooms: UiChatRoom[],
   patch: ApiChatListPatch,
   options: { activeRoomId?: string } = {}
 ): UiChatRoom[] {
   const index = rooms.findIndex((room) => room.id === patch.roomId);
-  if (index < 0) return rooms;
+  if (index >= 0) {
+    const current = rooms[index];
+    if (!current) return rooms;
+    const next = mergeRoomWithListPatch(current, patch, options);
+    const rest = rooms.filter((_, i) => i !== index);
+    return [next, ...rest];
+  }
 
-  const current = rooms[index];
-  const { text, at } = lastMessageFromPatch(patch);
-  const viewing = options.activeRoomId === patch.roomId;
-  const unreadCount = viewing
-    ? 0
-    : typeof patch.unreadCount === "number" &&
-        Number.isFinite(patch.unreadCount)
-      ? Math.max(0, patch.unreadCount)
-      : current.unreadCount;
-
-  const next: UiChatRoom = {
-    ...current,
-    lastMessage: text ?? current.lastMessage,
-    unreadCount,
-    timeAgo: (at ? formatListedAt(at) : "") || current.timeAgo,
-  };
-
-  const rest = rooms.filter((_, i) => i !== index);
-  return [next, ...rest];
+  return [roomFromChatListPatch(patch, options), ...rooms];
 }

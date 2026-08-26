@@ -6,6 +6,8 @@ export type UiChatRoom = {
   unreadCount: number;
   peerName: string;
   peerImageUrl?: string | null;
+  /** GET /rooms/{id} counterpart — 프로필 모달 */
+  peerMemberUuid?: string;
   productPostUuid?: string;
   price: number;
   location: string;
@@ -48,6 +50,12 @@ export const CHAT_MESSAGE_PAGE_SIZE = 50;
 export type UiChatMessagePage = {
   messages: UiChatMessage[];
   hasMore: boolean;
+};
+
+/** presign 응답 — 브라우저가 S3에 PUT한 뒤 STOMP content에 s3Key */
+export type UiChatImagePresigned = {
+  uploadUrl: string;
+  s3Key: string;
 };
 
 export type UiTradeReservation = {

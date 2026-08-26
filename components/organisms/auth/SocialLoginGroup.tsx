@@ -42,25 +42,29 @@ interface SocialLoginGroupProps {
 /** 소셜 로그인 UI — OAuth BE 미연동 */
 export function SocialLoginGroup({ className }: SocialLoginGroupProps) {
   return (
-    <div className={cn("flex gap-3", className)}>
+    <div className={cn("flex gap-5 md:gap-3", className)}>
       <Button
         type="button"
         variant="brand"
-        className="h-11 flex-1 rounded-sm gap-2"
+        className="h-auto flex-1 gap-2 rounded-sm border-[#d0d0d0] px-[30px] py-4 text-sm md:h-11 md:border-[#868686] md:px-8 md:py-0 md:text-base"
         disabled
         title="준비 중"
       >
-        <GoogleIcon />
+        <span className="hidden md:inline-flex">
+          <GoogleIcon />
+        </span>
         구글 로그인
       </Button>
       <Button
         type="button"
         variant="brand"
-        className="h-11 flex-1 rounded-sm gap-2"
+        className="h-auto flex-1 gap-2 rounded-sm border-[#d0d0d0] px-[30px] py-4 text-sm md:h-11 md:border-[#868686] md:px-8 md:py-0 md:text-base"
         disabled
         title="준비 중"
       >
-        <KakaoIcon />
+        <span className="hidden md:inline-flex">
+          <KakaoIcon />
+        </span>
         카카오 로그인
       </Button>
     </div>

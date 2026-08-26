@@ -7,6 +7,10 @@ export type UiLocationSelection = {
   placeName: string;
   latitude: number;
   longitude: number;
+  /** 거래 희망 동 — 지도 픽 시 채움, placeName만 수정해도 유지 */
+  regionDong?: string | null;
+  /** 거래 희망 구 — 지도 픽 시 채움 */
+  regionGu?: string | null;
 };
 
 export type KakaoMapsLoadStatus =
@@ -73,7 +77,12 @@ export type KakaoMapsNamespace = {
           lat: number,
           callback: (
             result: Array<{
-              address?: { address_name?: string };
+              address?: {
+                address_name?: string;
+                region_2depth_name?: string;
+                region_3depth_name?: string;
+                region_4depth_name?: string;
+              };
               road_address?: {
                 address_name?: string;
                 building_name?: string;

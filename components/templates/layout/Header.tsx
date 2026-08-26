@@ -39,6 +39,8 @@ export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const isHome = pathname === "/";
   const isDetail = isProductSubPath(pathname);
+  /** Figma product_list 모바일 헤더는 햄버거·로고·검색만 (대분류 내비 없음) */
+  const isProductList = pathname === PRODUCT_POSTS_PATH;
   const activeCategoryId =
     pathname === PRODUCT_POSTS_PATH
       ? headerCategoryNavIdFromUuid(searchParams.get("category"))
@@ -55,7 +57,11 @@ export function Header() {
         <div
           className={cn(
             "relative mx-auto flex w-full max-w-[1440px] flex-col px-5 md:px-10",
-            isDetail ? "gap-0 py-2.5 md:gap-5 md:py-5" : "gap-5 py-5"
+            isDetail
+              ? "gap-0 py-2.5 md:gap-5 md:py-5"
+              : isProductList
+                ? "gap-0 py-2.5 md:gap-5 md:py-5"
+                : "gap-5 py-5"
           )}
         >
           {/* 모바일 상세 — 뒤로가기 | Value hub (돋보기 없음, 균형용 spacer) */}
@@ -133,7 +139,12 @@ export function Header() {
           </div>
 
           {!searchOpen && !isDetail ? (
-            <div className="flex items-center justify-between gap-4">
+            <div
+              className={cn(
+                "items-center justify-between gap-4",
+                isProductList ? "hidden md:flex" : "flex"
+              )}
+            >
               <HeaderCategoryNav
                 activeId={activeCategoryId}
                 size="sm"

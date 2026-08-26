@@ -5,22 +5,29 @@ import { useCallback, useState } from "react";
 
 import { Icon } from "@/components/atoms/icons";
 import { cn } from "@/lib/utils";
-import type { UiProductPostImage } from "@/types/product-posts/ui";
+
+export type ProductSliderSlide = {
+  id: string;
+  url: string;
+  /** 서류 슬라이드 라벨 (영수증·보증서·감정서) — 상품 이미지는 생략 */
+  label?: string | null;
+};
 
 interface ProductImageSliderProps {
-  images: UiProductPostImage[];
+  slides: ProductSliderSlide[];
   productName: string;
   className?: string;
 }
 
 /** Figma product_detail thumbnail — 정사각 + 좌우 화살표 + 하단 인디케이터 */
 export function ProductImageSlider({
-  images,
+  slides,
   productName,
   className,
 }: ProductImageSliderProps) {
   const [current, setCurrent] = useState(0);
-  const total = images.length;
+  const total = slides.length;
+  const active = slides[current];
 
   const prev = useCallback(
     () => setCurrent((i) => (i <= 0 ? total - 1 : i - 1)),
@@ -51,17 +58,21 @@ export function ProductImageSlider({
         className
       )}
     >
-      {images.map((img, idx) => (
+      {slides.map((slide, idx) => (
         <div
-          key={img.uuid}
+          key={slide.id}
           className={cn(
             "absolute inset-0 transition-opacity duration-300",
             idx === current ? "opacity-100" : "pointer-events-none opacity-0"
           )}
         >
           <Image
-            src={img.url}
-            alt={`${productName} ${idx + 1}`}
+            src={slide.url}
+            alt={
+              slide.label
+                ? `${productName} ${slide.label}`
+                : `${productName} ${idx + 1}`
+            }
             fill
             unoptimized
             className="object-cover"
@@ -70,6 +81,12 @@ export function ProductImageSlider({
           />
         </div>
       ))}
+
+      {active?.label ? (
+        <span className="absolute left-2.5 top-2.5 z-10 rounded-[3px] bg-[rgba(50,50,50,0.65)] px-2 py-1 font-sans text-xs tracking-[-0.24px] text-white md:text-sm">
+          {active.label}
+        </span>
+      ) : null}
 
       {total > 1 ? (
         <>

@@ -5,6 +5,9 @@
 
 export type ApiChatTradeStatus = "SELLING" | "RESERVED" | "SOLD_OUT";
 
+/** Product-Post 노출 상태 — 방 생성 스냅샷 */
+export type ApiChatProductPostStatus = "PUBLIC" | "HIDDEN" | "DELETED";
+
 export type ApiChatMessageType = "TEXT" | "IMAGE" | "LOCATION" | "RESERVATION";
 
 export interface ApiCreateChatRoomRequest {
@@ -14,6 +17,7 @@ export interface ApiCreateChatRoomRequest {
   productPostName: string;
   price: number;
   tradeStatus: ApiChatTradeStatus;
+  productPostStatus: ApiChatProductPostStatus;
   sellerNickname: string;
 }
 
@@ -83,7 +87,7 @@ export interface ApiChatRoomList {
   rooms: ApiChatRoomListItem[];
 }
 
-/** STOMP /user/queue/chat-list — 목록 한 줄 패치 */
+/** STOMP /user/queue/chat-list — 목록 한 줄 패치. 새 방은 productPost가 오면 insert */
 export interface ApiChatListPatch {
   roomId: string;
   lastMessage?: ApiChatRoomListLastMessage | string | null;
@@ -91,11 +95,26 @@ export interface ApiChatListPatch {
   updatedAt?: string;
   content?: string;
   createdAt?: string;
+  productPost?: ApiChatRoomListProduct | null;
+  counterpart?: ApiChatCounterpart | ApiChatRoomDetailCounterpart | null;
 }
 
 /** GET /api/v1/chat/unread-count */
 export interface ApiChatUnreadCount {
   totalUnreadCount: number;
+}
+
+/** POST /rooms/{id}/images/presigned-url */
+export interface ApiChatImagePresignedRequest {
+  contentType: string;
+  fileSize: number;
+}
+
+export interface ApiChatImagePresignedResponse {
+  uploadUrl: string;
+  s3Key?: string;
+  key?: string;
+  objectKey?: string;
 }
 
 export interface ApiChatMessageMetadata {

@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import { Icon } from "@/components/atoms/icons";
 import { cn } from "@/lib/utils";
 import type { UiChatReservationCard } from "@/types/chat/ui";
 
@@ -22,15 +21,9 @@ export function ChatReservationCard({
         className
       )}
     >
-      <span className="flex items-center justify-between bg-[#f2ca7b] py-1.5 pr-1 pl-2.5">
+      <span className="flex min-w-0 items-center bg-[#f2ca7b] py-1.5 pr-2.5 pl-2.5">
         <span className="min-w-0 truncate font-sans text-xs text-[#323232] lg:text-sm">
           {reservation.title}
-        </span>
-        <span
-          className="flex size-[17px] shrink-0 items-center justify-center text-[#323232]"
-          aria-hidden
-        >
-          <Icon name="more" size={17} />
         </span>
       </span>
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import Image from "next/image";
 
 import { Icon } from "@/components/atoms/icons";
 import { Spinner } from "@/components/atoms/spinner";
@@ -15,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/molecules/overlay/Dialog";
 import { CHAT_DATE_DIVIDER } from "@/constants/chat-page";
+import { cn } from "@/lib/utils";
 import type { UiChatMessage } from "@/types/chat/ui";
 
 type MediaViewer =
@@ -34,18 +34,79 @@ interface ChatConversationProps {
   loadingOlder?: boolean;
   onLoadOlder?: () => void;
   onViewReservation?: () => void;
+  onPeerProfileClick?: () => void;
 }
 
-function PeerAvatar({ src }: { src?: string | null }) {
-  if (src) {
+const PEER_AVATAR_SIZE_CLASS = "block size-[35px] shrink-0 lg:size-9";
+
+function PeerAvatar({
+  src,
+  name,
+  onClick,
+}: {
+  src?: string | null;
+  name: string;
+  onClick?: () => void;
+}) {
+  const trimmedSrc = src?.trim() ?? "";
+  const [failedSrc, setFailedSrc] = useState("");
+  const showImage = Boolean(trimmedSrc) && failedSrc !== trimmedSrc;
+  const initial = name.trim().slice(0, 1);
+
+  const avatar = (
+    <span
+      className={cn(
+        PEER_AVATAR_SIZE_CLASS,
+        "flex items-center justify-center overflow-hidden rounded-full bg-[#d0d0d0] font-sans text-[10px] text-[#323232] lg:text-xs"
+      )}
+    >
+      {showImage ? (
+        // eslint-disable-next-line @next/next/no-img-element -- 멤버 프로필 CDN
+        <img
+          src={trimmedSrc}
+          alt=""
+          className="size-full object-cover"
+          onError={() => setFailedSrc(trimmedSrc)}
+        />
+      ) : initial ? (
+        initial
+      ) : (
+        <Icon name="user" size={16} className="opacity-70" />
+      )}
+    </span>
+  );
+
+  if (!onClick) return avatar;
+
+  return (
+    <button
+      type="button"
+      aria-label={`${name} 프로필`}
+      className={cn("overflow-hidden p-0 leading-none", PEER_AVATAR_SIZE_CLASS)}
+      onClick={onClick}
+    >
+      {avatar}
+    </button>
+  );
+}
+
+function PeerName({ name, onClick }: { name: string; onClick?: () => void }) {
+  if (!onClick) {
     return (
-      <span className="relative size-[35px] shrink-0 overflow-hidden rounded-full bg-[#d0d0d0] lg:size-9">
-        <Image src={src} alt="" fill sizes="36px" className="object-cover" />
-      </span>
+      <p className="font-sans text-[13px] text-[#323232] lg:text-base">
+        {name}
+      </p>
     );
   }
   return (
-    <span className="size-[35px] shrink-0 rounded-full bg-[#d0d0d0] lg:size-9" />
+    <button
+      type="button"
+      aria-label={`${name} 프로필`}
+      className="w-fit text-left font-sans text-[13px] text-[#323232] lg:text-base"
+      onClick={onClick}
+    >
+      {name}
+    </button>
   );
 }
 
@@ -77,12 +138,28 @@ function shouldShowPeerMeta(messages: UiChatMessage[], index: number) {
   return true;
 }
 
+/** 같은 사람·1분 묶음의 마지막 말풍선에만 시각 표시 */
+function shouldShowMessageTime(messages: UiChatMessage[], index: number) {
+  const current = messages[index];
+  if (!isChatBubble(current)) return false;
+
+  for (let i = index + 1; i < messages.length; i += 1) {
+    const next = messages[i];
+    if (!isChatBubble(next)) continue;
+    if (next.from !== current.from) return true;
+    return !isWithinOneMinute(current, next);
+  }
+  return true;
+}
+
 function MessageBody({
   message,
+  time,
   onOpenImage,
   onOpenLocation,
 }: {
   message: UiChatMessage;
+  time?: string;
   onOpenImage: (src: string) => void;
   onOpenLocation: (place: {
     placeName: string;
@@ -92,11 +169,7 @@ function MessageBody({
 }) {
   if (message.kind === "image" && message.imageSrc) {
     return (
-      <ChatMessageBubble
-        from={message.from}
-        time={message.time}
-        className="text-left"
-      >
+      <ChatMessageBubble from={message.from} time={time} className="text-left">
         <button
           type="button"
           aria-label="사진 크게 보기"
@@ -117,11 +190,7 @@ function MessageBody({
 
   if (message.kind === "location" && message.placeName) {
     return (
-      <ChatMessageBubble
-        from={message.from}
-        time={message.time}
-        className="text-left"
-      >
+      <ChatMessageBubble from={message.from} time={time} className="text-left">
         <button
           type="button"
           aria-label={`${message.placeName} 지도 크게 보기`}
@@ -152,7 +221,7 @@ function MessageBody({
   }
 
   return (
-    <ChatMessageBubble from={message.from} time={message.time}>
+    <ChatMessageBubble from={message.from} time={time}>
       {message.text}
     </ChatMessageBubble>
   );
@@ -167,6 +236,7 @@ export function ChatConversation({
   loadingOlder = false,
   onLoadOlder,
   onViewReservation,
+  onPeerProfileClick,
 }: ChatConversationProps) {
   const [viewer, setViewer] = useState<MediaViewer | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -256,11 +326,13 @@ export function ChatConversation({
             if (message.kind === "typing") {
               return (
                 <div key={message.id} className="flex items-start gap-2.5">
-                  <PeerAvatar src={peerImageUrl} />
+                  <PeerAvatar
+                    src={peerImageUrl}
+                    name={peerName}
+                    onClick={onPeerProfileClick}
+                  />
                   <div className="flex flex-col gap-2.5">
-                    <p className="font-sans text-[13px] text-[#323232] lg:text-base">
-                      {peerName}
-                    </p>
+                    <PeerName name={peerName} onClick={onPeerProfileClick} />
                     <div className="flex h-[39px] items-center justify-center rounded-[10px] bg-[rgba(134,134,134,0.1)] px-4">
                       <span className="flex gap-1">
                         <span className="size-1.5 rounded-full bg-[#868686]" />
@@ -273,9 +345,11 @@ export function ChatConversation({
               );
             }
 
+            const showTime = shouldShowMessageTime(messages, index);
             const body = (
               <MessageBody
                 message={message}
+                time={showTime ? message.time : undefined}
                 onOpenImage={(src) => setViewer({ kind: "image", src })}
                 onOpenLocation={(place) =>
                   setViewer({ kind: "location", ...place })
@@ -283,33 +357,33 @@ export function ChatConversation({
               />
             );
 
-            if (
-              message.from === "peer" &&
-              shouldShowPeerMeta(messages, index)
-            ) {
+            if (message.from === "peer") {
+              const showMeta = shouldShowPeerMeta(messages, index);
               return (
                 <div
                   key={message.id}
                   className="flex items-start gap-2.5 lg:gap-3.5"
                 >
-                  <PeerAvatar src={peerImageUrl} />
+                  <span
+                    className={cn(
+                      PEER_AVATAR_SIZE_CLASS,
+                      "overflow-hidden",
+                      !showMeta && "invisible"
+                    )}
+                    aria-hidden={!showMeta}
+                  >
+                    <PeerAvatar
+                      src={peerImageUrl}
+                      name={peerName}
+                      onClick={showMeta ? onPeerProfileClick : undefined}
+                    />
+                  </span>
                   <div className="flex min-w-0 flex-col gap-3.5">
-                    <p className="font-sans text-[13px] text-[#323232] lg:text-base">
-                      {peerName}
-                    </p>
+                    {showMeta ? (
+                      <PeerName name={peerName} onClick={onPeerProfileClick} />
+                    ) : null}
                     {body}
                   </div>
-                </div>
-              );
-            }
-
-            if (message.from === "peer") {
-              return (
-                <div
-                  key={message.id}
-                  className="flex items-start gap-2.5 pl-[45px] lg:gap-3.5 lg:pl-12"
-                >
-                  {body}
                 </div>
               );
             }

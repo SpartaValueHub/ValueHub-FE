@@ -1,6 +1,10 @@
 import { apiFetch, getProductPostApiUrl } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import type {
+  ApiMediaPresignedRequest,
+  ApiMediaPresignedResponse,
+} from "@/types/media/api";
+import type {
   ApiCreateProductPostRequest,
   ApiProductPostCardPage,
   ApiProductPostDetail,
@@ -39,6 +43,22 @@ export function createProductPost(body: ApiCreateProductPostRequest) {
     /** Gateway·BE 지연 시 UI가 무한 대기하지 않도록 */
     timeoutMillis: 12_000,
   });
+}
+
+/** POST /product-posts/media/presigned-url */
+export function createProductPostMediaPresignedUrl(
+  body: ApiMediaPresignedRequest
+) {
+  return apiFetch<ApiMediaPresignedResponse>(
+    API_ENDPOINTS.productPosts.mediaPresignedUrl,
+    {
+      method: "POST",
+      body,
+      baseUrl: getProductPostApiUrl(),
+      cache: { noStore: true },
+      timeoutMillis: 8_000,
+    }
+  );
 }
 
 /** PUT — 본인 + SELLING만. images/documents 전체 교체 */

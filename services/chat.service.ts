@@ -5,24 +5,29 @@
  */
 import {
   createChatRoom,
+  createChatImagePresignedUrl,
   getChatRoom,
   getChatUnreadCount,
   listChatMessages,
   listChatRooms,
   listChatRoomsByProductPost,
 } from "@/lib/api/chat";
+import { mapChatImagePresigned } from "@/lib/chat/map-image-presign";
 import { mapChatMessage } from "@/lib/chat/map-message";
 import { formatListedAt } from "@/lib/format-listed-at";
 import { getMemberPublicProfileService } from "@/services/member.service";
 import { getProductPostDetailService } from "@/services/product-posts.service";
 import type {
+  ApiChatProductPostStatus,
   ApiChatRoomDetail,
   ApiChatRoomListItem,
   ApiChatTradeStatus,
   ApiCreateChatRoomResponse,
 } from "@/types/chat/api";
+import type { ProductPostStatus } from "@/types/product-posts/ui";
 import {
   CHAT_MESSAGE_PAGE_SIZE,
+  type UiChatImagePresigned,
   type UiChatMessagePage,
   type UiChatRoom,
   type UiCreatedChatRoom,
@@ -46,6 +51,13 @@ function toTradeStatus(value: string): ApiChatTradeStatus {
   return "SELLING";
 }
 
+function toProductPostStatus(
+  value: ProductPostStatus | string
+): ApiChatProductPostStatus {
+  if (value === "HIDDEN" || value === "DELETED") return value;
+  return "PUBLIC";
+}
+
 export function mapChatRoomDetail(api: ApiChatRoomDetail): UiChatRoom {
   const post = api.productPost;
   return {
@@ -56,6 +68,7 @@ export function mapChatRoomDetail(api: ApiChatRoomDetail): UiChatRoom {
     unreadCount: 0,
     peerName: api.counterpart?.nickname?.trim() ?? "",
     peerImageUrl: api.counterpart?.profileImageUrl?.trim() || null,
+    peerMemberUuid: api.counterpart?.memberUuid?.trim() || undefined,
     productPostUuid: post?.productPostUuid?.trim() || undefined,
     price: post?.price ?? 0,
     location: "",
@@ -75,6 +88,7 @@ export function mapChatRoomListItem(api: ApiChatRoomListItem): UiChatRoom {
     timeAgo: stamp ? formatListedAt(stamp) : "",
     unreadCount: api.unreadCount ?? 0,
     peerName: "",
+    peerMemberUuid: api.counterpart?.memberUuid?.trim() || undefined,
     productPostUuid: post?.productPostUuid?.trim() || undefined,
     price: post?.price ?? 0,
     location: "",
@@ -122,6 +136,7 @@ export async function createChatRoomService(input: {
     productPostName: post.name,
     price: post.price,
     tradeStatus: toTradeStatus(post.tradeStatus),
+    productPostStatus: toProductPostStatus(post.productPostStatus),
     sellerNickname,
   });
 
@@ -142,7 +157,21 @@ export async function listChatRoomsByProductPostService(
 
 export async function getChatRoomService(roomId: string): Promise<UiChatRoom> {
   const api = await getChatRoom(roomId);
-  return mapChatRoomDetail(api);
+  const room = mapChatRoomDetail(api);
+  const memberUuid = room.peerMemberUuid?.trim();
+  if (!memberUuid) return room;
+
+  try {
+    const profile = await getMemberPublicProfileService(memberUuid);
+    const imageUrl = profile.profileImageUrl?.trim() || null;
+    return {
+      ...room,
+      peerName: room.peerName || profile.nickname,
+      peerImageUrl: imageUrl ?? room.peerImageUrl,
+    };
+  } catch {
+    return room;
+  }
 }
 
 export async function getChatUnreadCountService(): Promise<number> {
@@ -170,4 +199,12 @@ export async function listChatMessagesService(
     messages,
     hasMore: messages.length >= limit && messages.length > 0,
   };
+}
+
+export async function createChatImagePresignedUrlService(
+  roomId: string,
+  body: { contentType: string; fileSize: number }
+): Promise<UiChatImagePresigned> {
+  const api = await createChatImagePresignedUrl(roomId, body);
+  return mapChatImagePresigned(api);
 }

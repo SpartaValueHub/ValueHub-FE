@@ -11,10 +11,12 @@ import {
 } from "@/actions/categories";
 import {
   createProductPostAction,
+  createProductPostMediaPresignedUrlAction,
   updateProductPostAction,
 } from "@/actions/product-posts";
 import { Button } from "@/components/atoms/button";
 import { Checkbox } from "@/components/atoms/checkbox";
+import { Spinner } from "@/components/atoms/spinner";
 import { AlertDialog } from "@/components/molecules/overlay/AlertDialog";
 import { DialogDescription } from "@/components/molecules/overlay/Dialog";
 import { LocationRegisterDialog } from "@/components/molecules/overlay/LocationRegisterDialog";
@@ -23,16 +25,21 @@ import {
   PRODUCT_POST_DEFAULT_LONGITUDE,
   PRODUCT_POST_DESCRIPTION_MAX,
   PRODUCT_POST_IMAGE_MAX,
-  PRODUCT_POST_IMAGE_MAX_BYTES,
   PRODUCT_POST_IMAGE_MIN,
   PRODUCT_POST_MIN_PRICE_WON,
   PRODUCT_POST_NAME_MAX,
   PRODUCT_POST_NAME_MIN,
   PRODUCT_POSTS_PATH,
-  productPostPlaceholderImageUrl,
 } from "@/constants/product-posts";
 import { notifyIfSessionExpiredAction } from "@/lib/auth/session-expired.client";
 import { reverseGeocodeAdminRegion } from "@/lib/kakao-maps";
+import {
+  isAllowedMediaImageFile,
+  MEDIA_IMAGE_ACCEPT,
+  MEDIA_IMAGE_REJECT_MESSAGE,
+  normalizeMediaImageContentType,
+} from "@/lib/media/image-file";
+import { putFileToS3 } from "@/lib/media/put-to-s3";
 import { cn } from "@/lib/utils";
 import type { UiCategorySummary } from "@/types/categories/ui";
 import type {
@@ -103,8 +110,9 @@ type LocalImage = {
   id: string;
   previewUrl: string;
   fileName: string;
-  /** 기존 서버 URL — 있으면 제출 시 placeholder 대신 유지 */
+  /** CloudFront publicUrl — 업로드 완료 또는 수정 시 기존 URL */
   remoteUrl?: string;
+  uploadStatus: "ready" | "uploading" | "error";
 };
 
 function ThumbCell({
@@ -118,12 +126,14 @@ function ThumbCell({
   onSelect: () => void;
   onRemove: () => void;
 }) {
+  const uploading = img.uploadStatus === "uploading";
   return (
     <div className="relative size-full">
       <button
         type="button"
         aria-label={isRep ? "대표사진" : "대표사진으로 선택"}
         aria-pressed={isRep}
+        disabled={uploading}
         onClick={onSelect}
         className={cn(
           "relative size-full overflow-hidden",
@@ -139,15 +149,21 @@ function ThumbCell({
           unoptimized
           className="pointer-events-none object-cover"
         />
+        {uploading ? (
+          <span className="absolute inset-0 flex items-center justify-center bg-black/50">
+            <Spinner size="sm" inline aria-label="이미지 업로드 중" />
+          </span>
+        ) : null}
       </button>
       <button
         type="button"
         aria-label="이미지 삭제"
+        disabled={uploading}
         onClick={(e) => {
           e.stopPropagation();
           onRemove();
         }}
-        className="absolute right-0.5 top-0.5 z-10 flex size-3.5 items-center justify-center bg-black/50 text-xs leading-none text-white"
+        className="absolute right-0.5 top-0.5 z-10 flex size-3.5 items-center justify-center bg-black/50 text-xs leading-none text-white disabled:opacity-40"
       >
         ×
       </button>
@@ -163,6 +179,7 @@ type LocalDoc = {
   previewUrl: string | null;
   fileName: string | null;
   remoteUrl?: string;
+  uploadStatus?: "ready" | "uploading" | "error";
 };
 
 const GRADE_OPTIONS: { value: ConditionGrade; label: string }[] = [
@@ -179,8 +196,6 @@ const DOC_OPTIONS: { type: DocUiType; label: string; api: boolean }[] = [
   { type: "OTHER", label: "기타 서류", api: false },
 ];
 
-const ACCEPT_IMAGES = "image/jpeg,image/jpg,image/png,image/webp";
-
 const selectClassName = cn(
   "h-[42px] w-full appearance-none border border-[#d0d0d0] bg-[#323232] px-2.5 font-sans text-sm text-white",
   "outline-none focus:border-vh-brand-gold disabled:opacity-50"
@@ -191,9 +206,21 @@ const underlineInputClassName = cn(
   "placeholder:text-[#868686] focus:border-vh-brand-gold"
 );
 
-function isAllowedImage(file: File) {
-  const okType = /image\/(jpeg|jpg|png|webp)/i.test(file.type);
-  return okType && file.size <= PRODUCT_POST_IMAGE_MAX_BYTES;
+async function uploadProductPostMedia(file: File): Promise<string> {
+  const contentType = normalizeMediaImageContentType(file.type);
+  if (!contentType) {
+    throw new Error(MEDIA_IMAGE_REJECT_MESSAGE);
+  }
+  const presign = await createProductPostMediaPresignedUrlAction({
+    contentType,
+    contentLength: file.size,
+  });
+  if (!presign.ok) {
+    notifyIfSessionExpiredAction(presign);
+    throw new Error(presign.message);
+  }
+  await putFileToS3(presign.data.uploadUrl, file, contentType);
+  return presign.data.publicUrl;
 }
 
 export type ProductPostFormMode = "create" | "edit";
@@ -242,6 +269,7 @@ function docsFromPost(post: UiProductPostDetail): {
       previewUrl: doc.url,
       fileName: doc.type,
       remoteUrl: doc.url,
+      uploadStatus: "ready",
     };
     checked[type] = true;
   }
@@ -292,6 +320,7 @@ export function ProductPostCreateForm({
       previewUrl: img.url,
       fileName: `image-${img.sortOrder + 1}`,
       remoteUrl: img.url,
+      uploadStatus: "ready" as const,
     }))
   );
   const [name, setName] = useState(initialValues?.post.name ?? "");
@@ -441,22 +470,61 @@ export function ProductPostCreateForm({
 
   const addImages = (files: FileList | null) => {
     if (!files?.length) return;
-    const next: LocalImage[] = [];
+    const room = PRODUCT_POST_IMAGE_MAX - images.length;
+    if (room <= 0) return;
+
+    const accepted: { id: string; file: File; previewUrl: string }[] = [];
     for (const file of Array.from(files)) {
-      if (!isAllowedImage(file)) {
-        setFieldError("이미지는 jpg/png/webp, 장당 5MB 이하만 가능합니다.");
+      if (accepted.length >= room) break;
+      if (!isAllowedMediaImageFile(file)) {
+        setFieldError(MEDIA_IMAGE_REJECT_MESSAGE);
         continue;
       }
-      if (images.length + next.length >= PRODUCT_POST_IMAGE_MAX) break;
-      next.push({
+      accepted.push({
         id: `${file.name}-${file.size}-${crypto.randomUUID()}`,
+        file,
         previewUrl: URL.createObjectURL(file),
-        fileName: file.name,
       });
     }
-    if (next.length) {
-      setImages((prev) => [...prev, ...next]);
-      setFieldError(null);
+    if (!accepted.length) return;
+
+    setImages((prev) => [
+      ...prev,
+      ...accepted.map(({ id, file, previewUrl }) => ({
+        id,
+        previewUrl,
+        fileName: file.name,
+        uploadStatus: "uploading" as const,
+      })),
+    ]);
+    setFieldError(null);
+
+    for (const item of accepted) {
+      void (async () => {
+        try {
+          const publicUrl = await uploadProductPostMedia(item.file);
+          setImages((prev) =>
+            prev.map((img) =>
+              img.id === item.id
+                ? {
+                    ...img,
+                    remoteUrl: publicUrl,
+                    uploadStatus: "ready" as const,
+                  }
+                : img
+            )
+          );
+        } catch (e) {
+          setImages((prev) => {
+            const target = prev.find((img) => img.id === item.id);
+            if (target) revokeIfBlob(target.previewUrl);
+            return prev.filter((img) => img.id !== item.id);
+          });
+          setFieldError(
+            e instanceof Error ? e.message : "이미지 업로드에 실패했습니다."
+          );
+        }
+      })();
     }
   };
 
@@ -495,10 +563,11 @@ export function ProductPostCreateForm({
 
   const setDocFile = (type: DocUiType, file: File | null) => {
     if (!file) return;
-    if (!isAllowedImage(file)) {
-      setFieldError("서류 이미지는 jpg/png/webp, 5MB 이하만 가능합니다.");
+    if (!isAllowedMediaImageFile(file)) {
+      setFieldError(MEDIA_IMAGE_REJECT_MESSAGE);
       return;
     }
+    const previewUrl = URL.createObjectURL(file);
     setDocs((prev) => {
       const cur = prev[type];
       revokeIfBlob(cur.previewUrl);
@@ -506,13 +575,42 @@ export function ProductPostCreateForm({
         ...prev,
         [type]: {
           type,
-          previewUrl: URL.createObjectURL(file),
+          previewUrl,
           fileName: file.name,
+          uploadStatus: "uploading",
         },
       };
     });
     setDocChecked((prev) => ({ ...prev, [type]: true }));
     setFieldError(null);
+
+    void (async () => {
+      try {
+        const publicUrl = await uploadProductPostMedia(file);
+        setDocs((prev) => ({
+          ...prev,
+          [type]: {
+            type,
+            previewUrl,
+            fileName: file.name,
+            remoteUrl: publicUrl,
+            uploadStatus: "ready",
+          },
+        }));
+      } catch (e) {
+        setDocs((prev) => {
+          revokeIfBlob(previewUrl);
+          return {
+            ...prev,
+            [type]: { type, previewUrl: null, fileName: null },
+          };
+        });
+        setDocChecked((prev) => ({ ...prev, [type]: false }));
+        setFieldError(
+          e instanceof Error ? e.message : "서류 이미지 업로드에 실패했습니다."
+        );
+      }
+    })();
   };
 
   const parsePrice = () => {
@@ -521,8 +619,24 @@ export function ProductPostCreateForm({
   };
 
   const validate = (): string | null => {
+    if (images.some((img) => img.uploadStatus === "uploading")) {
+      return "이미지 업로드가 끝날 때까지 기다려 주세요.";
+    }
+    if (
+      DOC_OPTIONS.some(
+        (o) =>
+          o.api &&
+          docChecked[o.type] &&
+          docs[o.type].uploadStatus === "uploading"
+      )
+    ) {
+      return "서류 이미지 업로드가 끝날 때까지 기다려 주세요.";
+    }
     if (images.length < PRODUCT_POST_IMAGE_MIN) {
       return "상품 사진을 1장 이상 등록해 주세요.";
+    }
+    if (images.some((img) => !img.remoteUrl)) {
+      return "업로드되지 않은 상품 사진이 있습니다. 다시 첨부해 주세요.";
     }
     const trimmedName = name.trim();
     if (
@@ -555,7 +669,7 @@ export function ProductPostCreateForm({
     if (!agreed) return "판매 정보 책임 동의에 체크해 주세요.";
     for (const opt of DOC_OPTIONS) {
       if (!opt.api) continue;
-      if (docChecked[opt.type] && !docs[opt.type].previewUrl) {
+      if (docChecked[opt.type] && !docs[opt.type].remoteUrl) {
         return `${opt.label} 이미지를 첨부해 주세요.`;
       }
     }
@@ -583,12 +697,12 @@ export function ProductPostCreateForm({
     const post = initialValues?.post;
 
     const documents: ApiCreateProductPostDocument[] = DOC_OPTIONS.filter(
-      (o) => o.api && docChecked[o.type] && docs[o.type].previewUrl
-    ).map((o, index) => {
+      (o) => o.api && docChecked[o.type] && docs[o.type].remoteUrl
+    ).map((o) => {
       const doc = docs[o.type];
       return {
         documentType: o.type as DocApiType,
-        imageUrl: doc.remoteUrl ?? productPostPlaceholderImageUrl(100 + index),
+        imageUrl: doc.remoteUrl!,
       };
     });
 
@@ -613,8 +727,8 @@ export function ProductPostCreateForm({
       placeName: placeName.trim(),
       regionDong: regionDong?.trim() || null,
       regionGu: regionGu?.trim() || null,
-      images: images.map((img, i) => ({
-        imageUrl: img.remoteUrl ?? productPostPlaceholderImageUrl(i),
+      images: images.map((img) => ({
+        imageUrl: img.remoteUrl!,
       })),
       documents: documents.length ? documents : undefined,
     };
@@ -677,7 +791,7 @@ export function ProductPostCreateForm({
             <input
               ref={imageInputRef}
               type="file"
-              accept={ACCEPT_IMAGES}
+              accept={MEDIA_IMAGE_ACCEPT}
               multiple
               className="sr-only"
               onChange={(e) => {
@@ -992,7 +1106,7 @@ export function ProductPostCreateForm({
                   +
                   <input
                     type="file"
-                    accept={ACCEPT_IMAGES}
+                    accept={MEDIA_IMAGE_ACCEPT}
                     className="sr-only"
                     onChange={(e) => {
                       const file = e.target.files?.[0] ?? null;

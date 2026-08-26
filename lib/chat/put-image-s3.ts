@@ -1,15 +1,10 @@
-/** 채팅 이미지 — presigned URL로 S3에 직접 PUT (Gateway 아님) */
+import { putFileToS3 } from "@/lib/media/put-to-s3";
+
+/** @deprecated putFileToS3 사용 — 채팅 호환용 래퍼 */
 export async function putChatImageToS3(
   uploadUrl: string,
   file: Blob,
   contentType: string
 ) {
-  const res = await fetch(uploadUrl, {
-    method: "PUT",
-    body: file,
-    headers: { "Content-Type": contentType },
-  });
-  if (!res.ok) {
-    throw new Error("이미지를 올리지 못했습니다.");
-  }
+  return putFileToS3(uploadUrl, file, contentType);
 }

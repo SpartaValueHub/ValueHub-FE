@@ -5,23 +5,26 @@
 import { ALL_CATEGORY_NAV_ID } from "@/constants/categories";
 import {
   createProductPost,
+  createProductPostMediaPresignedUrl,
   deleteProductPost,
   getProductPostDetail,
   listProductPosts,
   updateProductPost,
 } from "@/lib/api/product-posts";
+import { mapMediaPresigned } from "@/lib/media/map-presign";
 import {
   listChildCategoriesService,
   listLeafCategoriesService,
   listRootCategoriesService,
 } from "@/services/categories.service";
+import type { UiCategorySummary } from "@/types/categories/ui";
+import type { UiMediaPresigned } from "@/types/media/ui";
 import type {
   ApiCreateProductPostRequest,
   ApiProductPostCard,
   ApiProductPostDetail,
   ApiUpdateProductPostRequest,
 } from "@/types/product-posts/api";
-import type { UiCategorySummary } from "@/types/categories/ui";
 import type {
   UiProductPostCard,
   UiProductPostCardPage,
@@ -128,6 +131,14 @@ export async function updateProductPostService(
 
 export async function deleteProductPostService(uuid: string): Promise<void> {
   await deleteProductPost(uuid);
+}
+
+export async function createProductPostMediaPresignedUrlService(body: {
+  contentType: string;
+  contentLength: number;
+}): Promise<UiMediaPresigned> {
+  const api = await createProductPostMediaPresignedUrl(body);
+  return mapMediaPresigned(api);
 }
 
 export const PRODUCT_POST_LIST_PAGE_SIZE = 20;

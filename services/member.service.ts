@@ -4,18 +4,23 @@
 import {
   checkNicknameAvailability,
   createMember,
+  createMemberMediaPresignedUrl,
   getMemberPublicProfile,
   getMyMemberProfile,
+  updateMyMember,
 } from "@/lib/api/members";
+import { mapMediaPresigned } from "@/lib/media/map-presign";
 import type {
   ApiCreateMemberResponse,
   ApiMemberPublicProfileResponse,
+  ApiUpdateMemberRequest,
 } from "@/types/member/api";
 import type {
   CreateMemberInput,
   UiMemberProfile,
   UiMemberPublicProfile,
 } from "@/types/member/ui";
+import type { UiMediaPresigned } from "@/types/media/ui";
 
 function mapMemberProfile(response: ApiCreateMemberResponse): UiMemberProfile {
   return {
@@ -78,4 +83,19 @@ export async function getMemberPublicProfileService(
 ): Promise<UiMemberPublicProfile> {
   const response = await getMemberPublicProfile(memberUuid);
   return mapPublicProfile(response);
+}
+
+export async function createMemberMediaPresignedUrlService(body: {
+  contentType: string;
+  contentLength: number;
+}): Promise<UiMediaPresigned> {
+  const api = await createMemberMediaPresignedUrl(body);
+  return mapMediaPresigned(api);
+}
+
+export async function updateMyMemberService(
+  body: ApiUpdateMemberRequest
+): Promise<UiMemberProfile> {
+  const response = await updateMyMember(body);
+  return mapMemberProfile(response);
 }

@@ -13,6 +13,7 @@ import { mapActionError } from "@/lib/auth/map-action-error";
 import { requireActionAuth } from "@/lib/session";
 import {
   createProductPostService,
+  createProductPostMediaPresignedUrlService,
   deleteProductPostService,
   getProductPostDetailService,
   listProductPostsService,
@@ -26,10 +27,11 @@ import type {
   UiProductPostCardPage,
   UiProductPostDetail,
 } from "@/types/product-posts/ui";
+import { mediaPresignedInputSchema } from "@/types/media/presign";
+import type { UiMediaPresigned } from "@/types/media/ui";
 
 export type ProductPostActionResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; message: string; code?: string };
+  { ok: true; data: T } | { ok: false; message: string; code?: string };
 
 function toErrorMessage(e: unknown, fallback: string) {
   if (e instanceof ApiTimeoutError) {
@@ -119,6 +121,33 @@ export async function deleteProductPostAction(
     return {
       ok: false,
       message: toErrorMessage(e, "상품 삭제에 실패했습니다."),
+    };
+  }
+}
+
+export async function createProductPostMediaPresignedUrlAction(
+  input: unknown
+): Promise<ProductPostActionResult<UiMediaPresigned>> {
+  const parsed = mediaPresignedInputSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message:
+        parsed.error.issues[0]?.message ?? "이미지 정보가 올바르지 않습니다.",
+    };
+  }
+
+  try {
+    await requireActionAuth();
+    const data = await createProductPostMediaPresignedUrlService(parsed.data);
+    return { ok: true, data };
+  } catch (e) {
+    if (e instanceof AuthSessionExpiredError) {
+      return mapActionError(e, "이미지 업로드 주소를 받지 못했습니다.");
+    }
+    return {
+      ok: false,
+      message: toErrorMessage(e, "이미지 업로드 주소를 받지 못했습니다."),
     };
   }
 }

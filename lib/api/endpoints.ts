@@ -27,6 +27,7 @@ export const API_ENDPOINTS = {
   members: {
     create: "/api/v1/members",
     me: "/api/v1/members/me",
+    mediaPresignedUrl: "/api/v1/members/me/media/presigned-url",
     publicProfile: (memberUuid: string) =>
       `/api/v1/members/${encodeURIComponent(memberUuid)}/profile`,
     checkNickname: (nickname: string) =>
@@ -47,6 +48,7 @@ export const API_ENDPOINTS = {
   },
   productPosts: {
     create: "/api/v1/product-posts",
+    mediaPresignedUrl: "/api/v1/product-posts/media/presigned-url",
     detail: (uuid: string) =>
       `/api/v1/product-posts/${encodeURIComponent(uuid)}`,
     update: (uuid: string) =>

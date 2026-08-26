@@ -38,3 +38,12 @@ export interface ApiMemberPublicProfileResponse {
 export interface ApiMemberAvailabilityResponse {
   available: boolean;
 }
+
+/** PATCH /api/v1/members/me — null/omit = 유지 */
+export interface ApiUpdateMemberRequest {
+  nickname?: string | null;
+  profileImageUrl?: string | null;
+  address?: string | null;
+}
+
+export type ApiUpdateMemberResponse = ApiCreateMemberResponse;

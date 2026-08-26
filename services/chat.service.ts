@@ -70,6 +70,7 @@ export function mapChatRoomDetail(api: ApiChatRoomDetail): UiChatRoom {
     peerImageUrl: api.counterpart?.profileImageUrl?.trim() || null,
     peerMemberUuid: api.counterpart?.memberUuid?.trim() || undefined,
     productPostUuid: post?.productPostUuid?.trim() || undefined,
+    sellerMemberUuid: api.seller?.memberUuid?.trim() || undefined,
     price: post?.price ?? 0,
     location: "",
     reserved: post?.tradeStatus === "RESERVED",

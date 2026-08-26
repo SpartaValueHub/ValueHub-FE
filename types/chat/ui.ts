@@ -9,6 +9,8 @@ export type UiChatRoom = {
   /** GET /rooms/{id} counterpart — 프로필 모달 */
   peerMemberUuid?: string;
   productPostUuid?: string;
+  /** GET /rooms/{id} seller.memberUuid — 예약하기 노출 기준 */
+  sellerMemberUuid?: string;
   price: number;
   location: string;
   lastMessage?: string;

@@ -146,6 +146,12 @@ export function ChatRoomWorkspace({
         activeRoomId: roomId,
         fetching: listFetchRef.current,
       });
+      if (
+        patch.roomId === roomId &&
+        patch.productPost?.tradeStatus === "RESERVED"
+      ) {
+        setPostReserved(true);
+      }
     },
   });
   const [reservation, setReservation] = useState<UiReservation | null>(() =>

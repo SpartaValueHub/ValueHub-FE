@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
+
 import { StatusBadge } from "@/components/atoms/status-badge";
 import { MyPageGhostButton } from "@/components/molecules/mypage/MyPageGhostButton";
 import { formatMyPagePrice } from "@/constants/mypage";
+import { PRODUCT_POSTS_PATH } from "@/constants/product-posts";
 import { useProductPostBump } from "@/hooks/product-posts/useProductPostBump";
 import { useProductPostCompleteTrade } from "@/hooks/product-posts/useProductPostCompleteTrade";
 import { cn } from "@/lib/utils";
@@ -45,6 +48,11 @@ export function MyPageTradeRow({
   const badge = STATUS_BADGE[item.status];
   const canBump = listKind === "sell" && item.action === "boost";
   const canComplete = listKind === "sell" && item.action === "complete";
+  /** 판매 목록 id = productPostUuid. 구매 목록은 아직 mock id라 링크하지 않음 */
+  const detailHref =
+    listKind === "sell"
+      ? `${PRODUCT_POSTS_PATH}/${encodeURIComponent(item.id)}`
+      : null;
 
   const {
     requestBump,
@@ -67,6 +75,8 @@ export function MyPageTradeRow({
   const actionPending =
     (item.action === "boost" && bumping) ||
     (item.action === "complete" && completing);
+
+  const titleClassName = "font-sans text-sm text-white lg:text-base";
 
   return (
     <>
@@ -91,9 +101,19 @@ export function MyPageTradeRow({
                     )
                 )}
               />
-              <p className="font-sans text-sm text-white lg:text-base">
-                {item.title}
-              </p>
+              {detailHref ? (
+                <Link
+                  href={detailHref}
+                  className={cn(
+                    titleClassName,
+                    "hover:underline focus-visible:underline focus-visible:outline-none"
+                  )}
+                >
+                  {item.title}
+                </Link>
+              ) : (
+                <p className={titleClassName}>{item.title}</p>
+              )}
               <p className="font-sans text-xs text-[#ababab] lg:text-sm">
                 {item.location
                   ? `${item.date} ${item.location}에서 거래`

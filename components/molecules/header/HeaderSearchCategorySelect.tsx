@@ -14,6 +14,8 @@ interface HeaderSearchCategorySelectProps {
   onChange: (navId: string) => void;
   size?: "desktop" | "mobile";
   className?: string;
+  /** 드롭다운 열림 — 추천검색어 패널과 겹침 방지용 */
+  onOpenChange?: (open: boolean) => void;
 }
 
 /** 헤더 검색바 대분류 — All/Luxury/Collectibles/Premium/Electrics (FE 상수) */
@@ -22,6 +24,7 @@ export function HeaderSearchCategorySelect({
   onChange,
   size = "desktop",
   className,
+  onOpenChange,
 }: HeaderSearchCategorySelectProps) {
   const [open, setOpen] = useState(false);
   const isMobile = size === "mobile";
@@ -32,16 +35,22 @@ export function HeaderSearchCategorySelect({
       ? HEADER_SEARCH_CATEGORY_LABEL
       : selected.title;
 
+  function setMenuOpen(next: boolean) {
+    setOpen(next);
+    onOpenChange?.(next);
+  }
+
   return (
     <Popover
       open={open}
-      onOpenChange={setOpen}
-      className={cn("shrink-0", className)}
-      contentClassName="mt-2 w-[160px] rounded-[10px] border border-white/20 bg-[#323232] p-1.5 shadow-[0_0_5px_rgba(255,255,255,0.25)]"
+      onOpenChange={setMenuOpen}
+      className={cn("relative z-[60] shrink-0", className)}
+      contentClassName="z-[60] mt-2 w-[160px] rounded-[10px] border border-white/20 bg-[#323232] p-1.5 shadow-[0_0_5px_rgba(255,255,255,0.25)]"
       trigger={
         <button
           type="button"
           aria-label="검색 카테고리"
+          aria-expanded={open}
           className={cn(
             "inline-flex shrink-0 items-center gap-1 font-sans font-light text-white",
             isMobile ? "text-[13px]" : "text-base"
@@ -64,7 +73,7 @@ export function HeaderSearchCategorySelect({
                 type="button"
                 onClick={() => {
                   onChange(item.id);
-                  setOpen(false);
+                  setMenuOpen(false);
                 }}
                 className={cn(
                   "flex w-full rounded-[6px] px-2.5 py-2 text-left text-sm transition-colors",

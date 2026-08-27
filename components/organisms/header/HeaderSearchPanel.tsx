@@ -39,9 +39,10 @@ export function HeaderSearchPanel({
   const [query, setQuery] = useState("");
   const [categoryNavId, setCategoryNavId] =
     useState<string>(ALL_CATEGORY_NAV_ID);
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
   const { terms, mode } = useHeaderSearchTerms(query);
   const isMobile = variant === "mobile";
-  const showTermsPanel = terms.length > 0;
+  const showTermsPanel = terms.length > 0 && !categoryMenuOpen;
 
   useEffect(() => {
     ensureSearchSessionId();
@@ -96,6 +97,7 @@ export function HeaderSearchPanel({
           <HeaderSearchCategorySelect
             value={categoryNavId}
             onChange={setCategoryNavId}
+            onOpenChange={setCategoryMenuOpen}
             size={isMobile ? "mobile" : "desktop"}
           />
 
@@ -136,7 +138,7 @@ export function HeaderSearchPanel({
           className={cn(
             isMobile
               ? "px-1.5 py-2.5"
-              : "absolute top-[calc(100%+12px)] right-0 left-0 rounded-[15px] bg-[#323232] p-5 shadow-[0_0_5px_rgba(255,255,255,0.4)]"
+              : "absolute top-[calc(100%+12px)] right-0 left-0 z-[1] rounded-[15px] bg-[#323232] p-5 shadow-[0_0_5px_rgba(255,255,255,0.4)]"
           )}
         >
           <p

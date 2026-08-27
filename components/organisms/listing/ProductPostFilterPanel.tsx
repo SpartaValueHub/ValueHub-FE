@@ -27,6 +27,7 @@ interface ProductPostFilterPanelProps {
   maxPrice: number;
   selectedGrades: ProductPostConditionGrade[];
   docs: ProductPostDocumentFilter;
+  keyword?: string | null;
   className?: string;
 }
 
@@ -53,7 +54,10 @@ function FilterSection({
         <Icon
           name="chevron-down"
           size={20}
-          className={cn("text-white transition-transform", open && "rotate-180")}
+          className={cn(
+            "text-white transition-transform",
+            open && "rotate-180"
+          )}
         />
       </button>
       {open ? <div className="mt-5">{children}</div> : null}
@@ -61,10 +65,7 @@ function FilterSection({
   );
 }
 
-function isBrandSelected(
-  brand: UiBrandFilterOption,
-  selectedBrands: string[]
-) {
+function isBrandSelected(brand: UiBrandFilterOption, selectedBrands: string[]) {
   return brand.categoryUuids.some((uuid) => selectedBrands.includes(uuid));
 }
 
@@ -77,14 +78,12 @@ export function ProductPostFilterPanel({
   maxPrice,
   selectedGrades,
   docs,
+  keyword = null,
   className,
 }: ProductPostFilterPanelProps) {
   const router = useRouter();
   const priceMan = Math.round(maxPrice / 10_000);
-  const clampedMan = Math.min(
-    PRICE_MAX_MAN,
-    Math.max(PRICE_MIN_MAN, priceMan)
-  );
+  const clampedMan = Math.min(PRICE_MAX_MAN, Math.max(PRICE_MIN_MAN, priceMan));
   const pricePct =
     ((clampedMan - PRICE_MIN_MAN) / (PRICE_MAX_MAN - PRICE_MIN_MAN)) * 100;
 
@@ -103,6 +102,7 @@ export function ProductPostFilterPanel({
         maxPrice: next.maxPrice ?? maxPrice,
         grades: next.grades ?? selectedGrades,
         docs: next.docs ?? docs,
+        keyword,
       })
     );
   };
@@ -132,6 +132,7 @@ export function ProductPostFilterPanel({
         category: categoryUuid,
         sub: activeSub,
         page: 1,
+        keyword,
       })
     );
   };

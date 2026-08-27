@@ -151,6 +151,8 @@ type ApiFetchOptions = {
   body?: unknown;
   cache?: FetchCacheOpts;
   baseUrl?: string;
+  /** 추가 요청 헤더 (Cookie·Authorization 등과 병합) */
+  headers?: Record<string, string>;
   /** 401 refresh 재시도 방지 */
   _retried?: boolean;
   /** refresh 실패 시 signOut 생략 (authorize 등) */
@@ -231,7 +233,10 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const base = (options.baseUrl ?? getApiUrl()).replace(/\/$/, "");
   const url = `${base}${path.startsWith("/") ? path : `/${path}`}`;
-  const headers: Record<string, string> = { Accept: "application/json" };
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    ...options.headers,
+  };
 
   if (options.body !== undefined) {
     headers["Content-Type"] = "application/json";

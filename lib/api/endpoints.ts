@@ -82,6 +82,12 @@ export const API_ENDPOINTS = {
     detail: (reservationId: string) =>
       `/api/v1/reservations/${encodeURIComponent(reservationId)}`,
   },
+  search: {
+    popular: "/api/v1/search/popular",
+    related: (q: string) => `/api/v1/search/related?q=${encodeURIComponent(q)}`,
+    suggestions: (q: string) =>
+      `/api/v1/search/suggestions?q=${encodeURIComponent(q)}`,
+  },
   chat: {
     rooms: "/api/v1/chat/rooms",
     room: (roomId: string) =>

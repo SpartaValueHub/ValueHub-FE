@@ -10,6 +10,7 @@ import {
   getProductPostDetail,
   listProductPosts,
   updateProductPost,
+  type ListProductPostsOptions,
 } from "@/lib/api/product-posts";
 import { mapMediaPresigned } from "@/lib/media/map-presign";
 import {
@@ -102,9 +103,10 @@ export async function getProductPostDetailService(
 }
 
 export async function listProductPostsService(
-  params?: Record<string, string | string[]>
+  params?: Record<string, string | string[]>,
+  options?: ListProductPostsOptions
 ): Promise<UiProductPostCardPage> {
-  const api = await listProductPosts(params);
+  const api = await listProductPosts(params, options);
   return {
     items: api.content.map(mapCard),
     page: api.page,

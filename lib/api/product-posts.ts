@@ -13,13 +13,33 @@ import type {
 
 /** product-post-service HTTP — lib/api/* 전용. UI·actions에서 import 금지. */
 
-function productPostFetch<T>(path: string) {
+export type ListProductPostsOptions = {
+  /** 로그인 검색자 — Gateway public 목록은 JWT를 안 타므로 FE 서버가 주입 */
+  searcherMemberUuid?: string;
+  /** 비로그인 동시검색 — X-Search-Session-Id */
+  searchSessionId?: string;
+};
+
+function productPostFetch<T>(
+  path: string,
+  options?: { headers?: Record<string, string> }
+) {
   return apiFetch<T>(path, {
     method: "GET",
     baseUrl: getProductPostApiUrl(),
     cache: { noStore: true },
     skipSessionRecovery: true,
+    headers: options?.headers,
   });
+}
+
+function searchCoOccurrenceHeaders(opts?: ListProductPostsOptions) {
+  const headers: Record<string, string> = {};
+  const member = opts?.searcherMemberUuid?.trim();
+  const session = opts?.searchSessionId?.trim();
+  if (member) headers["X-Member-Uuid"] = member;
+  if (session) headers["X-Search-Session-Id"] = session;
+  return Object.keys(headers).length > 0 ? headers : undefined;
 }
 
 export function getProductPostDetail(uuid: string) {
@@ -28,9 +48,13 @@ export function getProductPostDetail(uuid: string) {
   );
 }
 
-export function listProductPosts(params?: Record<string, string | string[]>) {
+export function listProductPosts(
+  params?: Record<string, string | string[]>,
+  options?: ListProductPostsOptions
+) {
   return productPostFetch<ApiProductPostCardPage>(
-    API_ENDPOINTS.productPosts.list(params)
+    API_ENDPOINTS.productPosts.list(params),
+    { headers: searchCoOccurrenceHeaders(options) }
   );
 }
 

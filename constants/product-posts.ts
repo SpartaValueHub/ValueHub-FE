@@ -108,6 +108,8 @@ export type ProductPostsListHrefOpts = {
   grades?: ProductPostConditionGrade[] | null;
   /** attached = 서류 있는 글, all/미지정 = 서류 필터 없음 */
   docs?: ProductPostDocumentFilter | null;
+  /** 헤더 일반 검색어 */
+  keyword?: string | null;
 };
 
 export function productPostsListHref(opts: ProductPostsListHrefOpts) {
@@ -117,6 +119,10 @@ export function productPostsListHref(opts: ProductPostsListHrefOpts) {
   }
   if (opts.sub) {
     sp.set("sub", opts.sub);
+  }
+  const keyword = opts.keyword?.trim();
+  if (keyword) {
+    sp.set("keyword", keyword);
   }
   if (opts.page && opts.page > 1) {
     sp.set("page", String(opts.page));

@@ -458,7 +458,26 @@ export function MyPageTradeSection({
             </p>
           ) : null}
           {visibleItems.map((item) => (
-            <MyPageTradeRow key={item.id} item={item} listKind={listKind} />
+            <MyPageTradeRow
+              key={item.id}
+              item={item}
+              listKind={listKind}
+              onBumpSuccess={(detail) => {
+                const iso = detail.bumpedAt?.trim() || detail.createdAt;
+                const date = new Date(iso);
+                const nextDate = Number.isNaN(date.getTime())
+                  ? null
+                  : `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
+                if (!nextDate) return;
+                setSellItems((prev) =>
+                  prev.map((row) =>
+                    row.id === detail.productPostUuid
+                      ? { ...row, date: nextDate }
+                      : row
+                  )
+                );
+              }}
+            />
           ))}
         </div>
         {canLoadMore ? (

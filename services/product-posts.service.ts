@@ -4,6 +4,7 @@
  */
 import { ALL_CATEGORY_NAV_ID } from "@/constants/categories";
 import {
+  bumpProductPost,
   createProductPost,
   createProductPostMediaPresignedUrl,
   deleteProductPost,
@@ -133,6 +134,13 @@ export async function updateProductPostService(
 
 export async function deleteProductPostService(uuid: string): Promise<void> {
   await deleteProductPost(uuid);
+}
+
+export async function bumpProductPostService(
+  uuid: string
+): Promise<UiProductPostDetail> {
+  const api = await bumpProductPost(uuid);
+  return mapProductPostDetail(api);
 }
 
 export async function createProductPostMediaPresignedUrlService(body: {

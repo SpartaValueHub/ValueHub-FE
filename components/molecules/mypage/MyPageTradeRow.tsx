@@ -1,14 +1,18 @@
+"use client";
+
 import { Icon } from "@/components/atoms/icons";
 import { StatusBadge } from "@/components/atoms/status-badge";
 import { MyPageGhostButton } from "@/components/molecules/mypage/MyPageGhostButton";
 import { MyPageStarRating } from "@/components/molecules/mypage/MyPageStarRating";
 import { formatMyPagePrice } from "@/constants/mypage";
+import { useProductPostBump } from "@/hooks/product-posts/useProductPostBump";
 import { cn } from "@/lib/utils";
 import type {
   UiMyPageTradeItem,
   UiTradeListKind,
   UiTradeStatus,
 } from "@/types/mypage/ui";
+import type { UiProductPostDetail } from "@/types/product-posts/ui";
 
 const STATUS_BADGE: Record<
   UiTradeStatus,
@@ -28,6 +32,7 @@ interface MyPageTradeRowProps {
   item: UiMyPageTradeItem;
   listKind?: UiTradeListKind;
   className?: string;
+  onBumpSuccess?: (detail: UiProductPostDetail) => void;
 }
 
 function TradeReview({ item }: { item: UiMyPageTradeItem }) {
@@ -126,54 +131,76 @@ export function MyPageTradeRow({
   item,
   listKind = "sell",
   className,
+  onBumpSuccess,
 }: MyPageTradeRowProps) {
   const badge = STATUS_BADGE[item.status];
+  const canBump = listKind === "sell" && item.action === "boost";
+
+  const {
+    requestBump,
+    bumping,
+    dialogs: bumpDialogs,
+  } = useProductPostBump({
+    productPostUuid: item.id,
+    onSuccess: onBumpSuccess,
+  });
 
   return (
-    <article
-      className={cn(
-        "flex w-full flex-col gap-3.5 border-b border-[#ababab]/20 px-1 py-3.5 last:border-b-0 lg:flex-row lg:items-center lg:justify-between lg:border-0 lg:px-0 lg:py-0",
-        className
-      )}
-    >
-      <div className="flex flex-1 flex-col gap-3.5 lg:flex-row lg:items-center lg:gap-[30px]">
-        <div className="flex w-full max-w-[500px] flex-col gap-1.5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-col items-start gap-1.5">
-            <StatusBadge
-              status={badge.status}
-              label={badge.label}
-              className={cn(
-                item.status === "reserved" && "border-0 bg-[#f8e3b9]",
-                item.status === "completed" &&
-                  cn(
-                    "bg-[#868686] text-[#323232]",
-                    listKind === "sell" && "lg:text-[#d0d0d0]"
-                  )
-              )}
-            />
-            <p className="font-sans text-sm text-white lg:text-base">
-              {item.title}
-            </p>
-            <p className="font-sans text-xs text-[#ababab] lg:text-sm">
-              {item.location
-                ? `${item.date} ${item.location}에서 거래`
-                : item.date}
+    <>
+      <article
+        className={cn(
+          "flex w-full flex-col gap-3.5 border-b border-[#ababab]/20 px-1 py-3.5 last:border-b-0 lg:flex-row lg:items-center lg:justify-between lg:border-0 lg:px-0 lg:py-0",
+          className
+        )}
+      >
+        <div className="flex flex-1 flex-col gap-3.5 lg:flex-row lg:items-center lg:gap-[30px]">
+          <div className="flex w-full max-w-[500px] flex-col gap-1.5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col items-start gap-1.5">
+              <StatusBadge
+                status={badge.status}
+                label={badge.label}
+                className={cn(
+                  item.status === "reserved" && "border-0 bg-[#f8e3b9]",
+                  item.status === "completed" &&
+                    cn(
+                      "bg-[#868686] text-[#323232]",
+                      listKind === "sell" && "lg:text-[#d0d0d0]"
+                    )
+                )}
+              />
+              <p className="font-sans text-sm text-white lg:text-base">
+                {item.title}
+              </p>
+              <p className="font-sans text-xs text-[#ababab] lg:text-sm">
+                {item.location
+                  ? `${item.date} ${item.location}에서 거래`
+                  : item.date}
+              </p>
+            </div>
+            <p className="shrink-0 font-sans text-white">
+              <span className="text-xl font-medium lg:text-2xl">
+                {formatMyPagePrice(item.price)}
+              </span>
+              <span className="text-base">원</span>
             </p>
           </div>
-          <p className="shrink-0 font-sans text-white">
-            <span className="text-xl font-medium lg:text-2xl">
-              {formatMyPagePrice(item.price)}
-            </span>
-            <span className="text-base">원</span>
-          </p>
+          {item.action ? (
+            <MyPageGhostButton
+              className="w-full lg:w-[150px]"
+              disabled={item.action === "boost" ? !canBump || bumping : false}
+              onClick={() => {
+                if (item.action === "boost") requestBump();
+              }}
+            >
+              {item.action === "boost" && bumping
+                ? "끌어올리는 중…"
+                : ACTION_LABEL[item.action]}
+            </MyPageGhostButton>
+          ) : null}
         </div>
-        {item.action ? (
-          <MyPageGhostButton className="w-full lg:w-[150px]">
-            {ACTION_LABEL[item.action]}
-          </MyPageGhostButton>
-        ) : null}
-      </div>
-      <TradeReview item={item} />
-    </article>
+        <TradeReview item={item} />
+      </article>
+      {canBump ? bumpDialogs : null}
+    </>
   );
 }

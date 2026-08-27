@@ -17,6 +17,7 @@ import {
   ensurePrimaryMemberRegionService,
   listMyMemberRegionsService,
   listRegionsService,
+  RegionVerifyFailedError,
   setPrimaryMemberRegionService,
   verifyMemberRegionService,
   verifySelectedRegionService,
@@ -181,6 +182,12 @@ export async function verifySelectedRegionAction(
   } catch (e) {
     if (e instanceof AuthSessionExpiredError) {
       return mapActionError(e, "동네 인증에 실패했습니다.");
+    }
+    if (e instanceof RegionVerifyFailedError) {
+      const message = e.rollbackFailed
+        ? `${e.message}\n등록 취소에 실패했습니다. 새로고침 후 확인해 주세요.`
+        : e.message;
+      return { ok: false, message, code: e.code };
     }
     return {
       ok: false,

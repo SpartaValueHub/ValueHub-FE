@@ -187,7 +187,7 @@ export function MyPageTradeSection({
           showFeedback(
             "인증 실패",
             res.code === "REGION_VERIFICATION_FAILED"
-              ? "선택한 동네 근처에서만 인증할 수 있습니다. 위치를 확인해 주세요."
+              ? res.message || "현재 위치에서 인증할 수 없습니다."
               : res.message
           );
           return;

@@ -17,3 +17,10 @@ export interface UiMemberRegion {
   verified: boolean;
   verifiedAt: string | null;
 }
+
+/** 상품목록 · 활동 지역 표시용 시·동 */
+export interface UiActivityRegionLabel {
+  regionCity: string;
+  regionDong: string;
+  source: "member_region" | "signup_address";
+}

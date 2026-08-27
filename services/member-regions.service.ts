@@ -16,8 +16,15 @@ import type {
   ApiRegion,
   ApiVerifyMemberRegionRequest,
 } from "@/types/member-regions/api";
-import type { UiMemberRegion, UiRegion } from "@/types/member-regions/ui";
 import { splitRegionName } from "@/lib/member-regions/region-name";
+import { getAuthUser } from "@/lib/session";
+import { getMyMemberProfileService } from "@/services/member.service";
+import type { UiMemberProfile } from "@/types/member/ui";
+import type {
+  UiActivityRegionLabel,
+  UiMemberRegion,
+  UiRegion,
+} from "@/types/member-regions/ui";
 
 export { splitRegionName };
 
@@ -97,6 +104,52 @@ export async function listRegionsService(
 export async function listMyMemberRegionsService(): Promise<UiMemberRegion[]> {
   const list = await listMyMemberRegions();
   return list.map(mapMemberRegion);
+}
+
+/**
+ * 상품목록 「내 위치」 — 대표 member-region 우선, 없으면 가입 address에서 시·동.
+ * 비로그인·조회 실패 시 null.
+ */
+export function resolveActivityRegionLabel(
+  profile: UiMemberProfile | null,
+  memberRegions: UiMemberRegion[]
+): UiActivityRegionLabel | null {
+  const primary =
+    memberRegions.find((r) => r.primary) ?? memberRegions[0] ?? null;
+
+  if (primary?.regionName.trim()) {
+    const parts = splitRegionName(primary.regionName);
+    if (parts.regionCity || parts.regionDong) {
+      return { ...parts, source: "member_region" };
+    }
+  }
+
+  const address = profile?.address?.trim() ?? "";
+  if (address) {
+    const parts = splitRegionName(address);
+    if (parts.regionCity || parts.regionDong) {
+      return { ...parts, source: "signup_address" };
+    }
+  }
+
+  return null;
+}
+
+export async function resolveMyActivityRegionLabelService(): Promise<UiActivityRegionLabel | null> {
+  const user = await getAuthUser();
+  if (!user) return null;
+
+  const [profileResult, regionsResult] = await Promise.allSettled([
+    getMyMemberProfileService(),
+    listMyMemberRegionsService(),
+  ]);
+
+  const profile =
+    profileResult.status === "fulfilled" ? profileResult.value : null;
+  const memberRegions =
+    regionsResult.status === "fulfilled" ? regionsResult.value : [];
+
+  return resolveActivityRegionLabel(profile, memberRegions);
 }
 
 /**

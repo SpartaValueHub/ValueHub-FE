@@ -9,6 +9,7 @@ import type {
   ApiProductPostCardPage,
   ApiProductPostDetail,
   ApiUpdateProductPostRequest,
+  ApiUpdateTradeStatusRequest,
 } from "@/types/product-posts/api";
 
 /** product-post-service HTTP — lib/api/* 전용. UI·actions에서 import 금지. */
@@ -120,4 +121,21 @@ export function bumpProductPost(uuid: string) {
     cache: { noStore: true },
     timeoutMillis: 12_000,
   });
+}
+
+/** PATCH — 판매자 본인. SELLING↔RESERVED, RESERVED/SELLING→SOLD_OUT */
+export function updateProductPostTradeStatus(
+  uuid: string,
+  body: ApiUpdateTradeStatusRequest
+) {
+  return apiFetch<ApiProductPostDetail>(
+    API_ENDPOINTS.productPosts.tradeStatus(uuid),
+    {
+      method: "PATCH",
+      body,
+      baseUrl: getProductPostApiUrl(),
+      cache: { noStore: true },
+      timeoutMillis: 12_000,
+    }
+  );
 }

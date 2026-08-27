@@ -11,6 +11,7 @@ import {
   getProductPostDetail,
   listProductPosts,
   updateProductPost,
+  updateProductPostTradeStatus,
   type ListProductPostsOptions,
 } from "@/lib/api/product-posts";
 import { mapMediaPresigned } from "@/lib/media/map-presign";
@@ -26,6 +27,7 @@ import type {
   ApiProductPostCard,
   ApiProductPostDetail,
   ApiUpdateProductPostRequest,
+  TradeStatus,
 } from "@/types/product-posts/api";
 import type {
   UiProductPostCard,
@@ -140,6 +142,14 @@ export async function bumpProductPostService(
   uuid: string
 ): Promise<UiProductPostDetail> {
   const api = await bumpProductPost(uuid);
+  return mapProductPostDetail(api);
+}
+
+export async function updateProductPostTradeStatusService(
+  uuid: string,
+  tradeStatus: TradeStatus
+): Promise<UiProductPostDetail> {
+  const api = await updateProductPostTradeStatus(uuid, { tradeStatus });
   return mapProductPostDetail(api);
 }
 

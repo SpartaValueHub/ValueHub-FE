@@ -6,6 +6,7 @@ import { MyPageGhostButton } from "@/components/molecules/mypage/MyPageGhostButt
 import { MyPageStarRating } from "@/components/molecules/mypage/MyPageStarRating";
 import { formatMyPagePrice } from "@/constants/mypage";
 import { useProductPostBump } from "@/hooks/product-posts/useProductPostBump";
+import { useProductPostCompleteTrade } from "@/hooks/product-posts/useProductPostCompleteTrade";
 import { cn } from "@/lib/utils";
 import type {
   UiMyPageTradeItem,
@@ -33,6 +34,7 @@ interface MyPageTradeRowProps {
   listKind?: UiTradeListKind;
   className?: string;
   onBumpSuccess?: (detail: UiProductPostDetail) => void;
+  onCompleteSuccess?: (detail: UiProductPostDetail) => void;
 }
 
 function TradeReview({ item }: { item: UiMyPageTradeItem }) {
@@ -132,9 +134,11 @@ export function MyPageTradeRow({
   listKind = "sell",
   className,
   onBumpSuccess,
+  onCompleteSuccess,
 }: MyPageTradeRowProps) {
   const badge = STATUS_BADGE[item.status];
   const canBump = listKind === "sell" && item.action === "boost";
+  const canComplete = listKind === "sell" && item.action === "complete";
 
   const {
     requestBump,
@@ -144,6 +148,19 @@ export function MyPageTradeRow({
     productPostUuid: item.id,
     onSuccess: onBumpSuccess,
   });
+
+  const {
+    requestComplete,
+    completing,
+    dialogs: completeDialogs,
+  } = useProductPostCompleteTrade({
+    productPostUuid: item.id,
+    onSuccess: onCompleteSuccess,
+  });
+
+  const actionPending =
+    (item.action === "boost" && bumping) ||
+    (item.action === "complete" && completing);
 
   return (
     <>
@@ -187,13 +204,20 @@ export function MyPageTradeRow({
           {item.action ? (
             <MyPageGhostButton
               className="w-full lg:w-[150px]"
-              disabled={item.action === "boost" ? !canBump || bumping : false}
+              disabled={
+                item.action === "boost"
+                  ? !canBump || bumping
+                  : !canComplete || completing
+              }
               onClick={() => {
                 if (item.action === "boost") requestBump();
+                if (item.action === "complete") requestComplete();
               }}
             >
-              {item.action === "boost" && bumping
-                ? "끌어올리는 중…"
+              {actionPending
+                ? item.action === "boost"
+                  ? "끌어올리는 중…"
+                  : "처리 중…"
                 : ACTION_LABEL[item.action]}
             </MyPageGhostButton>
           ) : null}
@@ -201,6 +225,7 @@ export function MyPageTradeRow({
         <TradeReview item={item} />
       </article>
       {canBump ? bumpDialogs : null}
+      {canComplete ? completeDialogs : null}
     </>
   );
 }

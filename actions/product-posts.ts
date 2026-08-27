@@ -19,10 +19,12 @@ import {
   getProductPostDetailService,
   listProductPostsService,
   updateProductPostService,
+  updateProductPostTradeStatusService,
 } from "@/services/product-posts.service";
 import type {
   ApiCreateProductPostRequest,
   ApiUpdateProductPostRequest,
+  TradeStatus,
 } from "@/types/product-posts/api";
 import type {
   UiProductPostCardPage,
@@ -141,6 +143,22 @@ export async function bumpProductPostAction(
       return mapActionError(e, "끌어올리기에 실패했습니다.");
     }
     return toErrorResult(e, "끌어올리기에 실패했습니다.");
+  }
+}
+
+export async function updateProductPostTradeStatusAction(
+  uuid: string,
+  tradeStatus: TradeStatus
+): Promise<ProductPostActionResult<UiProductPostDetail>> {
+  try {
+    await requireActionAuth();
+    const data = await updateProductPostTradeStatusService(uuid, tradeStatus);
+    return { ok: true, data };
+  } catch (e) {
+    if (e instanceof AuthSessionExpiredError) {
+      return mapActionError(e, "거래 상태 변경에 실패했습니다.");
+    }
+    return toErrorResult(e, "거래 상태 변경에 실패했습니다.");
   }
 }
 

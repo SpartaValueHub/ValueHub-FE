@@ -152,7 +152,12 @@ export function mapProductCardToSellItem(
       placeName: card.placeName,
     }),
     price: card.price,
-    action: status === "selling" ? "boost" : undefined,
+    action:
+      status === "selling"
+        ? "boost"
+        : status === "reserved"
+          ? "complete"
+          : undefined,
     review: { kind: "locked" },
   };
 }

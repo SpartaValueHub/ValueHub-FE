@@ -42,9 +42,10 @@ const DOC_TYPES = [
   { type: "RECEIPT" as const, label: "영수증" },
   { type: "WARRANTY" as const, label: "보증서" },
   { type: "APPRAISAL" as const, label: "감정서" },
+  { type: "OTHER" as const, label: "기타 서류" },
 ];
 
-/** 상품 이미지(sortOrder) 뒤에 영수증→보증서→감정서. OTHER 제외 */
+/** 상품 이미지(sortOrder) 뒤에 영수증→보증서→감정서→기타 (유형별 전부) */
 function buildDetailSliderSlides(
   post: UiProductPostDetail
 ): ProductSliderSlide[] {
@@ -57,13 +58,14 @@ function buildDetailSliderSlides(
 
   const documentSlides: ProductSliderSlide[] = [];
   for (const { type, label } of DOC_TYPES) {
-    const doc = post.documents.find((d) => d.type === type);
-    if (!doc?.url.trim()) continue;
-    documentSlides.push({
-      id: doc.uuid,
-      url: doc.url,
-      label,
-    });
+    for (const doc of post.documents.filter((d) => d.type === type)) {
+      if (!doc.url.trim()) continue;
+      documentSlides.push({
+        id: doc.uuid,
+        url: doc.url,
+        label,
+      });
+    }
   }
 
   return [...productSlides, ...documentSlides];
@@ -288,7 +290,6 @@ export function ProductPostDetail({
                         {doc.label}
                       </span>
                     ))}
-                    <span className="opacity-30">기타 서류</span>
                   </div>
                 </div>
               </div>

@@ -9,9 +9,12 @@ export interface ApiProductPostImage {
   sortOrder: number;
 }
 
+export type ApiProductPostDocumentType =
+  "WARRANTY" | "RECEIPT" | "APPRAISAL" | "OTHER";
+
 export interface ApiProductPostDocument {
   productPostDocumentUuid: string;
-  documentType: "WARRANTY" | "RECEIPT" | "APPRAISAL";
+  documentType: ApiProductPostDocumentType;
   imageUrl: string;
 }
 
@@ -71,7 +74,7 @@ export interface ApiCreateProductPostImage {
 }
 
 export interface ApiCreateProductPostDocument {
-  documentType: "WARRANTY" | "RECEIPT" | "APPRAISAL";
+  documentType: ApiProductPostDocumentType;
   imageUrl: string;
 }
 
@@ -89,7 +92,8 @@ export interface ApiCreateProductPostRequest {
   /** 거래 희망 구 — 선택 */
   regionGu?: string | null;
   images: ApiCreateProductPostImage[];
-  documents?: ApiCreateProductPostDocument[];
+  /** 최소 1개. 유형별 최대 2 · 합계 최대 8 */
+  documents: ApiCreateProductPostDocument[];
 }
 
 /** PUT body — 등록과 동일. images/documents는 전체 교체 */

@@ -48,7 +48,13 @@ export const PRODUCT_POST_DOCUMENT_TYPES = [
   "WARRANTY",
   "RECEIPT",
   "APPRAISAL",
+  "OTHER",
 ] as const;
+
+/** 서류 최소·유형별·합계 한도 (BE #53) */
+export const PRODUCT_POST_DOCUMENT_MIN = 1;
+export const PRODUCT_POST_DOCUMENT_MAX_PER_TYPE = 2;
+export const PRODUCT_POST_DOCUMENT_MAX_TOTAL = 8;
 
 export type ProductPostDocumentFilter = "attached" | "all";
 

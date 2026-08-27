@@ -8,7 +8,7 @@ export interface UiProductPostImage {
   sortOrder: number;
 }
 
-export type DocumentType = "WARRANTY" | "RECEIPT" | "APPRAISAL";
+export type DocumentType = "WARRANTY" | "RECEIPT" | "APPRAISAL" | "OTHER";
 
 export interface UiProductPostDocument {
   uuid: string;

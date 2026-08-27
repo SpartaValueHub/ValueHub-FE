@@ -2,17 +2,18 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent, type KeyboardEvent } from "react";
-import { ChevronDown } from "lucide-react";
 
 import { VerticalDivider } from "@/components/atoms/vertical-divider";
 import { VhIcon } from "@/components/atoms/vh-icon";
 import { VhInput } from "@/components/atoms/vh-input";
 import { HeaderIconButton } from "@/components/molecules/header/HeaderIconButton";
+import { HeaderSearchCategorySelect } from "@/components/molecules/header/HeaderSearchCategorySelect";
+import { ALL_CATEGORY_NAV_ID } from "@/constants/categories";
+import { HEADER_SEARCH_PLACEHOLDER } from "@/constants/search";
 import {
-  HEADER_SEARCH_CATEGORY_LABEL,
-  HEADER_SEARCH_PLACEHOLDER,
-} from "@/constants/search";
-import { productPostsListHref } from "@/constants/product-posts";
+  headerCategoryRootUuid,
+  productPostsListHref,
+} from "@/constants/product-posts";
 import { useHeaderSearchTerms } from "@/hooks/search/useHeaderSearchTerms";
 import { ensureSearchSessionId } from "@/lib/search/session";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,8 @@ export function HeaderSearchPanel({
 }: HeaderSearchPanelProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const [categoryNavId, setCategoryNavId] =
+    useState<string>(ALL_CATEGORY_NAV_ID);
   const { terms, mode } = useHeaderSearchTerms(query);
   const isMobile = variant === "mobile";
   const showTermsPanel = terms.length > 0;
@@ -46,10 +49,17 @@ export function HeaderSearchPanel({
 
   function submitSearch(raw: string) {
     const q = raw.trim();
-    if (!q) return;
+    const categoryUuid = headerCategoryRootUuid(categoryNavId);
+    if (!q && !categoryUuid) return;
     ensureSearchSessionId();
     onClose?.();
-    router.push(productPostsListHref({ keyword: q, page: 1 }));
+    router.push(
+      productPostsListHref({
+        keyword: q || null,
+        category: categoryUuid,
+        page: 1,
+      })
+    );
   }
 
   function onSubmit(event: FormEvent) {
@@ -83,19 +93,11 @@ export function HeaderSearchPanel({
             isMobile ? "gap-[5px]" : "gap-1.5"
           )}
         >
-          <button
-            type="button"
-            className={cn(
-              "inline-flex shrink-0 items-center gap-1 font-sans font-light text-white",
-              isMobile ? "text-[13px]" : "text-base"
-            )}
-          >
-            {HEADER_SEARCH_CATEGORY_LABEL}
-            <ChevronDown
-              className={isMobile ? "size-3.5" : "size-[22px]"}
-              strokeWidth={1.5}
-            />
-          </button>
+          <HeaderSearchCategorySelect
+            value={categoryNavId}
+            onChange={setCategoryNavId}
+            size={isMobile ? "mobile" : "desktop"}
+          />
 
           <VerticalDivider
             size={isMobile ? "sm" : "md"}

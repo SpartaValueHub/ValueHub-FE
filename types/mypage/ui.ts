@@ -1,6 +1,6 @@
 import type { UiMemberRegion } from "@/types/member-regions/ui";
 
-export type UiMyPageSectionId = "account" | "trade" | "payment";
+export type UiMyPageSectionId = "account" | "trade";
 
 export type UiTrustGradeLevel =
   "bronze" | "silver" | "gold" | "platinum" | "diamond";
@@ -56,12 +56,6 @@ export type UiMyPageTradeSummary = {
   nextGradeHint: string;
 };
 
-export type UiMyPageBenefit = {
-  title: string;
-  expiresAt: string;
-  description: string;
-};
-
 export type UiMyPage = {
   account: UiMyPageAccount;
   trade: UiMyPageTradeSummary;
@@ -71,5 +65,4 @@ export type UiMyPage = {
   /** 판매 목록 초기 페이지 메타 (탭·더보기 Action과 동일 계약) */
   sellList: UiMyPageSellListPage;
   buyItems: UiMyPageTradeItem[];
-  benefit: UiMyPageBenefit;
 };

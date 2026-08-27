@@ -55,6 +55,10 @@ export const API_ENDPOINTS = {
       `/api/v1/product-posts/${encodeURIComponent(uuid)}`,
     delete: (uuid: string) =>
       `/api/v1/product-posts/${encodeURIComponent(uuid)}`,
+    bump: (uuid: string) =>
+      `/api/v1/product-posts/${encodeURIComponent(uuid)}/bump`,
+    tradeStatus: (uuid: string) =>
+      `/api/v1/product-posts/${encodeURIComponent(uuid)}/trade-status`,
     list: (params?: Record<string, string | string[]>) => {
       const base = "/api/v1/product-posts";
       if (!params) return base;
@@ -81,6 +85,12 @@ export const API_ENDPOINTS = {
     },
     detail: (reservationId: string) =>
       `/api/v1/reservations/${encodeURIComponent(reservationId)}`,
+  },
+  search: {
+    popular: "/api/v1/search/popular",
+    related: (q: string) => `/api/v1/search/related?q=${encodeURIComponent(q)}`,
+    suggestions: (q: string) =>
+      `/api/v1/search/suggestions?q=${encodeURIComponent(q)}`,
   },
   chat: {
     rooms: "/api/v1/chat/rooms",

@@ -2,6 +2,7 @@ import {
   ALL_CATEGORY_NAV_ID,
   HEADER_ROOT_CATEGORY_UUIDS,
 } from "@/constants/categories";
+import { appendListCenterToSearchParams } from "@/lib/product-posts/list-center-params";
 
 /** product-post 목록 경로 — listing 네이밍 사용 금지 */
 export const PRODUCT_POSTS_PATH = "/product-posts";
@@ -48,7 +49,13 @@ export const PRODUCT_POST_DOCUMENT_TYPES = [
   "WARRANTY",
   "RECEIPT",
   "APPRAISAL",
+  "OTHER",
 ] as const;
+
+/** 서류 최소·유형별·합계 한도 (BE #53) */
+export const PRODUCT_POST_DOCUMENT_MIN = 1;
+export const PRODUCT_POST_DOCUMENT_MAX_PER_TYPE = 2;
+export const PRODUCT_POST_DOCUMENT_MAX_TOTAL = 8;
 
 export type ProductPostDocumentFilter = "attached" | "all";
 
@@ -97,7 +104,13 @@ export function headerCategoryNavIdFromUuid(categoryUuid: string | null) {
   return match ? match[0].toLowerCase() : "all";
 }
 
-export type ProductPostsListHrefOpts = {
+export type ProductListCenterHrefOpts = {
+  centerLatitude?: number | null;
+  centerLongitude?: number | null;
+  memberRegionId?: number | null;
+};
+
+export type ProductPostsListHrefOpts = ProductListCenterHrefOpts & {
   category?: string | null;
   sub?: string | null;
   page?: number;
@@ -108,6 +121,8 @@ export type ProductPostsListHrefOpts = {
   grades?: ProductPostConditionGrade[] | null;
   /** attached = 서류 있는 글, all/미지정 = 서류 필터 없음 */
   docs?: ProductPostDocumentFilter | null;
+  /** 헤더 일반 검색어 */
+  keyword?: string | null;
 };
 
 export function productPostsListHref(opts: ProductPostsListHrefOpts) {
@@ -117,6 +132,10 @@ export function productPostsListHref(opts: ProductPostsListHrefOpts) {
   }
   if (opts.sub) {
     sp.set("sub", opts.sub);
+  }
+  const keyword = opts.keyword?.trim();
+  if (keyword) {
+    sp.set("keyword", keyword);
   }
   if (opts.page && opts.page > 1) {
     sp.set("page", String(opts.page));
@@ -137,6 +156,11 @@ export function productPostsListHref(opts: ProductPostsListHrefOpts) {
   if (opts.docs === "attached") {
     sp.set("docs", "attached");
   }
+  appendListCenterToSearchParams(sp, {
+    centerLatitude: opts.centerLatitude,
+    centerLongitude: opts.centerLongitude,
+    memberRegionId: opts.memberRegionId,
+  });
   const qs = sp.toString();
   return qs ? `${PRODUCT_POSTS_PATH}?${qs}` : PRODUCT_POSTS_PATH;
 }

@@ -9,6 +9,7 @@ import {
   PRODUCT_POST_PRICE_FILTER_MAX_WON,
   PRODUCT_POST_PRICE_FILTER_MIN_WON,
   productPostsListHref,
+  type ProductListCenterHrefOpts,
   type ProductPostConditionGrade,
   type ProductPostDocumentFilter,
 } from "@/constants/product-posts";
@@ -19,6 +20,10 @@ const GRADES: ProductPostConditionGrade[] = ["S", "A", "B", "C"];
 const PRICE_MIN_MAN = PRODUCT_POST_PRICE_FILTER_MIN_WON / 10_000;
 const PRICE_MAX_MAN = PRODUCT_POST_PRICE_FILTER_MAX_WON / 10_000;
 
+function clampPriceMan(man: number) {
+  return Math.min(PRICE_MAX_MAN, Math.max(PRICE_MIN_MAN, man));
+}
+
 interface ProductPostFilterPanelProps {
   categoryUuid: string | null;
   activeSub: string | null;
@@ -27,6 +32,8 @@ interface ProductPostFilterPanelProps {
   maxPrice: number;
   selectedGrades: ProductPostConditionGrade[];
   docs: ProductPostDocumentFilter;
+  keyword?: string | null;
+  listCenter?: ProductListCenterHrefOpts | null;
   className?: string;
 }
 
@@ -53,7 +60,10 @@ function FilterSection({
         <Icon
           name="chevron-down"
           size={20}
-          className={cn("text-white transition-transform", open && "rotate-180")}
+          className={cn(
+            "text-white transition-transform",
+            open && "rotate-180"
+          )}
         />
       </button>
       {open ? <div className="mt-5">{children}</div> : null}
@@ -61,10 +71,7 @@ function FilterSection({
   );
 }
 
-function isBrandSelected(
-  brand: UiBrandFilterOption,
-  selectedBrands: string[]
-) {
+function isBrandSelected(brand: UiBrandFilterOption, selectedBrands: string[]) {
   return brand.categoryUuids.some((uuid) => selectedBrands.includes(uuid));
 }
 
@@ -77,16 +84,24 @@ export function ProductPostFilterPanel({
   maxPrice,
   selectedGrades,
   docs,
+  keyword = null,
+  listCenter = null,
   className,
 }: ProductPostFilterPanelProps) {
   const router = useRouter();
-  const priceMan = Math.round(maxPrice / 10_000);
-  const clampedMan = Math.min(
-    PRICE_MAX_MAN,
-    Math.max(PRICE_MIN_MAN, priceMan)
-  );
+  const centerHref = listCenter ?? {};
+  const propPriceMan = clampPriceMan(Math.round(maxPrice / 10_000));
+
+  /** 드래그 중에는 URL 반영 전 로컬 값만 갱신 — 놓으면 commit */
+  const [draftPriceMan, setDraftPriceMan] = useState(propPriceMan);
+  const [syncedMaxPrice, setSyncedMaxPrice] = useState(maxPrice);
+  if (maxPrice !== syncedMaxPrice) {
+    setSyncedMaxPrice(maxPrice);
+    setDraftPriceMan(propPriceMan);
+  }
+
   const pricePct =
-    ((clampedMan - PRICE_MIN_MAN) / (PRICE_MAX_MAN - PRICE_MIN_MAN)) * 100;
+    ((draftPriceMan - PRICE_MIN_MAN) / (PRICE_MAX_MAN - PRICE_MIN_MAN)) * 100;
 
   const pushFilters = (next: {
     brands?: string[];
@@ -103,8 +118,16 @@ export function ProductPostFilterPanel({
         maxPrice: next.maxPrice ?? maxPrice,
         grades: next.grades ?? selectedGrades,
         docs: next.docs ?? docs,
+        keyword,
+        ...centerHref,
       })
     );
+  };
+
+  const commitPriceMan = (man: number) => {
+    const nextWon = clampPriceMan(man) * 10_000;
+    if (nextWon === maxPrice) return;
+    pushFilters({ maxPrice: nextWon });
   };
 
   const toggleBrand = (brand: UiBrandFilterOption) => {
@@ -132,6 +155,8 @@ export function ProductPostFilterPanel({
         category: categoryUuid,
         sub: activeSub,
         page: 1,
+        keyword,
+        ...centerHref,
       })
     );
   };
@@ -183,7 +208,7 @@ export function ProductPostFilterPanel({
             min={PRICE_MIN_MAN}
             max={PRICE_MAX_MAN}
             step={10}
-            value={clampedMan}
+            value={draftPriceMan}
             aria-label="최대 가격"
             className="vh-price-range w-full"
             style={
@@ -191,16 +216,27 @@ export function ProductPostFilterPanel({
                 "--vh-price-pct": `${Math.min(100, Math.max(0, pricePct))}%`,
               } as CSSProperties
             }
-            onChange={(e) =>
-              pushFilters({
-                maxPrice: Number(e.target.value) * 10_000,
-              })
-            }
+            onChange={(e) => setDraftPriceMan(Number(e.target.value))}
+            onPointerUp={(e) => commitPriceMan(Number(e.currentTarget.value))}
+            onKeyUp={(e) => {
+              if (
+                e.key === "ArrowLeft" ||
+                e.key === "ArrowRight" ||
+                e.key === "ArrowUp" ||
+                e.key === "ArrowDown" ||
+                e.key === "Home" ||
+                e.key === "End" ||
+                e.key === "PageUp" ||
+                e.key === "PageDown"
+              ) {
+                commitPriceMan(Number(e.currentTarget.value));
+              }
+            }}
           />
           <p className="font-sans text-sm text-[#ababab]">
-            {clampedMan >= PRICE_MAX_MAN
+            {draftPriceMan >= PRICE_MAX_MAN
               ? "1000만원 이상"
-              : `최대 ${clampedMan.toLocaleString("ko-KR")}만원`}
+              : `최대 ${draftPriceMan.toLocaleString("ko-KR")}만원`}
           </p>
         </div>
       </FilterSection>

@@ -153,14 +153,6 @@ export const MAIN_FOOTER_LINKS = [
   { label: "광고문의", href: "#" },
 ] as const;
 
-export const HEADER_SEARCH_SUGGESTIONS = [
-  "샤넬 클래식 플랩백",
-  "에르메스 피코탄",
-  "롤렉스 서브마리너",
-  "루이비통 스피디",
-  "디올 북 토트",
-] as const;
-
 export const MAIN_CATEGORY_PLACEHOLDER = "카테고리";
 
 export const MAIN_SEARCH_PLACEHOLDER = "검색어를 입력하세요.";

@@ -24,6 +24,9 @@ import {
   PRODUCT_POST_DEFAULT_LATITUDE,
   PRODUCT_POST_DEFAULT_LONGITUDE,
   PRODUCT_POST_DESCRIPTION_MAX,
+  PRODUCT_POST_DOCUMENT_MAX_PER_TYPE,
+  PRODUCT_POST_DOCUMENT_MAX_TOTAL,
+  PRODUCT_POST_DOCUMENT_MIN,
   PRODUCT_POST_IMAGE_MAX,
   PRODUCT_POST_IMAGE_MIN,
   PRODUCT_POST_MIN_PRICE_WON,
@@ -32,6 +35,7 @@ import {
   PRODUCT_POSTS_PATH,
 } from "@/constants/product-posts";
 import { notifyIfSessionExpiredAction } from "@/lib/auth/session-expired.client";
+import { pickDocumentsFieldError } from "@/lib/product-posts/pick-documents-field-error";
 import { reverseGeocodeAdminRegion } from "@/lib/kakao-maps";
 import {
   isAllowedMediaImageFile,
@@ -171,15 +175,14 @@ function ThumbCell({
   );
 }
 
-type DocApiType = "RECEIPT" | "WARRANTY" | "APPRAISAL";
-type DocUiType = DocApiType | "OTHER";
+type DocApiType = "RECEIPT" | "WARRANTY" | "APPRAISAL" | "OTHER";
 
-type LocalDoc = {
-  type: DocUiType;
-  previewUrl: string | null;
-  fileName: string | null;
+type LocalDocItem = {
+  id: string;
+  previewUrl: string;
+  fileName: string;
   remoteUrl?: string;
-  uploadStatus?: "ready" | "uploading" | "error";
+  uploadStatus: "ready" | "uploading" | "error";
 };
 
 const GRADE_OPTIONS: { value: ConditionGrade; label: string }[] = [
@@ -189,11 +192,11 @@ const GRADE_OPTIONS: { value: ConditionGrade; label: string }[] = [
   { value: "C", label: "C 급" },
 ];
 
-const DOC_OPTIONS: { type: DocUiType; label: string; api: boolean }[] = [
-  { type: "RECEIPT", label: "영수증", api: true },
-  { type: "WARRANTY", label: "보증서", api: true },
-  { type: "APPRAISAL", label: "감정서", api: true },
-  { type: "OTHER", label: "기타 서류", api: false },
+const DOC_OPTIONS: { type: DocApiType; label: string }[] = [
+  { type: "RECEIPT", label: "영수증" },
+  { type: "WARRANTY", label: "보증서" },
+  { type: "APPRAISAL", label: "감정서" },
+  { type: "OTHER", label: "기타 서류" },
 ];
 
 const selectClassName = cn(
@@ -241,39 +244,52 @@ interface ProductPostCreateFormProps {
   initialValues?: ProductPostFormInitialValues;
 }
 
-function emptyDocs(): Record<DocUiType, LocalDoc> {
+function emptyDocs(): Record<DocApiType, LocalDocItem[]> {
   return {
-    RECEIPT: { type: "RECEIPT", previewUrl: null, fileName: null },
-    WARRANTY: { type: "WARRANTY", previewUrl: null, fileName: null },
-    APPRAISAL: { type: "APPRAISAL", previewUrl: null, fileName: null },
-    OTHER: { type: "OTHER", previewUrl: null, fileName: null },
+    RECEIPT: [],
+    WARRANTY: [],
+    APPRAISAL: [],
+    OTHER: [],
   };
 }
 
-function docsFromPost(post: UiProductPostDetail): {
-  docs: Record<DocUiType, LocalDoc>;
-  checked: Record<DocUiType, boolean>;
-} {
-  const docs = emptyDocs();
-  const checked: Record<DocUiType, boolean> = {
+function emptyDocChecked(): Record<DocApiType, boolean> {
+  return {
     RECEIPT: false,
     WARRANTY: false,
     APPRAISAL: false,
     OTHER: false,
   };
+}
+
+function docsFromPost(post: UiProductPostDetail): {
+  docs: Record<DocApiType, LocalDocItem[]>;
+  checked: Record<DocApiType, boolean>;
+} {
+  const docs = emptyDocs();
+  const checked = emptyDocChecked();
   for (const doc of post.documents) {
-    const type = doc.type as DocUiType;
+    const type = doc.type as DocApiType;
     if (!(type in docs)) continue;
-    docs[type] = {
-      type,
+    if (docs[type].length >= PRODUCT_POST_DOCUMENT_MAX_PER_TYPE) continue;
+    docs[type].push({
+      id: doc.uuid,
       previewUrl: doc.url,
       fileName: doc.type,
       remoteUrl: doc.url,
       uploadStatus: "ready",
-    };
+    });
     checked[type] = true;
   }
   return { docs, checked };
+}
+
+function countReadyDocuments(docs: Record<DocApiType, LocalDocItem[]>) {
+  return DOC_OPTIONS.reduce(
+    (sum, opt) =>
+      sum + docs[opt.type].filter((d) => Boolean(d.remoteUrl)).length,
+    0
+  );
 }
 
 export function ProductPostCreateForm({
@@ -306,12 +322,7 @@ export function ProductPostCreateForm({
     ? docsFromPost(initialValues.post)
     : {
         docs: emptyDocs(),
-        checked: {
-          RECEIPT: false,
-          WARRANTY: false,
-          APPRAISAL: false,
-          OTHER: false,
-        } as Record<DocUiType, boolean>,
+        checked: emptyDocChecked(),
       };
 
   const [images, setImages] = useState<LocalImage[]>(() =>
@@ -349,10 +360,10 @@ export function ProductPostCreateForm({
   const [description, setDescription] = useState(
     initialValues?.post.description ?? ""
   );
-  const [docs, setDocs] = useState<Record<DocUiType, LocalDoc>>(
+  const [docs, setDocs] = useState<Record<DocApiType, LocalDocItem[]>>(
     initialDocs.docs
   );
-  const [docChecked, setDocChecked] = useState<Record<DocUiType, boolean>>(
+  const [docChecked, setDocChecked] = useState<Record<DocApiType, boolean>>(
     initialDocs.checked
   );
   const [agreed, setAgreed] = useState(false);
@@ -434,8 +445,8 @@ export function ProductPostCreateForm({
   useEffect(() => {
     return () => {
       for (const img of images) revokeIfBlob(img.previewUrl);
-      for (const doc of Object.values(docs)) {
-        revokeIfBlob(doc.previewUrl);
+      for (const items of Object.values(docs)) {
+        for (const item of items) revokeIfBlob(item.previewUrl);
       }
     };
     // unmount only
@@ -547,40 +558,55 @@ export function ProductPostCreateForm({
     });
   };
 
-  const toggleDoc = (type: DocUiType, checked: boolean) => {
+  const toggleDoc = (type: DocApiType, checked: boolean) => {
     setDocChecked((prev) => ({ ...prev, [type]: checked }));
     if (!checked) {
       setDocs((prev) => {
-        const cur = prev[type];
-        revokeIfBlob(cur.previewUrl);
-        return {
-          ...prev,
-          [type]: { type, previewUrl: null, fileName: null },
-        };
+        for (const item of prev[type]) {
+          revokeIfBlob(item.previewUrl);
+        }
+        return { ...prev, [type]: [] };
       });
     }
   };
 
-  const setDocFile = (type: DocUiType, file: File | null) => {
+  const addDocFile = (type: DocApiType, file: File | null) => {
     if (!file) return;
     if (!isAllowedMediaImageFile(file)) {
       setFieldError(MEDIA_IMAGE_REJECT_MESSAGE);
       return;
     }
+    if (docs[type].length >= PRODUCT_POST_DOCUMENT_MAX_PER_TYPE) {
+      setFieldError(
+        `서류는 종류별로 최대 ${PRODUCT_POST_DOCUMENT_MAX_PER_TYPE}개까지 등록할 수 있습니다.`
+      );
+      return;
+    }
+    const currentTotal = DOC_OPTIONS.reduce(
+      (n, o) => n + docs[o.type].length,
+      0
+    );
+    if (currentTotal >= PRODUCT_POST_DOCUMENT_MAX_TOTAL) {
+      setFieldError(
+        `서류는 최대 ${PRODUCT_POST_DOCUMENT_MAX_TOTAL}장까지 등록할 수 있습니다.`
+      );
+      return;
+    }
+
+    const id = `${type}-${file.name}-${file.size}-${crypto.randomUUID()}`;
     const previewUrl = URL.createObjectURL(file);
-    setDocs((prev) => {
-      const cur = prev[type];
-      revokeIfBlob(cur.previewUrl);
-      return {
-        ...prev,
-        [type]: {
-          type,
+    setDocs((prev) => ({
+      ...prev,
+      [type]: [
+        ...prev[type],
+        {
+          id,
           previewUrl,
           fileName: file.name,
-          uploadStatus: "uploading",
+          uploadStatus: "uploading" as const,
         },
-      };
-    });
+      ],
+    }));
     setDocChecked((prev) => ({ ...prev, [type]: true }));
     setFieldError(null);
 
@@ -589,28 +615,43 @@ export function ProductPostCreateForm({
         const publicUrl = await uploadProductPostMedia(file);
         setDocs((prev) => ({
           ...prev,
-          [type]: {
-            type,
-            previewUrl,
-            fileName: file.name,
-            remoteUrl: publicUrl,
-            uploadStatus: "ready",
-          },
+          [type]: prev[type].map((item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  remoteUrl: publicUrl,
+                  uploadStatus: "ready" as const,
+                }
+              : item
+          ),
         }));
       } catch (e) {
         setDocs((prev) => {
-          revokeIfBlob(previewUrl);
-          return {
-            ...prev,
-            [type]: { type, previewUrl: null, fileName: null },
-          };
+          const target = prev[type].find((item) => item.id === id);
+          if (target) revokeIfBlob(target.previewUrl);
+          const nextItems = prev[type].filter((item) => item.id !== id);
+          if (nextItems.length === 0) {
+            setDocChecked((c) => ({ ...c, [type]: false }));
+          }
+          return { ...prev, [type]: nextItems };
         });
-        setDocChecked((prev) => ({ ...prev, [type]: false }));
         setFieldError(
           e instanceof Error ? e.message : "서류 이미지 업로드에 실패했습니다."
         );
       }
     })();
+  };
+
+  const removeDocItem = (type: DocApiType, id: string) => {
+    setDocs((prev) => {
+      const target = prev[type].find((item) => item.id === id);
+      if (target) revokeIfBlob(target.previewUrl);
+      const nextItems = prev[type].filter((item) => item.id !== id);
+      if (nextItems.length === 0) {
+        setDocChecked((c) => ({ ...c, [type]: false }));
+      }
+      return { ...prev, [type]: nextItems };
+    });
   };
 
   const parsePrice = () => {
@@ -623,11 +664,8 @@ export function ProductPostCreateForm({
       return "이미지 업로드가 끝날 때까지 기다려 주세요.";
     }
     if (
-      DOC_OPTIONS.some(
-        (o) =>
-          o.api &&
-          docChecked[o.type] &&
-          docs[o.type].uploadStatus === "uploading"
+      DOC_OPTIONS.some((o) =>
+        docs[o.type].some((d) => d.uploadStatus === "uploading")
       )
     ) {
       return "서류 이미지 업로드가 끝날 때까지 기다려 주세요.";
@@ -667,10 +705,19 @@ export function ProductPostCreateForm({
       return `상품설명은 최대 ${PRODUCT_POST_DESCRIPTION_MAX}자입니다.`;
     }
     if (!agreed) return "판매 정보 책임 동의에 체크해 주세요.";
+    if (countReadyDocuments(docs) < PRODUCT_POST_DOCUMENT_MIN) {
+      return "첨부서류를 1장 이상 등록해 주세요.";
+    }
     for (const opt of DOC_OPTIONS) {
-      if (!opt.api) continue;
-      if (docChecked[opt.type] && !docs[opt.type].remoteUrl) {
+      if (!docChecked[opt.type]) continue;
+      if (docs[opt.type].length === 0) {
         return `${opt.label} 이미지를 첨부해 주세요.`;
+      }
+      if (docs[opt.type].some((d) => !d.remoteUrl)) {
+        return `${opt.label} 업로드가 완료되지 않았습니다.`;
+      }
+      if (docs[opt.type].length > PRODUCT_POST_DOCUMENT_MAX_PER_TYPE) {
+        return `서류는 종류별로 최대 ${PRODUCT_POST_DOCUMENT_MAX_PER_TYPE}개까지 등록할 수 있습니다.`;
       }
     }
     return null;
@@ -696,15 +743,14 @@ export function ProductPostCreateForm({
     const price = parsePrice();
     const post = initialValues?.post;
 
-    const documents: ApiCreateProductPostDocument[] = DOC_OPTIONS.filter(
-      (o) => o.api && docChecked[o.type] && docs[o.type].remoteUrl
-    ).map((o) => {
-      const doc = docs[o.type];
-      return {
-        documentType: o.type as DocApiType,
-        imageUrl: doc.remoteUrl!,
-      };
-    });
+    const documents: ApiCreateProductPostDocument[] = DOC_OPTIONS.flatMap((o) =>
+      docs[o.type]
+        .filter((d) => Boolean(d.remoteUrl))
+        .map((d) => ({
+          documentType: o.type,
+          imageUrl: d.remoteUrl!,
+        }))
+    );
 
     const body = {
       categoryUuid,
@@ -730,7 +776,7 @@ export function ProductPostCreateForm({
       images: images.map((img) => ({
         imageUrl: img.remoteUrl!,
       })),
-      documents: documents.length ? documents : undefined,
+      documents,
     };
 
     void (async () => {
@@ -746,7 +792,13 @@ export function ProductPostCreateForm({
 
         if (!result.ok) {
           setConfirmOpen(false);
-          setError(result.message);
+          const docErr = pickDocumentsFieldError(result.fieldErrors);
+          if (docErr) {
+            setFieldError(docErr);
+            setError(null);
+          } else {
+            setError(result.message);
+          }
           notifyIfSessionExpiredAction(result);
           return;
         }
@@ -1062,10 +1114,13 @@ export function ProductPostCreateForm({
       {/* 첨부서류 */}
       <section className="flex flex-col gap-4">
         <div>
-          <p className="font-sans text-sm text-white">첨부서류</p>
+          <p className="font-sans text-sm text-white">
+            첨부서류 <span className="text-vh-brand-gold">*</span>
+          </p>
           <p className="mt-1 font-sans text-xs text-[#ababab]">
-            (서류 당 5MB 이하의 이미지 1장씩 첨부 가능. jpg, jpeg, png, webp
-            지원)
+            (필수 · 종류별 최대 {PRODUCT_POST_DOCUMENT_MAX_PER_TYPE}장 · 합계
+            최대 {PRODUCT_POST_DOCUMENT_MAX_TOTAL}장 · 장당 5MB 이하 · jpg,
+            jpeg, png, webp)
           </p>
         </div>
         <ul className="flex flex-wrap gap-4 md:gap-6">
@@ -1082,47 +1137,67 @@ export function ProductPostCreateForm({
         </ul>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {DOC_OPTIONS.filter((o) => docChecked[o.type]).map((opt) => (
-            <div
-              key={opt.type}
-              className="flex flex-col gap-2 border border-dashed border-[#868686] p-3"
-            >
-              <p className="font-sans text-xs text-[#d0d0d0]">
-                {opt.label}
-                {!opt.api ? " (UI만 · API 미전송)" : null}
-              </p>
-              {docs[opt.type].previewUrl ? (
-                <div className="relative aspect-square w-full overflow-hidden">
-                  <Image
-                    src={docs[opt.type].previewUrl!}
-                    alt={docs[opt.type].fileName ?? opt.label}
-                    fill
-                    unoptimized
-                    className="object-cover"
-                  />
-                </div>
-              ) : (
-                <label className="flex aspect-square cursor-pointer items-center justify-center bg-[#4a4a4a] text-2xl text-white">
-                  +
-                  <input
-                    type="file"
-                    accept={MEDIA_IMAGE_ACCEPT}
-                    className="sr-only"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] ?? null;
-                      setDocFile(opt.type, file);
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
-              )}
-              {docs[opt.type].fileName ? (
-                <p className="truncate font-sans text-[10px] text-[#ababab]">
-                  {docs[opt.type].fileName}
+          {DOC_OPTIONS.filter((o) => docChecked[o.type]).map((opt) => {
+            const items = docs[opt.type];
+            const canAdd = items.length < PRODUCT_POST_DOCUMENT_MAX_PER_TYPE;
+            return (
+              <div
+                key={opt.type}
+                className="flex flex-col gap-2 border border-dashed border-[#868686] p-3"
+              >
+                <p className="font-sans text-xs text-[#d0d0d0]">
+                  {opt.label} ({items.length}/
+                  {PRODUCT_POST_DOCUMENT_MAX_PER_TYPE})
                 </p>
-              ) : null}
-            </div>
-          ))}
+                <div className="grid grid-cols-2 gap-2">
+                  {items.map((item) => (
+                    <div key={item.id} className="relative aspect-square">
+                      <Image
+                        src={item.previewUrl}
+                        alt={item.fileName}
+                        fill
+                        unoptimized
+                        className="object-cover"
+                      />
+                      {item.uploadStatus === "uploading" ? (
+                        <span className="absolute inset-0 flex items-center justify-center bg-black/50">
+                          <Spinner
+                            size="sm"
+                            inline
+                            aria-label="서류 업로드 중"
+                          />
+                        </span>
+                      ) : null}
+                      <button
+                        type="button"
+                        aria-label={`${opt.label} 삭제`}
+                        disabled={item.uploadStatus === "uploading"}
+                        onClick={() => removeDocItem(opt.type, item.id)}
+                        className="absolute right-0.5 top-0.5 z-10 flex size-3.5 items-center justify-center bg-black/50 text-xs leading-none text-white disabled:opacity-40"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  {canAdd ? (
+                    <label className="flex aspect-square cursor-pointer items-center justify-center bg-[#4a4a4a] text-2xl text-white">
+                      +
+                      <input
+                        type="file"
+                        accept={MEDIA_IMAGE_ACCEPT}
+                        className="sr-only"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] ?? null;
+                          addDocFile(opt.type, file);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 

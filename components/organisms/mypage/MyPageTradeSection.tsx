@@ -187,7 +187,7 @@ export function MyPageTradeSection({
           showFeedback(
             "인증 실패",
             res.code === "REGION_VERIFICATION_FAILED"
-              ? "선택한 동네 근처에서만 인증할 수 있습니다. 위치를 확인해 주세요."
+              ? res.message || "현재 위치에서 인증할 수 없습니다."
               : res.message
           );
           return;
@@ -458,7 +458,30 @@ export function MyPageTradeSection({
             </p>
           ) : null}
           {visibleItems.map((item) => (
-            <MyPageTradeRow key={item.id} item={item} listKind={listKind} />
+            <MyPageTradeRow
+              key={item.id}
+              item={item}
+              listKind={listKind}
+              onBumpSuccess={(detail) => {
+                const iso = detail.bumpedAt?.trim() || detail.createdAt;
+                const date = new Date(iso);
+                const nextDate = Number.isNaN(date.getTime())
+                  ? null
+                  : `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
+                if (!nextDate) return;
+                setSellItems((prev) =>
+                  prev.map((row) =>
+                    row.id === detail.productPostUuid
+                      ? { ...row, date: nextDate }
+                      : row
+                  )
+                );
+              }}
+              onCompleteSuccess={() => {
+                if (listKind !== "sell") return;
+                loadSellPage(statusFilter, 1, false);
+              }}
+            />
           ))}
         </div>
         {canLoadMore ? (

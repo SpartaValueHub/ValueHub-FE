@@ -1,7 +1,6 @@
 import { Checkbox } from "@/components/atoms/checkbox";
 import { Icon } from "@/components/atoms/icons";
 import { MyPageFieldRow } from "@/components/molecules/mypage/MyPageFieldRow";
-import { MyPageGhostButton } from "@/components/molecules/mypage/MyPageGhostButton";
 import { MyPageProfileAvatar } from "@/components/molecules/mypage/MyPageProfileAvatar";
 import { MyPageWithdrawButton } from "@/components/molecules/mypage/MyPageWithdrawButton";
 import type { UiMyPageAccount } from "@/types/mypage/ui";
@@ -61,36 +60,27 @@ export function MyPageAccountSection({ account }: MyPageAccountSectionProps) {
         </MyPageFieldRow>
         <MyPageFieldRow
           label="비밀번호"
-          className="lg:col-start-2 lg:row-start-1"
+          className="justify-start lg:col-start-2 lg:row-start-1"
         >
-          <MyPageGhostButton className="w-auto shrink-0 px-3.5 py-1.5 text-xs lg:w-[134px] lg:px-[30px] lg:py-2 lg:text-sm">
-            <span className="lg:hidden">변경하기</span>
-            <span className="hidden lg:inline">비밀번호 변경</span>
-          </MyPageGhostButton>
+          <span className="font-sans text-[13px] text-white lg:text-base">
+            ••••••••
+          </span>
         </MyPageFieldRow>
         <MyPageFieldRow
           label="전화번호"
-          className="lg:col-start-1 lg:row-start-2"
+          className="justify-start lg:col-start-1 lg:row-start-2"
         >
-          <span className="mr-auto font-sans text-[13px] text-white lg:mr-0 lg:text-base">
+          <span className="font-sans text-[13px] text-white lg:text-base">
             {account.phone || "—"}
           </span>
-          <MyPageGhostButton className="w-auto shrink-0 px-3.5 py-1.5 text-xs lg:w-[134px] lg:px-[30px] lg:py-2 lg:text-sm">
-            <span className="lg:hidden">변경하기</span>
-            <span className="hidden lg:inline">전화번호 변경</span>
-          </MyPageGhostButton>
         </MyPageFieldRow>
         <MyPageFieldRow
           label="이메일"
-          className="lg:col-start-2 lg:row-start-2"
+          className="justify-start lg:col-start-2 lg:row-start-2"
         >
-          <span className="mr-auto truncate font-sans text-[13px] text-white lg:mr-0 lg:text-base">
+          <span className="truncate font-sans text-[13px] text-white lg:text-base">
             {account.email || "—"}
           </span>
-          <MyPageGhostButton className="w-auto shrink-0 px-3.5 py-1.5 text-xs lg:w-[134px] lg:px-[30px] lg:py-2 lg:text-sm">
-            <span className="lg:hidden">변경하기</span>
-            <span className="hidden lg:inline">이메일 변경</span>
-          </MyPageGhostButton>
         </MyPageFieldRow>
         <MyPageFieldRow
           label="마케팅 수신동의"

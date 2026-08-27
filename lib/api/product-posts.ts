@@ -9,17 +9,38 @@ import type {
   ApiProductPostCardPage,
   ApiProductPostDetail,
   ApiUpdateProductPostRequest,
+  ApiUpdateTradeStatusRequest,
 } from "@/types/product-posts/api";
 
 /** product-post-service HTTP — lib/api/* 전용. UI·actions에서 import 금지. */
 
-function productPostFetch<T>(path: string) {
+export type ListProductPostsOptions = {
+  /** 로그인 검색자 — Gateway public 목록은 JWT를 안 타므로 FE 서버가 주입 */
+  searcherMemberUuid?: string;
+  /** 비로그인 동시검색 — X-Search-Session-Id */
+  searchSessionId?: string;
+};
+
+function productPostFetch<T>(
+  path: string,
+  options?: { headers?: Record<string, string> }
+) {
   return apiFetch<T>(path, {
     method: "GET",
     baseUrl: getProductPostApiUrl(),
     cache: { noStore: true },
     skipSessionRecovery: true,
+    headers: options?.headers,
   });
+}
+
+function searchCoOccurrenceHeaders(opts?: ListProductPostsOptions) {
+  const headers: Record<string, string> = {};
+  const member = opts?.searcherMemberUuid?.trim();
+  const session = opts?.searchSessionId?.trim();
+  if (member) headers["X-Member-Uuid"] = member;
+  if (session) headers["X-Search-Session-Id"] = session;
+  return Object.keys(headers).length > 0 ? headers : undefined;
 }
 
 export function getProductPostDetail(uuid: string) {
@@ -28,9 +49,13 @@ export function getProductPostDetail(uuid: string) {
   );
 }
 
-export function listProductPosts(params?: Record<string, string | string[]>) {
+export function listProductPosts(
+  params?: Record<string, string | string[]>,
+  options?: ListProductPostsOptions
+) {
   return productPostFetch<ApiProductPostCardPage>(
-    API_ENDPOINTS.productPosts.list(params)
+    API_ENDPOINTS.productPosts.list(params),
+    { headers: searchCoOccurrenceHeaders(options) }
   );
 }
 
@@ -86,4 +111,31 @@ export async function deleteProductPost(uuid: string): Promise<void> {
     cache: { noStore: true },
     timeoutMillis: 12_000,
   });
+}
+
+/** POST — 본인 + SELLING + PUBLIC. 쿨다운·일일 한도 BE 검증 */
+export function bumpProductPost(uuid: string) {
+  return apiFetch<ApiProductPostDetail>(API_ENDPOINTS.productPosts.bump(uuid), {
+    method: "POST",
+    baseUrl: getProductPostApiUrl(),
+    cache: { noStore: true },
+    timeoutMillis: 12_000,
+  });
+}
+
+/** PATCH — 판매자 본인. SELLING↔RESERVED, RESERVED/SELLING→SOLD_OUT */
+export function updateProductPostTradeStatus(
+  uuid: string,
+  body: ApiUpdateTradeStatusRequest
+) {
+  return apiFetch<ApiProductPostDetail>(
+    API_ENDPOINTS.productPosts.tradeStatus(uuid),
+    {
+      method: "PATCH",
+      body,
+      baseUrl: getProductPostApiUrl(),
+      cache: { noStore: true },
+      timeoutMillis: 12_000,
+    }
+  );
 }

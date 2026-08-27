@@ -10,6 +10,7 @@ import {
 } from "@/components/molecules/overlay/Dialog";
 import { ProductPostFilterPanel } from "@/components/organisms/listing/ProductPostFilterPanel";
 import type {
+  ProductListCenterHrefOpts,
   ProductPostConditionGrade,
   ProductPostDocumentFilter,
 } from "@/constants/product-posts";
@@ -24,6 +25,8 @@ interface ProductPostMobileFilterProps {
   maxPrice: number;
   selectedGrades: ProductPostConditionGrade[];
   docs: ProductPostDocumentFilter;
+  keyword?: string | null;
+  listCenter?: ProductListCenterHrefOpts | null;
   className?: string;
 }
 
@@ -36,6 +39,8 @@ export function ProductPostMobileFilter({
   maxPrice,
   selectedGrades,
   docs,
+  keyword = null,
+  listCenter = null,
   className,
 }: ProductPostMobileFilterProps) {
   const [open, setOpen] = useState(false);
@@ -74,6 +79,8 @@ export function ProductPostMobileFilter({
             maxPrice={maxPrice}
             selectedGrades={selectedGrades}
             docs={docs}
+            keyword={keyword}
+            listCenter={listCenter}
           />
         </DialogContent>
       </Dialog>

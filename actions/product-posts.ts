@@ -12,16 +12,19 @@ import {
 import { mapActionError } from "@/lib/auth/map-action-error";
 import { requireActionAuth } from "@/lib/session";
 import {
+  bumpProductPostService,
   createProductPostService,
   createProductPostMediaPresignedUrlService,
   deleteProductPostService,
   getProductPostDetailService,
   listProductPostsService,
   updateProductPostService,
+  updateProductPostTradeStatusService,
 } from "@/services/product-posts.service";
 import type {
   ApiCreateProductPostRequest,
   ApiUpdateProductPostRequest,
+  TradeStatus,
 } from "@/types/product-posts/api";
 import type {
   UiProductPostCardPage,
@@ -31,15 +34,33 @@ import { mediaPresignedInputSchema } from "@/types/media/presign";
 import type { UiMediaPresigned } from "@/types/media/ui";
 
 export type ProductPostActionResult<T> =
-  { ok: true; data: T } | { ok: false; message: string; code?: string };
+  | { ok: true; data: T }
+  | {
+      ok: false;
+      message: string;
+      code?: string;
+      fieldErrors?: Record<string, string[]>;
+    };
 
-function toErrorMessage(e: unknown, fallback: string) {
+function toErrorResult(e: unknown, fallback: string) {
   if (e instanceof ApiTimeoutError) {
-    return "서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.";
+    return {
+      ok: false as const,
+      message: "서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.",
+    };
   }
-  if (e instanceof ApiError) return e.message;
-  if (e instanceof Error) return e.message;
-  return fallback;
+  if (e instanceof ApiError) {
+    return {
+      ok: false as const,
+      message: e.message,
+      code: e.code,
+      fieldErrors: e.fieldErrors,
+    };
+  }
+  if (e instanceof Error) {
+    return { ok: false as const, message: e.message };
+  }
+  return { ok: false as const, message: fallback };
 }
 
 export async function getProductPostDetailAction(
@@ -49,10 +70,7 @@ export async function getProductPostDetailAction(
     const data = await getProductPostDetailService(uuid);
     return { ok: true, data };
   } catch (e) {
-    return {
-      ok: false,
-      message: toErrorMessage(e, "상품 정보를 불러오지 못했습니다."),
-    };
+    return toErrorResult(e, "상품 정보를 불러오지 못했습니다.");
   }
 }
 
@@ -63,10 +81,7 @@ export async function listProductPostsAction(
     const data = await listProductPostsService(params);
     return { ok: true, data };
   } catch (e) {
-    return {
-      ok: false,
-      message: toErrorMessage(e, "상품 목록을 불러오지 못했습니다."),
-    };
+    return toErrorResult(e, "상품 목록을 불러오지 못했습니다.");
   }
 }
 
@@ -81,10 +96,7 @@ export async function createProductPostAction(
     if (e instanceof AuthSessionExpiredError) {
       return mapActionError(e, "상품 등록에 실패했습니다.");
     }
-    return {
-      ok: false,
-      message: toErrorMessage(e, "상품 등록에 실패했습니다."),
-    };
+    return toErrorResult(e, "상품 등록에 실패했습니다.");
   }
 }
 
@@ -100,10 +112,7 @@ export async function updateProductPostAction(
     if (e instanceof AuthSessionExpiredError) {
       return mapActionError(e, "상품 수정에 실패했습니다.");
     }
-    return {
-      ok: false,
-      message: toErrorMessage(e, "상품 수정에 실패했습니다."),
-    };
+    return toErrorResult(e, "상품 수정에 실패했습니다.");
   }
 }
 
@@ -118,10 +127,38 @@ export async function deleteProductPostAction(
     if (e instanceof AuthSessionExpiredError) {
       return mapActionError(e, "상품 삭제에 실패했습니다.");
     }
-    return {
-      ok: false,
-      message: toErrorMessage(e, "상품 삭제에 실패했습니다."),
-    };
+    return toErrorResult(e, "상품 삭제에 실패했습니다.");
+  }
+}
+
+export async function bumpProductPostAction(
+  uuid: string
+): Promise<ProductPostActionResult<UiProductPostDetail>> {
+  try {
+    await requireActionAuth();
+    const data = await bumpProductPostService(uuid);
+    return { ok: true, data };
+  } catch (e) {
+    if (e instanceof AuthSessionExpiredError) {
+      return mapActionError(e, "끌어올리기에 실패했습니다.");
+    }
+    return toErrorResult(e, "끌어올리기에 실패했습니다.");
+  }
+}
+
+export async function updateProductPostTradeStatusAction(
+  uuid: string,
+  tradeStatus: TradeStatus
+): Promise<ProductPostActionResult<UiProductPostDetail>> {
+  try {
+    await requireActionAuth();
+    const data = await updateProductPostTradeStatusService(uuid, tradeStatus);
+    return { ok: true, data };
+  } catch (e) {
+    if (e instanceof AuthSessionExpiredError) {
+      return mapActionError(e, "거래 상태 변경에 실패했습니다.");
+    }
+    return toErrorResult(e, "거래 상태 변경에 실패했습니다.");
   }
 }
 
@@ -145,9 +182,6 @@ export async function createProductPostMediaPresignedUrlAction(
     if (e instanceof AuthSessionExpiredError) {
       return mapActionError(e, "이미지 업로드 주소를 받지 못했습니다.");
     }
-    return {
-      ok: false,
-      message: toErrorMessage(e, "이미지 업로드 주소를 받지 못했습니다."),
-    };
+    return toErrorResult(e, "이미지 업로드 주소를 받지 못했습니다.");
   }
 }

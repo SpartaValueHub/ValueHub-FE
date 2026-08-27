@@ -140,9 +140,10 @@ function toBeTradeStatus(
 export function mapProductCardToSellItem(
   card: UiProductPostCard
 ): UiMyPageTradeItem {
+  const status = mapTradeStatus(card.tradeStatus);
   return {
     id: card.productPostUuid,
-    status: mapTradeStatus(card.tradeStatus),
+    status,
     title: card.name,
     date: formatMyPageTradeDate(card.listedAt),
     location: resolveTradeLocationLabel({
@@ -151,6 +152,12 @@ export function mapProductCardToSellItem(
       placeName: card.placeName,
     }),
     price: card.price,
+    action:
+      status === "selling"
+        ? "boost"
+        : status === "reserved"
+          ? "complete"
+          : undefined,
     review: { kind: "locked" },
   };
 }

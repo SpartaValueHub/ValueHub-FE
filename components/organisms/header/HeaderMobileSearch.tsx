@@ -52,7 +52,7 @@ export function HeaderMobileSearch({ open, onClose }: HeaderMobileSearchProps) {
         </span>
       </div>
 
-      <HeaderSearchPanel variant="mobile" className="px-5" />
+      <HeaderSearchPanel variant="mobile" className="px-5" onClose={onClose} />
     </div>
   );
 }

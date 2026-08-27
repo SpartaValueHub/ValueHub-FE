@@ -14,18 +14,21 @@ export class ApiError extends Error {
   status: number;
   code?: string;
   retryAfterSeconds?: number;
+  fieldErrors?: Record<string, string[]>;
 
   constructor(
     status: number,
     message: string,
     code?: string,
-    retryAfterSeconds?: number
+    retryAfterSeconds?: number,
+    fieldErrors?: Record<string, string[]>
   ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
     this.retryAfterSeconds = retryAfterSeconds;
+    this.fieldErrors = fieldErrors;
   }
 }
 
@@ -151,6 +154,8 @@ type ApiFetchOptions = {
   body?: unknown;
   cache?: FetchCacheOpts;
   baseUrl?: string;
+  /** 추가 요청 헤더 (Cookie·Authorization 등과 병합) */
+  headers?: Record<string, string>;
   /** 401 refresh 재시도 방지 */
   _retried?: boolean;
   /** refresh 실패 시 signOut 생략 (authorize 등) */
@@ -231,7 +236,10 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const base = (options.baseUrl ?? getApiUrl()).replace(/\/$/, "");
   const url = `${base}${path.startsWith("/") ? path : `/${path}`}`;
-  const headers: Record<string, string> = { Accept: "application/json" };
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    ...options.headers,
+  };
 
   if (options.body !== undefined) {
     headers["Content-Type"] = "application/json";
@@ -308,6 +316,7 @@ export async function apiFetch<T>(
         message?: string;
         code?: string;
         retryAfterSeconds?: number;
+        fieldErrors?: Record<string, string[]>;
       } | null;
       const message =
         body?.message || text || `API 오류 (${res.status} ${res.statusText})`;
@@ -315,7 +324,8 @@ export async function apiFetch<T>(
         res.status,
         message,
         body?.code,
-        body?.retryAfterSeconds
+        body?.retryAfterSeconds,
+        body?.fieldErrors
       );
     }
 
@@ -343,6 +353,7 @@ export async function apiFetch<T>(
       error?: string;
       code?: string;
       retryAfterSeconds?: number;
+      fieldErrors?: Record<string, string[]>;
     } | null;
     const message =
       body?.message ||
@@ -353,7 +364,8 @@ export async function apiFetch<T>(
       res.status,
       message,
       body?.code,
-      body?.retryAfterSeconds
+      body?.retryAfterSeconds,
+      body?.fieldErrors
     );
   }
 

@@ -12,6 +12,7 @@ import {
 import { mapActionError } from "@/lib/auth/map-action-error";
 import { requireActionAuth } from "@/lib/session";
 import {
+  bumpProductPostService,
   createProductPostService,
   createProductPostMediaPresignedUrlService,
   deleteProductPostService,
@@ -125,6 +126,21 @@ export async function deleteProductPostAction(
       return mapActionError(e, "상품 삭제에 실패했습니다.");
     }
     return toErrorResult(e, "상품 삭제에 실패했습니다.");
+  }
+}
+
+export async function bumpProductPostAction(
+  uuid: string
+): Promise<ProductPostActionResult<UiProductPostDetail>> {
+  try {
+    await requireActionAuth();
+    const data = await bumpProductPostService(uuid);
+    return { ok: true, data };
+  } catch (e) {
+    if (e instanceof AuthSessionExpiredError) {
+      return mapActionError(e, "끌어올리기에 실패했습니다.");
+    }
+    return toErrorResult(e, "끌어올리기에 실패했습니다.");
   }
 }
 

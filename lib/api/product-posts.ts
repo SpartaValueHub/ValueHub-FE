@@ -111,3 +111,13 @@ export async function deleteProductPost(uuid: string): Promise<void> {
     timeoutMillis: 12_000,
   });
 }
+
+/** POST — 본인 + SELLING + PUBLIC. 쿨다운·일일 한도 BE 검증 */
+export function bumpProductPost(uuid: string) {
+  return apiFetch<ApiProductPostDetail>(API_ENDPOINTS.productPosts.bump(uuid), {
+    method: "POST",
+    baseUrl: getProductPostApiUrl(),
+    cache: { noStore: true },
+    timeoutMillis: 12_000,
+  });
+}

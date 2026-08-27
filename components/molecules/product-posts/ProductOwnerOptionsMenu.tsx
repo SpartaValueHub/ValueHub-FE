@@ -11,6 +11,7 @@ import {
   PRODUCT_POSTS_PATH,
   productPostEditPath,
 } from "@/constants/product-posts";
+import { useProductPostBump } from "@/hooks/product-posts/useProductPostBump";
 import { notifyIfSessionExpiredAction } from "@/lib/auth/session-expired.client";
 import { cn } from "@/lib/utils";
 
@@ -18,20 +19,20 @@ type OwnerMenuItem = {
   key: "bump" | "edit" | "delete";
   label: string;
   icon: SystemIconName;
-  /** false면 비활성(opacity) — 끌어올리기는 후속, 수정은 SELLING만 */
+  /** false면 비활성(opacity) — 수정은 SELLING만, 끌올도 SELLING만 */
   enabled: boolean;
 };
 
 interface ProductOwnerOptionsMenuProps {
   productPostUuid: string;
-  /** BE PUT은 SELLING만 허용 — false면 「수정하기」 비활성 */
+  /** BE PUT·bump는 SELLING만 허용 — false면 「수정하기」「끌어올리기」 비활성 */
   canEdit?: boolean;
   className?: string;
 }
 
 /**
  * Figma option_product_detail (518:862)
- * — owner 전용 ⋯ 메뉴. 삭제·수정(SELLING) 연동. 끌어올리기는 placeholder.
+ * — owner 전용 ⋯ 메뉴. 끌어올리기·삭제·수정(SELLING) 연동.
  */
 export function ProductOwnerOptionsMenu({
   productPostUuid,
@@ -44,8 +45,24 @@ export function ProductOwnerOptionsMenu({
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const {
+    requestBump,
+    bumping,
+    dialogs: bumpDialogs,
+  } = useProductPostBump({
+    productPostUuid,
+    onSuccess: () => {
+      router.refresh();
+    },
+  });
+
   const menuItems: OwnerMenuItem[] = [
-    { key: "bump", label: "끌어올리기", icon: "chevron-up", enabled: false },
+    {
+      key: "bump",
+      label: "끌어올리기",
+      icon: "chevron-up",
+      enabled: canEdit,
+    },
     {
       key: "edit",
       label: "수정하기",
@@ -56,8 +73,13 @@ export function ProductOwnerOptionsMenu({
   ];
 
   const onSelect = (item: OwnerMenuItem) => {
-    if (!item.enabled) {
+    if (!item.enabled || bumping || deleting) {
       setMenuOpen(false);
+      return;
+    }
+    if (item.key === "bump") {
+      setMenuOpen(false);
+      requestBump();
       return;
     }
     if (item.key === "edit") {
@@ -118,7 +140,7 @@ export function ProductOwnerOptionsMenu({
               <button
                 type="button"
                 role="menuitem"
-                disabled={deleting || !item.enabled}
+                disabled={deleting || bumping || !item.enabled}
                 onClick={() => onSelect(item)}
                 className={cn(
                   "flex w-full items-center gap-1 text-left font-sans text-base text-[#323232]",
@@ -150,6 +172,8 @@ export function ProductOwnerOptionsMenu({
           setError(null);
         }}
       />
+
+      {bumpDialogs}
     </>
   );
 }

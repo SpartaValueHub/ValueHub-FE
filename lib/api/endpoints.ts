@@ -55,6 +55,8 @@ export const API_ENDPOINTS = {
       `/api/v1/product-posts/${encodeURIComponent(uuid)}`,
     delete: (uuid: string) =>
       `/api/v1/product-posts/${encodeURIComponent(uuid)}`,
+    bump: (uuid: string) =>
+      `/api/v1/product-posts/${encodeURIComponent(uuid)}/bump`,
     list: (params?: Record<string, string | string[]>) => {
       const base = "/api/v1/product-posts";
       if (!params) return base;

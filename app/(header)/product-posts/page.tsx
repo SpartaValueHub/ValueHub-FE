@@ -7,6 +7,7 @@ import {
   parseGradeParams,
 } from "@/constants/product-posts";
 import { resolveSearchCoOccurrenceHeaders } from "@/lib/search/co-occurrence";
+import { resolveMyActivityRegionLabelService } from "@/services/member-regions.service";
 import {
   PRODUCT_POST_LIST_PAGE_SIZE,
   listProductPostsService,
@@ -93,12 +94,25 @@ export default async function ProductPostsPage({
 
   let list = EMPTY_LIST;
   let errorMessage: string | undefined;
-  try {
-    const searchHeaders = keyword
-      ? await resolveSearchCoOccurrenceHeaders()
-      : undefined;
-    list = await listProductPostsService(listParams, searchHeaders);
-  } catch {
+  let myLocation = null;
+
+  const [locationResult, listResult] = await Promise.allSettled([
+    resolveMyActivityRegionLabelService(),
+    (async () => {
+      const searchHeaders = keyword
+        ? await resolveSearchCoOccurrenceHeaders()
+        : undefined;
+      return listProductPostsService(listParams, searchHeaders);
+    })(),
+  ]);
+
+  if (locationResult.status === "fulfilled") {
+    myLocation = locationResult.value;
+  }
+
+  if (listResult.status === "fulfilled") {
+    list = listResult.value;
+  } else {
     errorMessage = "상품 목록을 불러오지 못했습니다.";
   }
 
@@ -116,6 +130,7 @@ export default async function ProductPostsPage({
       keyword={keyword || null}
       list={list}
       errorMessage={errorMessage}
+      myLocation={myLocation}
     />
   );
 }

@@ -14,9 +14,14 @@ import {
   type ProductPostConditionGrade,
   type ProductPostDocumentFilter,
 } from "@/constants/product-posts";
+import {
+  formatProductListLocationDong,
+  formatProductListLocationLabel,
+} from "@/lib/member-regions/format-list-location";
 import { cn } from "@/lib/utils";
 import type { UiBrandFilterOption } from "@/services/product-posts.service";
 import type { UiCategorySummary } from "@/types/categories/ui";
+import type { UiActivityRegionLabel } from "@/types/member-regions/ui";
 import type { UiProductPostCardPage } from "@/types/product-posts/ui";
 
 interface ProductPostListTemplateProps {
@@ -32,6 +37,7 @@ interface ProductPostListTemplateProps {
   keyword?: string | null;
   list: UiProductPostCardPage;
   errorMessage?: string;
+  myLocation?: UiActivityRegionLabel | null;
 }
 
 function pageItems(current: number, total: number) {
@@ -59,8 +65,15 @@ export function ProductPostListTemplate({
   keyword = null,
   list,
   errorMessage,
+  myLocation = null,
 }: ProductPostListTemplateProps) {
   const pages = pageItems(list.page, Math.max(1, list.totalPages));
+  const locationPcLabel = myLocation
+    ? formatProductListLocationLabel(myLocation)
+    : "";
+  const locationMobileDong = myLocation
+    ? formatProductListLocationDong(myLocation.regionDong)
+    : "";
   const filterOpts = {
     category: categoryUuid,
     sub: activeSub,
@@ -75,18 +88,20 @@ export function ProductPostListTemplate({
     <main className="relative flex flex-1 flex-col bg-[#323232] pb-[90px] pt-[72px] md:pb-[120px] md:pt-[160px]">
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-[30px] px-[3px] md:flex-row md:items-start md:gap-[90px] md:px-10">
         <aside className="hidden w-[340px] shrink-0 md:block">
-          <div className="pt-10">
-            <p className="font-sans text-xs text-[#ababab]">내 위치</p>
-            <button
-              type="button"
-              className="mt-2 flex w-full items-center justify-between font-sans text-2xl leading-9 text-vh-gray-100"
-            >
-              <span>부산시 초량동</span>
-              <Icon name="swap" size={24} className="text-[#ababab]" />
-            </button>
-          </div>
+          {locationPcLabel ? (
+            <div className="pt-10">
+              <p className="font-sans text-xs text-[#ababab]">내 위치</p>
+              <button
+                type="button"
+                className="mt-2 flex w-full items-center justify-between font-sans text-2xl leading-9 text-vh-gray-100"
+              >
+                <span>{locationPcLabel}</span>
+                <Icon name="swap" size={24} className="text-[#ababab]" />
+              </button>
+            </div>
+          ) : null}
 
-          <div className="mt-8">
+          <div className={cn(locationPcLabel ? "mt-8" : "pt-10")}>
             <ProductPostFilterPanel
               categoryUuid={categoryUuid}
               activeSub={activeSub}
@@ -106,18 +121,20 @@ export function ProductPostListTemplate({
             <p className="font-sans text-xl font-medium leading-none text-vh-gray-100">
               {title}
             </p>
-            <button
-              type="button"
-              className="flex items-center gap-0.5 rounded-[5px] border border-[#868686] px-2 py-1 font-sans text-xs text-vh-gray-100"
-            >
-              <Icon
-                name="location-pin"
-                size={10}
-                className="text-vh-gray-100"
-              />
-              <span>초량동</span>
-              <Icon name="swap" size={10} className="text-[#ababab]" />
-            </button>
+            {locationMobileDong ? (
+              <button
+                type="button"
+                className="flex items-center gap-0.5 rounded-[5px] border border-[#868686] px-2 py-1 font-sans text-xs text-vh-gray-100"
+              >
+                <Icon
+                  name="location-pin"
+                  size={10}
+                  className="text-vh-gray-100"
+                />
+                <span>{locationMobileDong}</span>
+                <Icon name="swap" size={10} className="text-[#ababab]" />
+              </button>
+            ) : null}
           </div>
 
           {/* PC 타이틀 */}

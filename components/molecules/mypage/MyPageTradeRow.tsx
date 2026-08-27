@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
+
 import { StatusBadge } from "@/components/atoms/status-badge";
 import { MyPageGhostButton } from "@/components/molecules/mypage/MyPageGhostButton";
 import { formatMyPagePrice } from "@/constants/mypage";
+import { PRODUCT_POSTS_PATH } from "@/constants/product-posts";
 import { useProductPostBump } from "@/hooks/product-posts/useProductPostBump";
 import { useProductPostCompleteTrade } from "@/hooks/product-posts/useProductPostCompleteTrade";
 import { cn } from "@/lib/utils";
@@ -45,6 +48,7 @@ export function MyPageTradeRow({
   const badge = STATUS_BADGE[item.status];
   const canBump = listKind === "sell" && item.action === "boost";
   const canComplete = listKind === "sell" && item.action === "complete";
+  const detailHref = `${PRODUCT_POSTS_PATH}/${encodeURIComponent(item.id)}`;
 
   const {
     requestBump,
@@ -91,9 +95,12 @@ export function MyPageTradeRow({
                     )
                 )}
               />
-              <p className="font-sans text-sm text-white lg:text-base">
+              <Link
+                href={detailHref}
+                className="font-sans text-sm text-white underline-offset-2 hover:underline lg:text-base"
+              >
                 {item.title}
-              </p>
+              </Link>
               <p className="font-sans text-xs text-[#ababab] lg:text-sm">
                 {item.location
                   ? `${item.date} ${item.location}에서 거래`

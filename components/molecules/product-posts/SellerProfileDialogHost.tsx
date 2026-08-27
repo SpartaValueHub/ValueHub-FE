@@ -14,27 +14,6 @@ import type {
   UiUserProfileProduct,
 } from "@/types/profile/ui";
 
-function SourceBadge({
-  label,
-  source,
-}: {
-  label: string;
-  source: UiProfileFieldSource;
-}) {
-  const isApi = source === "api";
-  return (
-    <span
-      className={
-        isApi
-          ? "rounded px-1.5 py-0.5 font-sans text-[10px] font-medium tracking-tight text-white bg-emerald-600"
-          : "rounded px-1.5 py-0.5 font-sans text-[10px] font-medium tracking-tight text-white bg-[#868686]"
-      }
-    >
-      {label}:{isApi ? "API" : "목업"}
-    </span>
-  );
-}
-
 type HostPhase = "idle" | "loading" | "profile" | "unavailable";
 
 interface SellerProfileDialogHostProps {
@@ -52,7 +31,7 @@ export function SellerProfileDialogHost({
   memberUuid,
   onOpenChange,
 }: SellerProfileDialogHostProps) {
-  const [pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const [morePending, startMoreTransition] = useTransition();
   const [phase, setPhase] = useState<HostPhase>("idle");
   const [profile, setProfile] = useState<UiUserProfile | null>(null);
@@ -144,7 +123,7 @@ export function SellerProfileDialogHost({
 
   return (
     <>
-      {dialogProfile && sources ? (
+      {dialogProfile ? (
         <UserProfileDialog
           open={open && phase === "profile"}
           profile={dialogProfile}
@@ -152,22 +131,6 @@ export function SellerProfileDialogHost({
           showProductsMore={showProductsMore}
           productsMorePending={morePending}
           onProductsMoreClick={handleProductsMore}
-          headerExtra={
-            <div className="flex flex-wrap gap-1.5 pb-2">
-              <SourceBadge label="닉네임" source={sources.nickname} />
-              <SourceBadge label="이미지" source={sources.avatar} />
-              <SourceBadge label="가입일" source={sources.joinedAt} />
-              <SourceBadge label="등급" source={sources.trustGrade} />
-              <SourceBadge label="지역" source={sources.region} />
-              <SourceBadge label="별점" source={sources.rating} />
-              <SourceBadge label="판매목록" source={sources.products} />
-              {pending ? (
-                <span className="font-sans text-[10px] text-[#868686]">
-                  로딩…
-                </span>
-              ) : null}
-            </div>
-          }
         />
       ) : null}
 

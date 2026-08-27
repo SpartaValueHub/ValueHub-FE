@@ -1,9 +1,7 @@
 "use client";
 
-import { Icon } from "@/components/atoms/icons";
 import { StatusBadge } from "@/components/atoms/status-badge";
 import { MyPageGhostButton } from "@/components/molecules/mypage/MyPageGhostButton";
-import { MyPageStarRating } from "@/components/molecules/mypage/MyPageStarRating";
 import { formatMyPagePrice } from "@/constants/mypage";
 import { useProductPostBump } from "@/hooks/product-posts/useProductPostBump";
 import { useProductPostCompleteTrade } from "@/hooks/product-posts/useProductPostCompleteTrade";
@@ -35,98 +33,6 @@ interface MyPageTradeRowProps {
   className?: string;
   onBumpSuccess?: (detail: UiProductPostDetail) => void;
   onCompleteSuccess?: (detail: UiProductPostDetail) => void;
-}
-
-function TradeReview({ item }: { item: UiMyPageTradeItem }) {
-  if (item.review.kind === "locked") {
-    return (
-      <>
-        <p className="w-full text-center font-sans text-xs leading-[1.4] tracking-[-0.24px] text-white lg:hidden">
-          거래가 완료되지 않아 후기/평점을 보거나 작성할 수 없습니다.
-        </p>
-        <div className="hidden w-[210px] flex-col items-start gap-5 lg:flex">
-          <p className="font-sans text-base font-light text-white">
-            후기 및 평점
-          </p>
-          <p className="font-sans text-base leading-[1.4] tracking-[-0.32px] text-white">
-            거래가 완료되지 않아 후기/평점을
-            <br />
-            보거나 작성할 수 없습니다.
-          </p>
-        </div>
-      </>
-    );
-  }
-
-  if (item.review.kind === "rated") {
-    return (
-      <>
-        <div className="flex items-center gap-[13px] lg:hidden">
-          <MyPageStarRating score={item.review.score} />
-          <button
-            type="button"
-            className="flex items-center gap-1 border-b-[0.5px] border-[#d0d0d0] p-0.5"
-          >
-            <span className="font-sans text-[13px] text-[#ababab]">
-              상세보기
-            </span>
-            <Icon name="chevron-right" size={12} className="invert" />
-          </button>
-        </div>
-        <MyPageGhostButton className="w-full lg:hidden">
-          후기/평점 작성
-        </MyPageGhostButton>
-        <div className="hidden w-[210px] flex-col items-start gap-2.5 lg:flex">
-          <p className="font-sans text-base font-light text-white">
-            후기 및 평점
-          </p>
-          <div className="flex flex-col items-center gap-0.5">
-            <div className="flex h-[33px] items-center gap-[13px]">
-              <MyPageStarRating score={item.review.score} />
-              <button
-                type="button"
-                className="flex items-center gap-1 border-b-[0.5px] border-[#d0d0d0] p-0.5"
-              >
-                <span className="font-sans text-[13px] text-[#ababab]">
-                  상세보기
-                </span>
-                <Icon name="chevron-right" size={12} className="invert" />
-              </button>
-            </div>
-            <MyPageGhostButton className="w-full">
-              후기/평점 작성
-            </MyPageGhostButton>
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  return (
-    <>
-      <p className="w-full font-sans text-xs leading-[1.4] tracking-[-0.24px] text-white lg:hidden">
-        아직 상대방이 후기와 평점을 작성하지 않았습니다.
-      </p>
-      <MyPageGhostButton className="w-full lg:hidden">
-        작성한 후기 보기
-      </MyPageGhostButton>
-      <div className="hidden w-[210px] flex-col items-start gap-2.5 lg:flex">
-        <p className="font-sans text-base font-light text-white">
-          후기 및 평점
-        </p>
-        <div className="flex w-full flex-col items-start gap-0.5">
-          <p className="font-sans text-base leading-[1.4] tracking-[-0.32px] text-white">
-            아직 상대방이 후기와 평점을
-            <br />
-            작성하지 않았습니다.
-          </p>
-          <MyPageGhostButton className="w-[183px]">
-            작성한 후기 보기
-          </MyPageGhostButton>
-        </div>
-      </div>
-    </>
-  );
 }
 
 export function MyPageTradeRow({
@@ -222,7 +128,6 @@ export function MyPageTradeRow({
             </MyPageGhostButton>
           ) : null}
         </div>
-        <TradeReview item={item} />
       </article>
       {canBump ? bumpDialogs : null}
       {canComplete ? completeDialogs : null}

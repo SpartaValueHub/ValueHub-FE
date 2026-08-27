@@ -98,7 +98,11 @@ export function useProductPostCompleteTrade({
         title="거래가 완료되었습니다."
         primaryLabel="확인"
         onPrimary={() => setSuccessOpen(false)}
-      />
+      >
+        <DialogDescription className="sr-only">
+          거래가 완료되었습니다.
+        </DialogDescription>
+      </AlertDialog>
 
       <AlertDialog
         open={failOpen}

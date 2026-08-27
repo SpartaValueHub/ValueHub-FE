@@ -24,6 +24,7 @@ interface ProductPostMobileFilterProps {
   maxPrice: number;
   selectedGrades: ProductPostConditionGrade[];
   docs: ProductPostDocumentFilter;
+  keyword?: string | null;
   className?: string;
 }
 
@@ -36,6 +37,7 @@ export function ProductPostMobileFilter({
   maxPrice,
   selectedGrades,
   docs,
+  keyword = null,
   className,
 }: ProductPostMobileFilterProps) {
   const [open, setOpen] = useState(false);
@@ -74,6 +76,7 @@ export function ProductPostMobileFilter({
             maxPrice={maxPrice}
             selectedGrades={selectedGrades}
             docs={docs}
+            keyword={keyword}
           />
         </DialogContent>
       </Dialog>

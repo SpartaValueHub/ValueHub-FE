@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Icon } from "@/components/atoms/icons";
 import { BrandWordmark } from "@/components/molecules/brand/BrandWordmark";
@@ -37,6 +37,10 @@ export function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const desktopSearchRef = useRef<HTMLDivElement>(null);
+  const searchQuery = searchParams.toString();
+  const routeKey = `${pathname}?${searchQuery}`;
+  const [overlayRouteKey, setOverlayRouteKey] = useState(routeKey);
   const isHome = pathname === "/";
   const isDetail = isProductSubPath(pathname);
   /** Figma product_list 모바일 헤더는 햄버거·로고·검색만 (대분류 내비 없음) */
@@ -45,6 +49,56 @@ export function Header() {
     pathname === PRODUCT_POSTS_PATH
       ? headerCategoryNavIdFromUuid(searchParams.get("category"))
       : "all";
+
+  /** 라우트·쿼리 이동 시 검색·메뉴 정리 (카테고리 Link 포함) */
+  if (overlayRouteKey !== routeKey) {
+    setOverlayRouteKey(routeKey);
+    setSearchOpen(false);
+    setMobileSearchOpen(false);
+    setMenuOpen(false);
+  }
+
+  function closeDesktopSearch() {
+    setSearchOpen(false);
+  }
+
+  function closeAllOverlays() {
+    setSearchOpen(false);
+    setMobileSearchOpen(false);
+    setMenuOpen(false);
+  }
+
+  /** PC 검색 — Esc / 패널 바깥 클릭으로 닫기 (검색 아이콘 토글은 제외) */
+  useEffect(() => {
+    if (!searchOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeDesktopSearch();
+    };
+
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (desktopSearchRef.current?.contains(target)) return;
+      if (
+        target instanceof Element &&
+        target.closest("[data-header-search-toggle]")
+      ) {
+        return;
+      }
+      closeDesktopSearch();
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("touchstart", onPointerDown);
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("touchstart", onPointerDown);
+    };
+  }, [searchOpen]);
 
   return (
     <>
@@ -108,8 +162,11 @@ export function Header() {
             <BrandWordmark size="sm" className="md:hidden" />
 
             {searchOpen ? (
-              <div className="absolute inset-x-10 top-5 z-10 hidden justify-center md:flex">
-                <HeaderSearchPanel onClose={() => setSearchOpen(false)} />
+              <div
+                ref={desktopSearchRef}
+                className="absolute inset-x-10 top-5 z-10 hidden justify-center md:flex"
+              >
+                <HeaderSearchPanel onClose={closeDesktopSearch} />
               </div>
             ) : null}
 
@@ -119,9 +176,9 @@ export function Header() {
               onSearchClick={() => {
                 setMenuOpen(false);
                 setMobileSearchOpen(false);
-                setSearchOpen(true);
+                setSearchOpen((open) => !open);
               }}
-              showSearch={!searchOpen}
+              showSearch
               showInboxIcons={isAuthenticated}
               className="hidden md:flex"
             />
@@ -148,11 +205,13 @@ export function Header() {
               <HeaderCategoryNav
                 activeId={activeCategoryId}
                 size="sm"
+                onNavigate={closeAllOverlays}
                 className="flex flex-1 justify-between overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden"
               />
 
               <HeaderCategoryNav
                 activeId={activeCategoryId}
+                onNavigate={closeAllOverlays}
                 className="hidden flex-1 md:flex"
               />
 
@@ -169,6 +228,7 @@ export function Header() {
             <div className="hidden items-center justify-between gap-4 md:flex">
               <HeaderCategoryNav
                 activeId={activeCategoryId}
+                onNavigate={closeAllOverlays}
                 className="flex flex-1"
               />
               <HeaderAuthLinks
@@ -182,7 +242,10 @@ export function Header() {
 
           {searchOpen ? (
             <div className="hidden items-center justify-between md:flex">
-              <HeaderCategoryNav activeId={activeCategoryId} />
+              <HeaderCategoryNav
+                activeId={activeCategoryId}
+                onNavigate={closeAllOverlays}
+              />
               <HeaderAuthLinks
                 isAuthenticated={isAuthenticated}
                 isLoading={isLoading}

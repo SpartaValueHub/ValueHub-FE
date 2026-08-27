@@ -29,6 +29,7 @@ interface ProductPostListTemplateProps {
   maxPrice: number;
   selectedGrades: ProductPostConditionGrade[];
   docs: ProductPostDocumentFilter;
+  keyword?: string | null;
   list: UiProductPostCardPage;
   errorMessage?: string;
 }
@@ -55,6 +56,7 @@ export function ProductPostListTemplate({
   maxPrice,
   selectedGrades,
   docs,
+  keyword = null,
   list,
   errorMessage,
 }: ProductPostListTemplateProps) {
@@ -66,6 +68,7 @@ export function ProductPostListTemplate({
     maxPrice,
     selectedGrades,
     docs,
+    keyword,
   };
 
   return (
@@ -92,6 +95,7 @@ export function ProductPostListTemplate({
               maxPrice={maxPrice}
               selectedGrades={selectedGrades}
               docs={docs}
+              keyword={keyword}
             />
           </div>
         </aside>
@@ -177,6 +181,7 @@ export function ProductPostListTemplate({
                 maxPrice={maxPrice}
                 selectedGrades={selectedGrades}
                 docs={docs}
+                keyword={keyword}
               />
               <ProductPostSortButton label="최신순" />
             </div>

@@ -9,6 +9,7 @@ import {
   PRODUCT_POST_PRICE_FILTER_MAX_WON,
   PRODUCT_POST_PRICE_FILTER_MIN_WON,
   productPostsListHref,
+  type ProductListCenterHrefOpts,
   type ProductPostConditionGrade,
   type ProductPostDocumentFilter,
 } from "@/constants/product-posts";
@@ -28,6 +29,7 @@ interface ProductPostFilterPanelProps {
   selectedGrades: ProductPostConditionGrade[];
   docs: ProductPostDocumentFilter;
   keyword?: string | null;
+  listCenter?: ProductListCenterHrefOpts | null;
   className?: string;
 }
 
@@ -79,9 +81,11 @@ export function ProductPostFilterPanel({
   selectedGrades,
   docs,
   keyword = null,
+  listCenter = null,
   className,
 }: ProductPostFilterPanelProps) {
   const router = useRouter();
+  const centerHref = listCenter ?? {};
   const priceMan = Math.round(maxPrice / 10_000);
   const clampedMan = Math.min(PRICE_MAX_MAN, Math.max(PRICE_MIN_MAN, priceMan));
   const pricePct =
@@ -103,6 +107,7 @@ export function ProductPostFilterPanel({
         grades: next.grades ?? selectedGrades,
         docs: next.docs ?? docs,
         keyword,
+        ...centerHref,
       })
     );
   };
@@ -133,6 +138,7 @@ export function ProductPostFilterPanel({
         sub: activeSub,
         page: 1,
         keyword,
+        ...centerHref,
       })
     );
   };

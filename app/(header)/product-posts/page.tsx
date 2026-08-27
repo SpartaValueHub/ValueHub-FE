@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { ProductPostListTemplate } from "@/components/templates/listing/ProductPostListTemplate";
 import {
   PRODUCT_POST_DOCUMENT_TYPES,
@@ -7,7 +9,10 @@ import {
   parseGradeParams,
 } from "@/constants/product-posts";
 import { resolveSearchCoOccurrenceHeaders } from "@/lib/search/co-occurrence";
-import { resolveMyActivityRegionLabelService } from "@/services/member-regions.service";
+import {
+  appendListCenterQuery,
+  resolveProductListLocationService,
+} from "@/services/product-list-location.service";
 import {
   PRODUCT_POST_LIST_PAGE_SIZE,
   listProductPostsService,
@@ -26,6 +31,10 @@ interface ProductPostsPageProps {
     grade?: string | string[];
     docs?: string;
     keyword?: string;
+    centerLatitude?: string;
+    centerLongitude?: string;
+    memberRegionId?: string;
+    locationDenied?: string;
   }>;
 }
 
@@ -66,6 +75,16 @@ export default async function ProductPostsPage({
       ? Math.min(parsedMax, PRODUCT_POST_PRICE_FILTER_MAX_WON)
       : PRODUCT_POST_PRICE_FILTER_MAX_WON;
 
+  const locationState = await resolveProductListLocationService({
+    centerLatitude: params.centerLatitude,
+    centerLongitude: params.centerLongitude,
+    memberRegionId: params.memberRegionId,
+    guestLocationDenied: params.locationDenied === "1",
+  });
+
+  const listCenter =
+    locationState.kind === "ready" ? locationState.location : null;
+
   const listParams: Record<string, string | string[]> = {
     page: String(page),
     size: String(PRODUCT_POST_LIST_PAGE_SIZE),
@@ -94,43 +113,39 @@ export default async function ProductPostsPage({
 
   let list = EMPTY_LIST;
   let errorMessage: string | undefined;
-  let myLocation = null;
 
-  const [locationResult, listResult] = await Promise.allSettled([
-    resolveMyActivityRegionLabelService(),
-    (async () => {
+  const shouldFetchList = locationState.kind === "ready" && listCenter != null;
+
+  if (shouldFetchList && listCenter) {
+    appendListCenterQuery(listParams, listCenter);
+    try {
       const searchHeaders = keyword
         ? await resolveSearchCoOccurrenceHeaders()
         : undefined;
-      return listProductPostsService(listParams, searchHeaders);
-    })(),
-  ]);
-
-  if (locationResult.status === "fulfilled") {
-    myLocation = locationResult.value;
-  }
-
-  if (listResult.status === "fulfilled") {
-    list = listResult.value;
-  } else {
-    errorMessage = "상품 목록을 불러오지 못했습니다.";
+      list = await listProductPostsService(listParams, searchHeaders);
+    } catch {
+      errorMessage = "상품 목록을 불러오지 못했습니다.";
+    }
   }
 
   return (
-    <ProductPostListTemplate
-      title={keyword ? `"${keyword}" 검색 결과` : context.title}
-      categoryUuid={context.rootUuid}
-      subCategories={context.children}
-      brands={context.brands}
-      activeSub={context.activeSub}
-      selectedBrands={selectedBrands}
-      maxPrice={maxPrice}
-      selectedGrades={selectedGrades}
-      docs={docs}
-      keyword={keyword || null}
-      list={list}
-      errorMessage={errorMessage}
-      myLocation={myLocation}
-    />
+    <Suspense fallback={null}>
+      <ProductPostListTemplate
+        title={keyword ? `"${keyword}" 검색 결과` : context.title}
+        categoryUuid={context.rootUuid}
+        subCategories={context.children}
+        brands={context.brands}
+        activeSub={context.activeSub}
+        selectedBrands={selectedBrands}
+        maxPrice={maxPrice}
+        selectedGrades={selectedGrades}
+        docs={docs}
+        keyword={keyword || null}
+        list={list}
+        errorMessage={errorMessage}
+        locationState={locationState}
+        listCenter={listCenter}
+      />
+    </Suspense>
   );
 }

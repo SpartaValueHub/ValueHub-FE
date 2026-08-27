@@ -1,6 +1,12 @@
 import Link from "next/link";
 
 import { Icon } from "@/components/atoms/icons";
+import { Spinner } from "@/components/atoms/spinner";
+import {
+  ProductListGuestLocationInit,
+  ProductListLocationControls,
+  ProductListLocationDeniedBanner,
+} from "@/components/molecules/listing/ProductListLocationControls";
 import { ListingSideActions } from "@/components/organisms/listing/ListingSideActions";
 import { ProductPostFilterPanel } from "@/components/organisms/listing/ProductPostFilterPanel";
 import { ProductPostGrid } from "@/components/organisms/listing/ProductPostGrid";
@@ -14,14 +20,13 @@ import {
   type ProductPostConditionGrade,
   type ProductPostDocumentFilter,
 } from "@/constants/product-posts";
-import {
-  formatProductListLocationDong,
-  formatProductListLocationLabel,
-} from "@/lib/member-regions/format-list-location";
 import { cn } from "@/lib/utils";
 import type { UiBrandFilterOption } from "@/services/product-posts.service";
 import type { UiCategorySummary } from "@/types/categories/ui";
-import type { UiActivityRegionLabel } from "@/types/member-regions/ui";
+import type {
+  ProductListLocationState,
+  UiProductListLocation,
+} from "@/types/member-regions/ui";
 import type { UiProductPostCardPage } from "@/types/product-posts/ui";
 
 interface ProductPostListTemplateProps {
@@ -37,7 +42,8 @@ interface ProductPostListTemplateProps {
   keyword?: string | null;
   list: UiProductPostCardPage;
   errorMessage?: string;
-  myLocation?: UiActivityRegionLabel | null;
+  locationState: ProductListLocationState;
+  listCenter: UiProductListLocation | null;
 }
 
 function pageItems(current: number, total: number) {
@@ -49,6 +55,15 @@ function pageItems(current: number, total: number) {
   const end = Math.min(total, start + 4);
   start = Math.max(1, end - 4);
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+}
+
+function toListCenterHref(location: UiProductListLocation | null) {
+  if (!location) return null;
+  return {
+    centerLatitude: location.centerLatitude,
+    centerLongitude: location.centerLongitude,
+    memberRegionId: location.memberRegionId ?? null,
+  };
 }
 
 /** 카테고리 상품 목록 — Figma product_list PC + 모바일(1121:6694) */
@@ -65,15 +80,11 @@ export function ProductPostListTemplate({
   keyword = null,
   list,
   errorMessage,
-  myLocation = null,
+  locationState,
+  listCenter,
 }: ProductPostListTemplateProps) {
   const pages = pageItems(list.page, Math.max(1, list.totalPages));
-  const locationPcLabel = myLocation
-    ? formatProductListLocationLabel(myLocation)
-    : "";
-  const locationMobileDong = myLocation
-    ? formatProductListLocationDong(myLocation.regionDong)
-    : "";
+  const listCenterHref = toListCenterHref(listCenter);
   const filterOpts = {
     category: categoryUuid,
     sub: activeSub,
@@ -82,26 +93,27 @@ export function ProductPostListTemplate({
     selectedGrades,
     docs,
     keyword,
+    ...(listCenterHref ?? {}),
   };
+  const showLocationControls = locationState.kind === "ready";
+  const showGuestInit = locationState.kind === "guest_needs_gps";
+  const showDeniedBanner = locationState.kind === "guest_denied";
 
   return (
     <main className="relative flex flex-1 flex-col bg-[#323232] pb-[90px] pt-[72px] md:pb-[120px] md:pt-[160px]">
+      <ProductListGuestLocationInit needsGps={showGuestInit} />
+
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-[30px] px-[3px] md:flex-row md:items-start md:gap-[90px] md:px-10">
         <aside className="hidden w-[340px] shrink-0 md:block">
-          {locationPcLabel ? (
-            <div className="pt-10">
-              <p className="font-sans text-xs text-[#ababab]">내 위치</p>
-              <button
-                type="button"
-                className="mt-2 flex w-full items-center justify-between font-sans text-2xl leading-9 text-vh-gray-100"
-              >
-                <span>{locationPcLabel}</span>
-                <Icon name="swap" size={24} className="text-[#ababab]" />
-              </button>
-            </div>
+          {showLocationControls ? (
+            <ProductListLocationControls
+              locationState={locationState}
+              filterOpts={filterOpts}
+              variant="desktop"
+            />
           ) : null}
 
-          <div className={cn(locationPcLabel ? "mt-8" : "pt-10")}>
+          <div className={cn(showLocationControls ? "mt-8" : "pt-10")}>
             <ProductPostFilterPanel
               categoryUuid={categoryUuid}
               activeSub={activeSub}
@@ -111,33 +123,25 @@ export function ProductPostListTemplate({
               selectedGrades={selectedGrades}
               docs={docs}
               keyword={keyword}
+              listCenter={listCenterHref}
             />
           </div>
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col gap-[30px] md:max-w-[1010px] md:gap-0">
-          {/* 모바일: Luxury + 초량동 칩 (드롭다운 아이콘 없음 — 헤더 카테고리 내비 사용) */}
           <div className="flex items-end justify-between px-2.5 md:hidden">
             <p className="font-sans text-xl font-medium leading-none text-vh-gray-100">
               {title}
             </p>
-            {locationMobileDong ? (
-              <button
-                type="button"
-                className="flex items-center gap-0.5 rounded-[5px] border border-[#868686] px-2 py-1 font-sans text-xs text-vh-gray-100"
-              >
-                <Icon
-                  name="location-pin"
-                  size={10}
-                  className="text-vh-gray-100"
-                />
-                <span>{locationMobileDong}</span>
-                <Icon name="swap" size={10} className="text-[#ababab]" />
-              </button>
+            {showLocationControls ? (
+              <ProductListLocationControls
+                locationState={locationState}
+                filterOpts={filterOpts}
+                variant="mobile"
+              />
             ) : null}
           </div>
 
-          {/* PC 타이틀 */}
           <div className="hidden flex-col items-center pt-10 md:flex">
             <p className="font-serif text-[36px] leading-none text-vh-gray-100">
               {title}
@@ -188,7 +192,6 @@ export function ProductPostListTemplate({
           ) : null}
 
           <div className="flex flex-col gap-2.5 md:mt-6 md:gap-6">
-            {/* 모바일: settings | 최신순 (Figma sort) */}
             <div className="flex items-center justify-between p-1.5 md:hidden">
               <ProductPostMobileFilter
                 categoryUuid={categoryUuid}
@@ -199,23 +202,32 @@ export function ProductPostListTemplate({
                 selectedGrades={selectedGrades}
                 docs={docs}
                 keyword={keyword}
+                listCenter={listCenterHref}
               />
               <ProductPostSortButton label="최신순" />
             </div>
 
-            {/* PC: 정렬 */}
             <div className="hidden justify-end md:flex">
               <ProductPostSortButton label="최신순" />
             </div>
 
             <div className="md:mt-4">
-              {errorMessage ? (
+              {showDeniedBanner ? (
+                <ProductListLocationDeniedBanner />
+              ) : errorMessage ? (
                 <p className="font-sans text-sm text-[#ababab]">
                   {errorMessage}
                 </p>
+              ) : showGuestInit ? (
+                <div className="flex items-center justify-center gap-2 py-16 font-sans text-sm text-[#ababab]">
+                  <Spinner size="sm" inline aria-label="위치 확인 중" />
+                  <span>내 위치를 확인하는 중입니다…</span>
+                </div>
               ) : (
                 <ProductPostGrid
                   items={list.items}
+                  emptyTitle="주변에 등록된 상품이 없습니다"
+                  emptyDescription="다른 동네로 변경하거나 필터를 조정해 보세요."
                   banner={
                     <div className="hidden h-[220px] w-full flex-col items-center justify-center bg-[#1e2a38] px-6 text-center md:flex">
                       <p className="font-sans text-3xl tracking-wide text-vh-brand-gold">

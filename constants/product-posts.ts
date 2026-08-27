@@ -2,6 +2,7 @@ import {
   ALL_CATEGORY_NAV_ID,
   HEADER_ROOT_CATEGORY_UUIDS,
 } from "@/constants/categories";
+import { appendListCenterToSearchParams } from "@/lib/product-posts/list-center-params";
 
 /** product-post 목록 경로 — listing 네이밍 사용 금지 */
 export const PRODUCT_POSTS_PATH = "/product-posts";
@@ -103,7 +104,13 @@ export function headerCategoryNavIdFromUuid(categoryUuid: string | null) {
   return match ? match[0].toLowerCase() : "all";
 }
 
-export type ProductPostsListHrefOpts = {
+export type ProductListCenterHrefOpts = {
+  centerLatitude?: number | null;
+  centerLongitude?: number | null;
+  memberRegionId?: number | null;
+};
+
+export type ProductPostsListHrefOpts = ProductListCenterHrefOpts & {
   category?: string | null;
   sub?: string | null;
   page?: number;
@@ -149,6 +156,11 @@ export function productPostsListHref(opts: ProductPostsListHrefOpts) {
   if (opts.docs === "attached") {
     sp.set("docs", "attached");
   }
+  appendListCenterToSearchParams(sp, {
+    centerLatitude: opts.centerLatitude,
+    centerLongitude: opts.centerLongitude,
+    memberRegionId: opts.memberRegionId,
+  });
   const qs = sp.toString();
   return qs ? `${PRODUCT_POSTS_PATH}?${qs}` : PRODUCT_POSTS_PATH;
 }

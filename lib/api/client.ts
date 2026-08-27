@@ -14,18 +14,21 @@ export class ApiError extends Error {
   status: number;
   code?: string;
   retryAfterSeconds?: number;
+  fieldErrors?: Record<string, string[]>;
 
   constructor(
     status: number,
     message: string,
     code?: string,
-    retryAfterSeconds?: number
+    retryAfterSeconds?: number,
+    fieldErrors?: Record<string, string[]>
   ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
     this.retryAfterSeconds = retryAfterSeconds;
+    this.fieldErrors = fieldErrors;
   }
 }
 
@@ -313,6 +316,7 @@ export async function apiFetch<T>(
         message?: string;
         code?: string;
         retryAfterSeconds?: number;
+        fieldErrors?: Record<string, string[]>;
       } | null;
       const message =
         body?.message || text || `API 오류 (${res.status} ${res.statusText})`;
@@ -320,7 +324,8 @@ export async function apiFetch<T>(
         res.status,
         message,
         body?.code,
-        body?.retryAfterSeconds
+        body?.retryAfterSeconds,
+        body?.fieldErrors
       );
     }
 
@@ -348,6 +353,7 @@ export async function apiFetch<T>(
       error?: string;
       code?: string;
       retryAfterSeconds?: number;
+      fieldErrors?: Record<string, string[]>;
     } | null;
     const message =
       body?.message ||
@@ -358,7 +364,8 @@ export async function apiFetch<T>(
       res.status,
       message,
       body?.code,
-      body?.retryAfterSeconds
+      body?.retryAfterSeconds,
+      body?.fieldErrors
     );
   }
 

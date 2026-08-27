@@ -10,6 +10,10 @@ import {
 import { listChatRoomsByProductPostService } from "@/services/chat.service";
 import { getMemberPublicProfileService } from "@/services/member.service";
 import {
+  appendListCenterQuery,
+  resolveProductListLocationService,
+} from "@/services/product-list-location.service";
+import {
   getProductPostDetailService,
   listProductPostsService,
 } from "@/services/product-posts.service";
@@ -66,17 +70,22 @@ export default async function ProductPostDetailPage({
     : null;
 
   let nearbyItems: UiProductPostCard[] = [];
-  try {
-    const nearby = await listProductPostsService({
-      page: "1",
-      size: String(NEARBY_SIZE + 5),
-      categoryUuids: nearbyCategoryUuids,
-    });
-    nearbyItems = nearby.items
-      .filter((item) => item.productPostUuid !== post.productPostUuid)
-      .slice(0, NEARBY_SIZE);
-  } catch {
-    nearbyItems = [];
+  const locationState = await resolveProductListLocationService({});
+  if (locationState.kind === "ready") {
+    try {
+      const nearbyParams: Record<string, string | string[]> = {
+        page: "1",
+        size: String(NEARBY_SIZE + 5),
+        categoryUuids: nearbyCategoryUuids,
+      };
+      appendListCenterQuery(nearbyParams, locationState.location);
+      const nearby = await listProductPostsService(nearbyParams);
+      nearbyItems = nearby.items
+        .filter((item) => item.productPostUuid !== post.productPostUuid)
+        .slice(0, NEARBY_SIZE);
+    } catch {
+      nearbyItems = [];
+    }
   }
 
   let activeChatCount = 0;

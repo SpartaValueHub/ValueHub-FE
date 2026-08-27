@@ -12,6 +12,8 @@ interface ProductPostGridProps {
   items: UiProductPostCard[];
   banner?: ReactNode;
   bannerAfter?: number;
+  emptyTitle?: string;
+  emptyDescription?: string;
   className?: string;
 }
 
@@ -45,15 +47,12 @@ export function ProductPostGrid({
   items,
   banner,
   bannerAfter = 8,
+  emptyTitle = "등록된 상품이 없습니다",
+  emptyDescription = "다른 카테고리를 선택하거나 잠시 후 다시 확인해 주세요.",
   className,
 }: ProductPostGridProps) {
   if (items.length === 0) {
-    return (
-      <Empty
-        title="등록된 상품이 없습니다"
-        description="다른 카테고리를 선택하거나 잠시 후 다시 확인해 주세요."
-      />
-    );
+    return <Empty title={emptyTitle} description={emptyDescription} />;
   }
 
   const head = banner ? items.slice(0, bannerAfter) : items;

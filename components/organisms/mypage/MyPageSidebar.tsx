@@ -6,7 +6,6 @@ import type { UiMyPageSectionId } from "@/types/mypage/ui";
 const NAV_ITEMS: { id: UiMyPageSectionId; label: string }[] = [
   { id: "account", label: "계정정보 관리" },
   { id: "trade", label: "거래정보 관리" },
-  { id: "payment", label: "결제정보 관리" },
 ];
 
 interface MyPageSidebarProps {

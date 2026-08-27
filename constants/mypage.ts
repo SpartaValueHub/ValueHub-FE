@@ -91,11 +91,6 @@ export const MOCK_MYPAGE: UiMyPage = {
       ...BASE_TRADE,
     },
   ],
-  benefit: {
-    title: "프리미엄(3개월) 결제중",
-    expiresAt: "2026.10.09",
-    description: "판매글을 1시간마다 1회씩, 1일 총 24회 끌어올릴 수 있습니다.",
-  },
 };
 
 export function formatMyPagePrice(price: number) {

@@ -98,3 +98,8 @@ export interface ApiCreateProductPostRequest {
 
 /** PUT body — 등록과 동일. images/documents는 전체 교체 */
 export type ApiUpdateProductPostRequest = ApiCreateProductPostRequest;
+
+/** PATCH /api/v1/product-posts/{uuid}/trade-status */
+export interface ApiUpdateTradeStatusRequest {
+  tradeStatus: TradeStatus;
+}

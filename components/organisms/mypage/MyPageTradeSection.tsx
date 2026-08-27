@@ -477,6 +477,10 @@ export function MyPageTradeSection({
                   )
                 );
               }}
+              onCompleteSuccess={() => {
+                if (listKind !== "sell") return;
+                loadSellPage(statusFilter, 1, false);
+              }}
             />
           ))}
         </div>

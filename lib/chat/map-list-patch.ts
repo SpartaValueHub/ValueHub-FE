@@ -94,12 +94,27 @@ export function mergeRoomWithListPatch(
   options: { activeRoomId?: string } = {}
 ): UiChatRoom {
   const { text, at } = lastMessageFromPatch(patch);
+  const reserved = reservedFromPatch(patch, room.reserved);
   return {
     ...room,
     lastMessage: text ?? room.lastMessage,
     unreadCount: unreadFromPatch(patch, room.unreadCount, options.activeRoomId),
     timeAgo: (at ? formatListedAt(at) : "") || room.timeAgo || "방금 전",
+    reserved,
+    productPostUuid:
+      patch.productPost?.productPostUuid?.trim() || room.productPostUuid,
+    price: patch.productPost?.price ?? room.price,
   };
+}
+
+function reservedFromPatch(
+  patch: ApiChatListPatch,
+  fallback?: boolean
+): boolean | undefined {
+  const tradeStatus = patch.productPost?.tradeStatus;
+  if (tradeStatus === "RESERVED") return true;
+  if (tradeStatus === "SELLING" || tradeStatus === "SOLD_OUT") return false;
+  return fallback;
 }
 
 function roomFromChatListPatch(

@@ -254,8 +254,6 @@ export const CHAT_MESSAGES: UiChatMessage[] = [
   { id: "m7", kind: "typing", from: "peer" },
 ];
 
-export const CHAT_DATE_DIVIDER = "07월 31일 금요일";
-
 const WEEKDAY_SHORT = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
 export function formatReservationDate(date: Date): string {
@@ -282,6 +280,59 @@ export function parseReservationTimeLabel(label: string): UiTradeTimeValue {
   const hour = Number(label.match(/(\d+)\s*시/)?.[1] ?? 6);
   const minute = Number(label.match(/(\d+)\s*분/)?.[1] ?? 0);
   return { period, hour, minute };
+}
+
+export function dateAndTimeFromScheduledAt(iso: string): {
+  date: Date;
+  time: UiTradeTimeValue;
+} {
+  const date = new Date(iso);
+  const hours = date.getHours();
+  const period: "am" | "pm" = hours < 12 ? "am" : "pm";
+  let hour = hours % 12;
+  if (hour === 0) hour = 12;
+  return {
+    date,
+    time: { period, hour, minute: date.getMinutes() },
+  };
+}
+
+export function scheduledAtFromDateAndTime(
+  date: Date,
+  time: UiTradeTimeValue
+): string {
+  const hours24 =
+    time.period === "am"
+      ? time.hour === 12
+        ? 0
+        : time.hour
+      : time.hour === 12
+        ? 12
+        : time.hour + 12;
+  const next = new Date(date);
+  next.setHours(hours24, time.minute, 0, 0);
+  return next.toISOString();
+}
+
+export function reservationCardFromListItem(
+  item: {
+    reservationId: string;
+    chatRoomId: string;
+    scheduledAt: string;
+    placeName: string;
+  },
+  title: string
+): UiChatReservationCard {
+  const { date, time } = dateAndTimeFromScheduledAt(item.scheduledAt);
+  return {
+    id: item.reservationId,
+    roomId: item.chatRoomId,
+    title,
+    dateLabel: formatReservationChipDate(date),
+    weekdayLabel: WEEKDAYS[date.getDay()],
+    timeLabel: formatReservationTime(time.period, time.hour, time.minute),
+    placeName: item.placeName,
+  };
 }
 
 export function reservationFromCard(

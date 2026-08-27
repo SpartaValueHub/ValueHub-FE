@@ -3,10 +3,16 @@
 import { useState } from "react";
 import Image from "next/image";
 
+import {
+  cancelReservationAction,
+  createReservationAction,
+  updateReservationAction,
+} from "@/actions/reservations";
 import { Button } from "@/components/atoms/button";
 import { Icon } from "@/components/atoms/icons";
 import { StatusBadge } from "@/components/atoms/status-badge";
 import { ReservationFieldRow } from "@/components/molecules/chat/ReservationFieldRow";
+import { KakaoMapPicker } from "@/components/molecules/maps/KakaoMapPicker";
 import { DatePickerDialog } from "@/components/molecules/overlay/DatePickerDialog";
 import {
   Dialog,
@@ -17,15 +23,19 @@ import { LocationRegisterDialog } from "@/components/molecules/overlay/LocationR
 import { TimePickerDialog } from "@/components/molecules/overlay/TimePickerDialog";
 import { ConfirmModal } from "@/components/molecules/overlay/ConfirmModal";
 import {
-  CHAT_MAP_PREVIEW,
+  dateAndTimeFromScheduledAt,
   formatReservationDate,
   formatReservationDateLine,
   formatReservationTime,
+  scheduledAtFromDateAndTime,
 } from "@/constants/chat-page";
+import { hasKakaoMapAppKey } from "@/lib/kakao-maps";
 import { cn } from "@/lib/utils";
-import type { UiTradeReservation, UiTradeTimeValue } from "@/types/chat/ui";
+import type { UiTradeTimeValue } from "@/types/chat/ui";
+import type { UiReservation } from "@/types/reservations/ui";
 
 type PanelPhase = "empty" | "form" | "confirmed";
+type ConfirmKind = "create" | "update" | "cancel";
 
 export type TradeReservationProduct = {
   title: string;
@@ -34,9 +44,11 @@ export type TradeReservationProduct = {
 };
 
 interface TradeReservationPanelProps {
-  onReserved?: (reservation: UiTradeReservation) => void;
-  onCancelReservation?: () => void;
-  reservation?: UiTradeReservation | null;
+  chatRoomId: string;
+  canManage?: boolean;
+  reservation?: UiReservation | null;
+  loadError?: string | null;
+  onReservationChange?: (reservation: UiReservation | null) => void;
   product?: TradeReservationProduct;
   variant?: "aside" | "dialog";
   open?: boolean;
@@ -45,11 +57,32 @@ interface TradeReservationPanelProps {
   postReserved?: boolean;
 }
 
+function confirmedReservation(
+  reservation: UiReservation | null | undefined
+): UiReservation | null {
+  if (!reservation || reservation.status !== "CONFIRMED") return null;
+  return reservation;
+}
+
+function formFromReservation(reservation: UiReservation) {
+  const parsed = dateAndTimeFromScheduledAt(reservation.scheduledAt);
+  return {
+    date: parsed.date,
+    time: parsed.time,
+    placeName: reservation.placeName,
+    address: reservation.address,
+    latitude: reservation.latitude,
+    longitude: reservation.longitude,
+  };
+}
+
 /** 우측 거래 예약 패널 — 없음 / 작성 / 완료. 모바일은 Dialog */
 export function TradeReservationPanel({
-  onReserved,
-  onCancelReservation,
+  chatRoomId,
+  canManage = false,
+  onReservationChange,
   reservation = null,
+  loadError = null,
   product,
   variant = "aside",
   open = true,
@@ -58,75 +91,174 @@ export function TradeReservationPanel({
   postReserved = false,
 }: TradeReservationPanelProps) {
   const isDialog = variant === "dialog";
+  const current = confirmedReservation(reservation);
   const [draftActive, setDraftActive] = useState(
-    () => isDialog && intent === "form"
+    () => isDialog && intent === "form" && canManage && !current
   );
-  const [date, setDate] = useState<Date | undefined>(() => reservation?.date);
+  const initialForm = current ? formFromReservation(current) : null;
+  const [date, setDate] = useState<Date | undefined>(() => initialForm?.date);
   const [time, setTime] = useState<UiTradeTimeValue | undefined>(
-    () => reservation?.time
+    () => initialForm?.time
   );
   const [placeName, setPlaceName] = useState(
-    () => reservation?.placeName ?? ""
+    () => initialForm?.placeName ?? ""
+  );
+  const [address, setAddress] = useState<string | null>(
+    () => initialForm?.address ?? null
+  );
+  const [latitude, setLatitude] = useState<number | null>(
+    () => initialForm?.latitude ?? null
+  );
+  const [longitude, setLongitude] = useState<number | null>(
+    () => initialForm?.longitude ?? null
   );
   const [dateOpen, setDateOpen] = useState(false);
   const [timeOpen, setTimeOpen] = useState(false);
   const [placeOpen, setPlaceOpen] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmKind, setConfirmKind] = useState<ConfirmKind | null>(null);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(loadError);
 
   const phase: PanelPhase =
-    reservation && !draftActive
+    current && !draftActive
       ? "confirmed"
-      : draftActive
+      : draftActive && canManage
         ? "form"
-        : isDialog
+        : isDialog && canManage && intent === "form"
           ? "form"
           : "empty";
 
-  const viewDate = phase === "form" ? date : (reservation?.date ?? date);
-  const viewTime = phase === "form" ? time : (reservation?.time ?? time);
+  const viewDate = phase === "form" ? date : (initialForm?.date ?? date);
+  const viewTime = phase === "form" ? time : (initialForm?.time ?? time);
   const viewPlace =
-    phase === "form" ? placeName : (reservation?.placeName ?? placeName);
+    phase === "form" ? placeName : (current?.placeName ?? placeName);
+  const viewLat = phase === "form" ? latitude : (current?.latitude ?? latitude);
+  const viewLng =
+    phase === "form" ? longitude : (current?.longitude ?? longitude);
 
   const dateLabel = viewDate ? formatReservationDate(viewDate) : "";
   const timeLabel = viewTime
     ? formatReservationTime(viewTime.period, viewTime.hour, viewTime.minute)
     : "";
-  const canSubmit = Boolean(date && time && placeName);
+  const canSubmit = Boolean(
+    canManage &&
+    date &&
+    time &&
+    placeName.trim() &&
+    latitude != null &&
+    longitude != null
+  );
   const showChevron = phase === "form";
+  const showMap = Boolean(
+    viewPlace && viewLat != null && viewLng != null && Number.isFinite(viewLat)
+  );
 
   function startEdit() {
-    if (reservation) {
-      setDate(reservation.date);
-      setTime(reservation.time);
-      setPlaceName(reservation.placeName);
-    }
+    if (!canManage || !current) return;
+    const next = formFromReservation(current);
+    setDate(next.date);
+    setTime(next.time);
+    setPlaceName(next.placeName);
+    setAddress(next.address);
+    setLatitude(next.latitude);
+    setLongitude(next.longitude);
+    setError(null);
     setDraftActive(true);
   }
 
-  function completeReservation() {
-    if (!date || !time || !placeName) return;
-    const next: UiTradeReservation = {
-      date,
-      dateLabel: formatReservationDate(date),
-      timeLabel: formatReservationTime(time.period, time.hour, time.minute),
-      time,
-      placeName,
-      mapImage: CHAT_MAP_PREVIEW,
-    };
-    onReserved?.(next);
-    setDraftActive(false);
-    setConfirmOpen(false);
-    if (isDialog) onOpenChange?.(false);
+  function startCreate() {
+    if (!canManage) return;
+    setError(null);
+    setDraftActive(true);
   }
 
-  function handleCancelReservation() {
-    setDate(undefined);
-    setTime(undefined);
-    setPlaceName("");
-    setDraftActive(false);
-    onCancelReservation?.();
-    if (isDialog) onOpenChange?.(false);
+  async function submitReservation() {
+    if (!date || !time || latitude == null || longitude == null) return;
+    const scheduledAt = scheduledAtFromDateAndTime(date, time);
+    const place = placeName.trim();
+    if (!place) return;
+
+    setPending(true);
+    setError(null);
+    try {
+      if (current) {
+        const result = await updateReservationAction({
+          reservationId: current.reservationId,
+          scheduledAt,
+          placeName: place,
+          latitude,
+          longitude,
+        });
+        if (!result.ok) {
+          setError(result.message);
+          return;
+        }
+        onReservationChange?.(result.data);
+      } else {
+        const result = await createReservationAction({
+          chatRoomId,
+          scheduledAt,
+          placeName: place,
+          address,
+          latitude,
+          longitude,
+        });
+        if (!result.ok) {
+          setError(result.message);
+          return;
+        }
+        onReservationChange?.(result.data);
+      }
+      setDraftActive(false);
+      setConfirmKind(null);
+      if (isDialog) onOpenChange?.(false);
+    } finally {
+      setPending(false);
+    }
   }
+
+  async function submitCancel() {
+    if (!canManage || !current) return;
+    setPending(true);
+    setError(null);
+    try {
+      const result = await cancelReservationAction({
+        reservationId: current.reservationId,
+      });
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setDate(undefined);
+      setTime(undefined);
+      setPlaceName("");
+      setAddress(null);
+      setLatitude(null);
+      setLongitude(null);
+      setDraftActive(false);
+      setConfirmKind(null);
+      onReservationChange?.(null);
+      if (isDialog) onOpenChange?.(false);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  const confirmCopy: Record<ConfirmKind, { message: string; label: string }> = {
+    create: {
+      message:
+        "이 내용으로 거래 예약을 할까요?\n상품 거래 상태도 예약중으로 바꿀까요?",
+      label: "예약하기",
+    },
+    update: {
+      message: "이 내용으로 예약을 수정할까요?",
+      label: "수정하기",
+    },
+    cancel: {
+      message: "거래 예약을 취소할까요?",
+      label: "예약 취소",
+    },
+  };
 
   const fields = (
     <div className="flex flex-col gap-2.5">
@@ -159,20 +291,31 @@ export function TradeReservationPanel({
           onClick={() => phase === "form" && setPlaceOpen(true)}
         />
       </div>
-      {viewPlace ? (
+      {showMap ? (
         <div
           className={cn(
             "relative w-full overflow-hidden bg-[#d9d9d9]",
-            isDialog ? "h-[173px]" : "h-[130px]"
+            isDialog ? "h-[173px] min-h-[173px]" : "h-[130px] min-h-[130px]"
           )}
         >
-          <Image
-            src={CHAT_MAP_PREVIEW}
-            alt=""
-            fill
-            sizes="420px"
-            className="object-cover"
-          />
+          {hasKakaoMapAppKey() ? (
+            <KakaoMapPicker
+              key={`${viewLat}-${viewLng}`}
+              fill
+              className="h-full w-full"
+              initialLatitude={viewLat}
+              initialLongitude={viewLng}
+              interactive={false}
+            />
+          ) : (
+            <Image
+              src="/chat/map-preview.png"
+              alt=""
+              fill
+              sizes="420px"
+              className="object-cover"
+            />
+          )}
         </div>
       ) : null}
     </div>
@@ -186,32 +329,48 @@ export function TradeReservationPanel({
             예약된 거래가 없습니다.
           </p>
           <p className="font-sans text-base leading-[1.5] text-[#323232]">
-            예약하기 버튼을 눌러 거래 예약을 진행하세요.
+            {canManage
+              ? "예약하기 버튼을 눌러 거래 예약을 진행하세요."
+              : "판매자가 예약을 등록하면 여기에 표시됩니다."}
           </p>
         </div>
         <div className="flex flex-1 items-center justify-center">
           <Icon name="calendar-plus" size={80} />
         </div>
-        <Button
-          type="button"
-          variant="modal"
-          className="h-auto w-full py-3 text-lg"
-          onClick={() => setDraftActive(true)}
-        >
-          예약하기
-        </Button>
+        {error ? (
+          <p className="font-sans text-sm text-[#ff5d31]" role="alert">
+            {error}
+          </p>
+        ) : null}
+        {canManage ? (
+          <Button
+            type="button"
+            variant="modal"
+            className="h-auto w-full py-3 text-lg"
+            onClick={startCreate}
+          >
+            예약하기
+          </Button>
+        ) : null}
       </div>
     ) : (
       <div className="flex h-full flex-col gap-[30px]">
         <div className="flex flex-col gap-1.5">
-          <h2
-            className={cn(
-              "font-sans text-[#323232]",
-              isDialog && phase === "confirmed" ? "text-base" : "text-xl"
-            )}
-          >
-            {phase === "confirmed" ? "거래가 예약되었습니다." : "거래 예약하기"}
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2
+              className={cn(
+                "font-sans text-[#323232]",
+                isDialog && phase === "confirmed" ? "text-base" : "text-xl"
+              )}
+            >
+              {phase === "confirmed"
+                ? "거래가 예약되었습니다."
+                : "거래 예약하기"}
+            </h2>
+            {phase === "confirmed" && postReserved ? (
+              <StatusBadge status="reserved" className="shrink-0" />
+            ) : null}
+          </div>
           {phase === "form" ? (
             <p className="font-sans text-sm leading-[1.5] text-[#323232] lg:text-base">
               거래 날짜, 시간, 장소를 설정하세요.
@@ -235,7 +394,9 @@ export function TradeReservationPanel({
                 <p className="min-w-0 flex-1 font-sans text-sm text-[#323232]">
                   {product.title}
                 </p>
-                {postReserved ? <StatusBadge status="reserved" /> : null}
+                {postReserved ? (
+                  <StatusBadge status="reserved" className="shrink-0" />
+                ) : null}
               </div>
               <p className="font-sans text-lg font-medium text-[#323232]">
                 {product.price.toLocaleString("ko-KR")}
@@ -247,37 +408,47 @@ export function TradeReservationPanel({
 
         {fields}
 
+        {error ? (
+          <p className="font-sans text-sm text-[#ff5d31]" role="alert">
+            {error}
+          </p>
+        ) : null}
+
         <div className="mt-auto py-5">
           {phase === "form" ? (
             <Button
               type="button"
               variant="modal"
               className="h-auto w-full py-3 text-sm lg:text-lg"
-              disabled={!canSubmit}
-              onClick={() => setConfirmOpen(true)}
+              disabled={!canSubmit || pending}
+              onClick={() => setConfirmKind(current ? "update" : "create")}
             >
               예약하기
             </Button>
           ) : (
             <div className="flex flex-col gap-2.5">
-              <div className="flex gap-2.5">
-                <Button
-                  type="button"
-                  variant="modal"
-                  className="h-auto min-w-0 flex-1 py-3 text-sm lg:text-lg"
-                  onClick={handleCancelReservation}
-                >
-                  예약 취소
-                </Button>
-                <Button
-                  type="button"
-                  variant="modal"
-                  className="h-auto min-w-0 flex-1 py-3 text-sm lg:text-lg"
-                  onClick={startEdit}
-                >
-                  예약 수정
-                </Button>
-              </div>
+              {canManage ? (
+                <div className="flex gap-2.5">
+                  <Button
+                    type="button"
+                    variant="modal"
+                    className="h-auto min-w-0 flex-1 py-3 text-sm lg:text-lg"
+                    disabled={pending}
+                    onClick={() => setConfirmKind("cancel")}
+                  >
+                    예약 취소
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="modal"
+                    className="h-auto min-w-0 flex-1 py-3 text-sm lg:text-lg"
+                    disabled={pending}
+                    onClick={startEdit}
+                  >
+                    예약 수정
+                  </Button>
+                </div>
+              ) : null}
               {isDialog ? (
                 <Button
                   type="button"
@@ -311,19 +482,34 @@ export function TradeReservationPanel({
       <LocationRegisterDialog
         open={placeOpen}
         onOpenChange={setPlaceOpen}
-        onConfirm={(loc) => setPlaceName(loc.placeName)}
+        initialPlaceName={placeName}
+        initialLatitude={latitude}
+        initialLongitude={longitude}
+        onConfirm={(loc) => {
+          setPlaceName(loc.placeName);
+          setLatitude(loc.latitude);
+          setLongitude(loc.longitude);
+        }}
       />
       <ConfirmModal
-        open={confirmOpen}
+        open={confirmKind != null}
         title=""
-        message={
-          "거래 예약을 완료했습니다.\n게시글을 예약중으로 변경하시겠습니까?"
-        }
+        message={confirmKind ? confirmCopy[confirmKind].message : ""}
         cancelLabel="취소"
-        confirmLabel="확인"
+        confirmLabel={confirmKind ? confirmCopy[confirmKind].label : "확인"}
+        confirmPending={pending}
         className="max-w-[min(100%,360px)]"
-        onCancel={() => setConfirmOpen(false)}
-        onConfirm={completeReservation}
+        onCancel={() => {
+          if (pending) return;
+          setConfirmKind(null);
+        }}
+        onConfirm={() => {
+          if (confirmKind === "cancel") {
+            void submitCancel();
+            return;
+          }
+          void submitReservation();
+        }}
       />
     </>
   );
@@ -362,9 +548,11 @@ export function TradeReservationPanel({
   );
 }
 
-export function reservationNoticeLines(reservation: UiTradeReservation) {
+export function reservationNoticeLines(reservation: UiReservation) {
+  const { date, time } = dateAndTimeFromScheduledAt(reservation.scheduledAt);
+  const timeLabel = formatReservationTime(time.period, time.hour, time.minute);
   return {
-    dateLine: formatReservationDateLine(reservation.date),
-    timePlaceLine: `${reservation.timeLabel} ${reservation.placeName}`,
+    dateLine: formatReservationDateLine(date),
+    timePlaceLine: `${timeLabel} ${reservation.placeName}`,
   };
 }

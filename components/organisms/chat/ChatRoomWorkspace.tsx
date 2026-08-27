@@ -9,8 +9,10 @@ import {
   createChatImagePresignedUrlAction,
   listOlderChatMessagesAction,
 } from "@/actions/chat";
+import { getReservationByChatRoomAction } from "@/actions/reservations";
 import { ingestChatListPatch } from "@/hooks/chat/ingestChatListPatch";
 import { useChatRoomSocket } from "@/hooks/chat/useChatRoomSocket";
+import { alignReservationMessage } from "@/lib/chat/map-message";
 import { putChatImageToS3 } from "@/lib/chat/put-image-s3";
 import { logSafeError } from "@/lib/log/safe-log";
 
@@ -24,29 +26,25 @@ import {
   type ChatOutgoingPayload,
 } from "@/components/organisms/chat/ChatMessageForm";
 import { ChatRoomList } from "@/components/organisms/chat/ChatRoomList";
+import { TradeReservationPanel } from "@/components/organisms/chat/TradeReservationPanel";
 import {
-  TradeReservationPanel,
-  reservationNoticeLines,
-} from "@/components/organisms/chat/TradeReservationPanel";
-import {
-  CHAT_RESERVATIONS,
+  dateAndTimeFromScheduledAt,
   formatReservationChipDate,
   formatReservationChipSubline,
-  reservationFromCard,
 } from "@/constants/chat-page";
 import { PRODUCT_POSTS_PATH } from "@/constants/product-posts";
 import { cn } from "@/lib/utils";
-import type {
-  UiChatMessage,
-  UiChatRoom,
-  UiTradeReservation,
-} from "@/types/chat/ui";
+import type { UiChatMessage, UiChatRoom } from "@/types/chat/ui";
+import type { UiReservation } from "@/types/reservations/ui";
 
 interface ChatRoomWorkspaceProps {
   rooms: UiChatRoom[];
   roomId: string;
   initialMessages: UiChatMessage[];
   initialHasMoreMessages?: boolean;
+  initialReservation?: UiReservation | null;
+  canManageReservation?: boolean;
+  reservationLoadError?: string | null;
 }
 
 function ProductPostLink({
@@ -69,6 +67,39 @@ function ProductPostLink({
       {children}
     </Link>
   );
+}
+
+const RESERVATION_SYNC_DELAYS_MS = [0, 400, 1000];
+
+function wait(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function syncReservationPanel(
+  roomId: string,
+  productPostUuid: string | undefined,
+  apply: (next: UiReservation | null) => void
+) {
+  let last: UiReservation | null = null;
+  for (const delay of RESERVATION_SYNC_DELAYS_MS) {
+    if (delay) await wait(delay);
+    const result = await getReservationByChatRoomAction(
+      roomId,
+      productPostUuid
+    );
+    if (!result.ok) {
+      logSafeError("Reservation panel sync failed:", result.message);
+      return;
+    }
+    last = result.data;
+    if (last?.status === "CONFIRMED") {
+      apply(last);
+      return;
+    }
+  }
+  apply(last);
 }
 
 const MORE_MENU_ITEMS: {
@@ -114,10 +145,17 @@ export function ChatRoomWorkspace({
   roomId,
   initialMessages,
   initialHasMoreMessages = false,
+  initialReservation = null,
+  canManageReservation = false,
+  reservationLoadError = null,
 }: ChatRoomWorkspaceProps) {
   const router = useRouter();
   const [listRooms, setListRooms] = useState(rooms);
-  const [messages, setMessages] = useState(initialMessages);
+  const [messages, setMessages] = useState(() =>
+    initialMessages.map((item) =>
+      alignReservationMessage(item, canManageReservation)
+    )
+  );
   const [hasMoreMessages, setHasMoreMessages] = useState(
     initialHasMoreMessages
   );
@@ -125,29 +163,56 @@ export function ChatRoomWorkspace({
   const loadingOlderRef = useRef(false);
   const requestedBeforeRef = useRef<string | null>(null);
   const listFetchRef = useRef(new Set<string>());
+  const [reservation, setReservation] = useState<UiReservation | null>(() =>
+    initialReservation?.status === "CONFIRMED" ? initialReservation : null
+  );
+  const [postReserved, setPostReserved] = useState(
+    () =>
+      initialReservation?.status === "CONFIRMED" ||
+      Boolean(rooms.find((item) => item.id === roomId)?.reserved)
+  );
+
+  function handleReservationChange(next: UiReservation | null) {
+    const confirmed = next?.status === "CONFIRMED" ? next : null;
+    const reserved = Boolean(confirmed);
+    setReservation(confirmed);
+    setPostReserved(reserved);
+    setListRooms((current) =>
+      current.map((item) => (item.id === roomId ? { ...item, reserved } : item))
+    );
+  }
 
   const { publishText, publishLocation, publishImage } = useChatRoomSocket({
     roomId,
     onMessage: (incoming) => {
+      const mapped = alignReservationMessage(incoming, canManageReservation);
       setMessages((current) => {
-        if (current.some((item) => item.id === incoming.id)) return current;
-        return [...current, incoming];
+        if (current.some((item) => item.id === mapped.id)) return current;
+        return [...current, mapped];
       });
+      if (mapped.kind !== "system-reservation") return;
+      const productPostUuid =
+        listRooms.find((item) => item.id === roomId)?.productPostUuid ??
+        rooms.find((item) => item.id === roomId)?.productPostUuid;
+      void syncReservationPanel(
+        roomId,
+        productPostUuid,
+        handleReservationChange
+      );
     },
     onListPatch: (patch) => {
       ingestChatListPatch(patch, setListRooms, {
         activeRoomId: roomId,
         fetching: listFetchRef.current,
       });
+      if (
+        patch.roomId === roomId &&
+        patch.productPost?.tradeStatus === "RESERVED"
+      ) {
+        setPostReserved(true);
+      }
     },
   });
-  const [reservation, setReservation] = useState<UiTradeReservation | null>(
-    () => {
-      const card = CHAT_RESERVATIONS.find((item) => item.roomId === roomId);
-      return card ? reservationFromCard(card) : null;
-    }
-  );
-  const [postReserved, setPostReserved] = useState(Boolean(reservation));
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [desktopMoreOpen, setDesktopMoreOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -159,6 +224,9 @@ export function ChatRoomWorkspace({
     [listRooms, roomId]
   );
   const peerMemberUuid = room.peerMemberUuid?.trim() ?? "";
+  const reservationSchedule = reservation
+    ? dateAndTimeFromScheduledAt(reservation.scheduledAt)
+    : null;
 
   function openPeerProfile() {
     if (!peerMemberUuid) return;
@@ -179,7 +247,12 @@ export function ChatRoomWorkspace({
         requestedBeforeRef.current = null;
         return;
       }
-      setMessages((current) => [...result.data.messages, ...current]);
+      setMessages((current) => [
+        ...result.data.messages.map((item) =>
+          alignReservationMessage(item, canManageReservation)
+        ),
+        ...current,
+      ]);
       setHasMoreMessages(result.data.hasMore);
     } finally {
       loadingOlderRef.current = false;
@@ -187,33 +260,8 @@ export function ChatRoomWorkspace({
     }
   }
 
-  function handleReserved(next: UiTradeReservation) {
-    const summary = reservationNoticeLines(next);
-    setReservation(next);
-    setPostReserved(true);
-    setMessages((current) => [
-      ...current.filter(
-        (item) => item.kind !== "typing" && item.kind !== "system-reservation"
-      ),
-      {
-        id: `reserve-${Date.now()}`,
-        kind: "system-reservation",
-        from: "me",
-        time: "방금",
-        reservationSummary: summary,
-      },
-    ]);
-  }
-
-  function handleCancelReservation() {
-    setReservation(null);
-    setPostReserved(false);
-    setMessages((current) =>
-      current.filter((item) => item.kind !== "system-reservation")
-    );
-  }
-
   function openReserveForm() {
+    if (!canManageReservation) return;
     setMobileMoreOpen(false);
     setDesktopMoreOpen(false);
     setDialogIntent("form");
@@ -222,6 +270,8 @@ export function ChatRoomWorkspace({
 
   function openReserveDetail() {
     if (!reservation) return;
+    setMobileMoreOpen(false);
+    setDesktopMoreOpen(false);
     setDialogIntent("detail");
     setDialogOpen(true);
   }
@@ -284,7 +334,9 @@ export function ChatRoomWorkspace({
         }
       >
         <div className="flex flex-col gap-5">
-          {MORE_MENU_ITEMS.map((item) => (
+          {MORE_MENU_ITEMS.filter(
+            (item) => item.action !== "reserve" || canManageReservation
+          ).map((item) => (
             <button
               key={item.label}
               type="button"
@@ -293,6 +345,10 @@ export function ChatRoomWorkspace({
                 event.preventDefault();
                 event.stopPropagation();
                 if (item.action === "reserve") {
+                  if (reservation) {
+                    openReserveDetail();
+                    return;
+                  }
                   openReserveForm();
                   return;
                 }
@@ -352,16 +408,21 @@ export function ChatRoomWorkspace({
                 />
               </span>
               <div className="flex min-w-0 flex-col justify-center gap-0.5">
-                <p className="truncate font-sans text-xs tracking-[-0.24px] text-[#323232]">
-                  {room.title}
-                </p>
+                <div className="flex min-w-0 items-center gap-1">
+                  <p className="truncate font-sans text-xs tracking-[-0.24px] text-[#323232]">
+                    {room.title}
+                  </p>
+                  {postReserved ? (
+                    <StatusBadge status="reserved" className="shrink-0" />
+                  ) : null}
+                </div>
                 <p className="font-sans text-sm font-medium text-[#323232]">
                   {room.price.toLocaleString("ko-KR")}
                   <span className="ml-0.5 text-xs">원</span>
                 </p>
               </div>
             </ProductPostLink>
-            {reservation ? (
+            {reservation && reservationSchedule ? (
               <button
                 type="button"
                 className="flex shrink-0 flex-col items-end justify-center gap-1 rounded-[3px] bg-white py-[3px] pr-1.5 pl-[3px]"
@@ -370,13 +431,13 @@ export function ChatRoomWorkspace({
                 <span className="flex items-center gap-0.5">
                   <Icon name="calendar" size={16} />
                   <span className="font-sans text-xs tracking-[-0.24px] text-[#323232]">
-                    {formatReservationChipDate(reservation.date)}
+                    {formatReservationChipDate(reservationSchedule.date)}
                   </span>
                 </span>
                 <span className="font-sans text-xs tracking-[-0.24px] text-[#323232]">
                   {formatReservationChipSubline(
-                    reservation.date,
-                    reservation.time
+                    reservationSchedule.date,
+                    reservationSchedule.time
                   )}
                 </span>
               </button>
@@ -403,11 +464,13 @@ export function ChatRoomWorkspace({
                 room={room}
                 className="flex min-w-0 flex-col gap-1"
               >
-                <div className="flex items-center gap-1">
+                <div className="flex min-w-0 items-center gap-1">
                   <p className="truncate font-sans text-sm text-[#323232]">
                     {room.title}
                   </p>
-                  {postReserved ? <StatusBadge status="reserved" /> : null}
+                  {postReserved ? (
+                    <StatusBadge status="reserved" className="shrink-0" />
+                  ) : null}
                 </div>
                 <p className="font-sans text-lg text-[#323232]">
                   {room.price.toLocaleString("ko-KR")}
@@ -449,10 +512,12 @@ export function ChatRoomWorkspace({
           <div className="hidden lg:flex">
             <TradeReservationPanel
               key={room.id}
+              chatRoomId={roomId}
+              canManage={canManageReservation}
               reservation={reservation}
+              loadError={reservationLoadError}
               postReserved={postReserved}
-              onReserved={handleReserved}
-              onCancelReservation={handleCancelReservation}
+              onReservationChange={handleReservationChange}
             />
           </div>
         </div>
@@ -464,15 +529,17 @@ export function ChatRoomWorkspace({
           open={dialogOpen}
           onOpenChange={setDialogOpen}
           intent={dialogIntent}
+          chatRoomId={roomId}
+          canManage={canManageReservation}
           reservation={reservation}
+          loadError={reservationLoadError}
           postReserved={postReserved}
           product={{
             title: room.title,
             thumbnail: room.thumbnail,
             price: room.price,
           }}
-          onReserved={handleReserved}
-          onCancelReservation={handleCancelReservation}
+          onReservationChange={handleReservationChange}
         />
       ) : null}
 

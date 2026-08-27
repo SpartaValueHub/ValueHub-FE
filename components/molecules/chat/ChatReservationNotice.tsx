@@ -1,22 +1,32 @@
 import { Button } from "@/components/atoms/button";
+import { cn } from "@/lib/utils";
 
 interface ChatReservationNoticeProps {
+  from?: "peer" | "me";
   dateLine: string;
   timePlaceLine: string;
   time?: string;
   onViewDetails?: () => void;
 }
 
-/** 거래 예약 완료 시스템 메시지 */
+/** 거래 예약 완료 시스템 메시지 — 판매자 발신 정렬 */
 export function ChatReservationNotice({
+  from = "me",
   dateLine,
   timePlaceLine,
   time,
   onViewDetails,
 }: ChatReservationNoticeProps) {
+  const mine = from === "me";
+
   return (
-    <div className="flex items-end justify-end gap-[11px]">
-      {time ? (
+    <div
+      className={cn(
+        "flex items-end gap-[11px]",
+        mine ? "justify-end" : "justify-start"
+      )}
+    >
+      {mine && time ? (
         <span className="shrink-0 font-sans text-[10px] text-[#606060] lg:text-xs">
           {time}
         </span>
@@ -40,6 +50,11 @@ export function ChatReservationNotice({
           </Button>
         ) : null}
       </div>
+      {!mine && time ? (
+        <span className="shrink-0 font-sans text-[10px] text-[#606060] lg:text-xs">
+          {time}
+        </span>
+      ) : null}
     </div>
   );
 }

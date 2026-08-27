@@ -64,9 +64,39 @@ type KakaoMapPickerProps = {
   initialLongitude?: number | null;
   /** false면 마커만 표시 (채팅 말풍선·확대 보기) */
   interactive?: boolean;
+  /** 부모 높이를 채움 (예약 패널 미리보기). 기본 400px 사각 제약 해제 */
+  fill?: boolean;
   /** 지도 클릭·현위치 이동 시. interactive일 때 사용 */
   onPick?: (result: KakaoMapPickResult) => void;
 };
+
+function waitForElementSize(
+  element: HTMLElement,
+  isCancelled: () => boolean
+): Promise<void> {
+  if (element.clientWidth > 0 && element.clientHeight > 0) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    const finish = () => {
+      resizeObserver.disconnect();
+      window.clearTimeout(timeoutId);
+      resolve();
+    };
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (element.clientWidth > 0 && element.clientHeight > 0) {
+        finish();
+      }
+    });
+    resizeObserver.observe(element);
+
+    const timeoutId = window.setTimeout(finish, 2000);
+
+    if (isCancelled()) finish();
+  });
+}
 
 /**
  * 카카오맵 클릭 픽커 — SDK 로드·마커·역지오코딩.
@@ -77,6 +107,7 @@ export function KakaoMapPicker({
   initialLatitude,
   initialLongitude,
   interactive = true,
+  fill = false,
   onPick,
 }: KakaoMapPickerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -90,6 +121,14 @@ export function KakaoMapPicker({
   >(() => (hasKakaoMapAppKey() ? "loading" : "missing-key"));
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const shellClassName = cn(
+    "relative overflow-hidden bg-[#d9d9d9]",
+    fill
+      ? "h-full min-h-0 w-full"
+      : "min-h-[240px] w-full sm:min-h-[400px] sm:size-[400px]",
+    className
+  );
+
   useEffect(() => {
     onPickRef.current = onPick;
   }, [onPick]);
@@ -100,10 +139,14 @@ export function KakaoMapPicker({
     }
 
     let cancelled = false;
+    let resizeObserver: ResizeObserver | null = null;
 
     void (async () => {
       try {
         const kakao = await loadKakaoMaps();
+        if (cancelled || !containerRef.current) return;
+
+        await waitForElementSize(containerRef.current, () => cancelled);
         if (cancelled || !containerRef.current) return;
 
         kakaoRef.current = kakao;
@@ -157,9 +200,27 @@ export function KakaoMapPicker({
           });
         }
 
-        requestAnimationFrame(() => {
+        const relayout = () => {
           map.relayout();
+          map.setCenter(center);
+        };
+        requestAnimationFrame(relayout);
+
+        let lastWidth = 0;
+        let lastHeight = 0;
+        resizeObserver = new ResizeObserver((entries) => {
+          const size = entries[0]?.contentRect;
+          if (
+            !size ||
+            (size.width === lastWidth && size.height === lastHeight)
+          ) {
+            return;
+          }
+          lastWidth = size.width;
+          lastHeight = size.height;
+          if (size.width > 0 && size.height > 0) relayout();
         });
+        resizeObserver.observe(containerRef.current);
 
         if (!cancelled) setPhase("ready");
       } catch (e) {
@@ -173,6 +234,7 @@ export function KakaoMapPicker({
 
     return () => {
       cancelled = true;
+      resizeObserver?.disconnect();
       markerRef.current?.setMap(null);
       markerRef.current = null;
       mapRef.current = null;
@@ -227,8 +289,8 @@ export function KakaoMapPicker({
     return (
       <div
         className={cn(
-          "flex min-h-[240px] w-full flex-col items-center justify-center gap-2 bg-[#d9d9d9] px-4 text-center sm:min-h-[400px] sm:size-[400px]",
-          className
+          "flex flex-col items-center justify-center gap-2 px-4 text-center",
+          shellClassName
         )}
       >
         <p className="font-sans text-sm text-[#606060]">
@@ -246,12 +308,7 @@ export function KakaoMapPicker({
   }
 
   return (
-    <div
-      className={cn(
-        "relative min-h-[240px] w-full overflow-hidden bg-[#d9d9d9] sm:min-h-[400px] sm:size-[400px]",
-        className
-      )}
-    >
+    <div className={shellClassName}>
       <div ref={containerRef} className="absolute inset-0" />
 
       {phase === "loading" ? (

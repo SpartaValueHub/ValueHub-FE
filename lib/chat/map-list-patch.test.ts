@@ -46,19 +46,24 @@ describe("parseChatListPatch", () => {
 });
 
 describe("applyChatListPatch", () => {
-  it("updates one row and moves it to the top", () => {
+  it("marks existing rooms reserved when productPost.tradeStatus is RESERVED", () => {
     const next = applyChatListPatch(rooms, {
-      roomId: "b",
+      roomId: "a",
       lastMessage: {
-        content: "새 메시지",
+        content: "거래가 예약되었습니다",
         createdAt: new Date().toISOString(),
       },
-      unreadCount: 3,
+      productPost: {
+        productPostUuid: "p1",
+        productPostImageUrl: "/a.png",
+        productPostName: "A",
+        price: 1000,
+        tradeStatus: "RESERVED",
+      },
     });
-    expect(next[0]?.id).toBe("b");
-    expect(next[0]?.lastMessage).toBe("새 메시지");
-    expect(next[0]?.unreadCount).toBe(3);
-    expect(next[1]?.id).toBe("a");
+    expect(next[0]?.id).toBe("a");
+    expect(next[0]?.reserved).toBe(true);
+    expect(next[0]?.lastMessage).toBe("거래가 예약되었습니다");
   });
 
   it("clears unread when that room is open", () => {

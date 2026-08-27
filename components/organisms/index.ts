@@ -12,7 +12,6 @@ export { MainRecommendedProducts } from "./main/MainRecommendedProducts";
 export { MainSearchBar } from "./main/MainSearchBar";
 export { SigninForm } from "./auth/SigninForm";
 export { SignupForm } from "./auth/SignupForm";
-export { SocialLoginGroup } from "./auth/SocialLoginGroup";
 export { TermsAgreementSection } from "./auth/TermsAgreementSection";
 export { MyPageWorkspace } from "./mypage/MyPageWorkspace";
 export { ChatListLive } from "./chat/ChatListLive";

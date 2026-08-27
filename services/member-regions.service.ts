@@ -10,6 +10,7 @@ import {
   setPrimaryMemberRegion,
   verifyMemberRegion,
 } from "@/lib/api/member-regions";
+import { ApiError } from "@/lib/api/client";
 import type {
   ApiAddMemberRegionRequest,
   ApiMemberRegion,
@@ -157,49 +158,147 @@ export async function resolveMyActivityRegionLabelService(): Promise<UiActivityR
  * - primary: 대표 슬롯 수정·재인증 (인증된 primary도 change로 교체 가능 — BE가 verified 무효화)
  * - secondary: 두 번째 동네 추가·재인증
  */
-export async function ensureMemberRegionForVerifyService(
+export type EnsureMemberRegionMutation =
+  "none" | "created" | "changed" | "set_primary";
+
+export type EnsureMemberRegionForVerifyResult = {
+  region: UiMemberRegion;
+  mutation: EnsureMemberRegionMutation;
+  /** change 직전 regionCode — verify 실패 시 복구용 */
+  previousRegionCode?: number;
+};
+
+/** verify 실패 후 롤백까지 포함한 인증 에러 */
+export class RegionVerifyFailedError extends Error {
+  code: string;
+  rollbackFailed: boolean;
+
+  constructor(
+    message: string,
+    options?: { code?: string; rollbackFailed?: boolean }
+  ) {
+    super(message);
+    this.name = "RegionVerifyFailedError";
+    this.code = options?.code ?? "REGION_VERIFICATION_FAILED";
+    this.rollbackFailed = options?.rollbackFailed ?? false;
+  }
+}
+
+export async function ensureMemberRegionForVerifyDetailed(
   regionCode: number,
   slot: "primary" | "secondary" = "primary"
-): Promise<UiMemberRegion> {
+): Promise<EnsureMemberRegionForVerifyResult> {
   const existing = await listMyMemberRegionsService();
   const same = existing.find((r) => r.regionCode === regionCode);
 
   if (slot === "secondary") {
-    if (same) return same;
+    if (same) {
+      return { region: same, mutation: "none" };
+    }
 
     const secondary =
       existing.find((r) => !r.primary) ??
       (existing.length > 1 ? existing.find((r) => !r.primary) : null);
 
-    // 이미 추가된 2번째 동네가 있으면 교체(인증 무효화 후 재인증)
     if (secondary) {
-      return changeMemberRegionService(secondary.memberRegionId, regionCode);
+      const previousRegionCode = secondary.regionCode;
+      const region = await changeMemberRegionService(
+        secondary.memberRegionId,
+        regionCode
+      );
+      return { region, mutation: "changed", previousRegionCode };
     }
 
     if (existing.length >= 2) {
       throw new Error("동네는 최대 2개까지 등록할 수 있습니다.");
     }
     const hasPrimary = existing.length > 0;
-    return addMemberRegionService({
+    const region = await addMemberRegionService({
       regionCode,
       primary: !hasPrimary,
     });
+    return { region, mutation: "created" };
   }
 
   // primary slot
   if (same) {
-    if (same.primary) return same;
-    return setPrimaryMemberRegionService(same.memberRegionId);
+    if (same.primary) {
+      return { region: same, mutation: "none" };
+    }
+    const region = await setPrimaryMemberRegionService(same.memberRegionId);
+    return { region, mutation: "set_primary" };
   }
 
   const primary = existing.find((r) => r.primary) ?? existing[0] ?? null;
 
   if (!primary) {
-    return addMemberRegionService({ regionCode, primary: true });
+    const region = await addMemberRegionService({ regionCode, primary: true });
+    return { region, mutation: "created" };
   }
 
-  // 대표 동네 변경 (미인증·인증 완료 모두 — BE change 시 verified 무효화)
-  return changeMemberRegionService(primary.memberRegionId, regionCode);
+  const previousRegionCode = primary.regionCode;
+  const region = await changeMemberRegionService(
+    primary.memberRegionId,
+    regionCode
+  );
+  return { region, mutation: "changed", previousRegionCode };
+}
+
+export async function ensureMemberRegionForVerifyService(
+  regionCode: number,
+  slot: "primary" | "secondary" = "primary"
+): Promise<UiMemberRegion> {
+  const result = await ensureMemberRegionForVerifyDetailed(regionCode, slot);
+  return result.region;
+}
+
+/** verify 실패 시 ensure mutation에 따른 롤백 계획 */
+export function planVerifyFailRollback(
+  ensured: EnsureMemberRegionForVerifyResult
+):
+  | { kind: "delete"; memberRegionId: number }
+  | {
+      kind: "restore";
+      memberRegionId: number;
+      previousRegionCode: number;
+    }
+  | { kind: "noop" } {
+  if (ensured.mutation === "created") {
+    return {
+      kind: "delete",
+      memberRegionId: ensured.region.memberRegionId,
+    };
+  }
+  if (ensured.mutation === "changed" && ensured.previousRegionCode != null) {
+    return {
+      kind: "restore",
+      memberRegionId: ensured.region.memberRegionId,
+      previousRegionCode: ensured.previousRegionCode,
+    };
+  }
+  return { kind: "noop" };
+}
+
+async function rollbackEnsureAfterVerifyFail(
+  ensured: EnsureMemberRegionForVerifyResult
+): Promise<boolean> {
+  const plan = planVerifyFailRollback(ensured);
+  try {
+    if (plan.kind === "delete") {
+      await deleteMemberRegionService(plan.memberRegionId);
+      return true;
+    }
+    if (plan.kind === "restore") {
+      await changeMemberRegionService(
+        plan.memberRegionId,
+        plan.previousRegionCode
+      );
+      return true;
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -243,11 +342,35 @@ export async function verifySelectedRegionService(
   body: ApiVerifyMemberRegionRequest,
   slot: "primary" | "secondary" = "primary"
 ): Promise<UiMemberRegion> {
-  const target = await ensureMemberRegionForVerifyService(regionCode, slot);
-  if (target.verified && target.regionCode === regionCode) {
-    return target;
+  const ensured = await ensureMemberRegionForVerifyDetailed(regionCode, slot);
+  if (ensured.region.verified && ensured.region.regionCode === regionCode) {
+    return ensured.region;
   }
-  return verifyMemberRegionService(target.memberRegionId, body);
+
+  try {
+    return await verifyMemberRegionService(ensured.region.memberRegionId, body);
+  } catch (e) {
+    const rolledBack = await rollbackEnsureAfterVerifyFail(ensured);
+    const isVerifyFail =
+      e instanceof ApiError && e.code === "REGION_VERIFICATION_FAILED";
+
+    if (isVerifyFail) {
+      throw new RegionVerifyFailedError("현재 위치에서 인증할 수 없습니다.", {
+        code: "REGION_VERIFICATION_FAILED",
+        rollbackFailed: !rolledBack,
+      });
+    }
+
+    if (!rolledBack) {
+      const base = e instanceof Error ? e.message : "동네 인증에 실패했습니다.";
+      throw new RegionVerifyFailedError(base, {
+        code: e instanceof ApiError ? e.code : undefined,
+        rollbackFailed: true,
+      });
+    }
+
+    throw e;
+  }
 }
 
 export async function addMemberRegionService(

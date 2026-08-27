@@ -35,6 +35,7 @@ import {
   PRODUCT_POSTS_PATH,
 } from "@/constants/product-posts";
 import { notifyIfSessionExpiredAction } from "@/lib/auth/session-expired.client";
+import { pickDocumentsFieldError } from "@/lib/product-posts/pick-documents-field-error";
 import { reverseGeocodeAdminRegion } from "@/lib/kakao-maps";
 import {
   isAllowedMediaImageFile,
@@ -791,7 +792,13 @@ export function ProductPostCreateForm({
 
         if (!result.ok) {
           setConfirmOpen(false);
-          setError(result.message);
+          const docErr = pickDocumentsFieldError(result.fieldErrors);
+          if (docErr) {
+            setFieldError(docErr);
+            setError(null);
+          } else {
+            setError(result.message);
+          }
           notifyIfSessionExpiredAction(result);
           return;
         }

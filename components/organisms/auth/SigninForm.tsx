@@ -128,11 +128,9 @@ export function SigninForm({ callbackUrl }: SigninFormProps) {
             보안 확인을 표시할 수 없습니다.
           </p>
         ) : null}
-
-        <AuthHelperLinks />
       </div>
 
-      <div className="mt-[100px] flex flex-col gap-[30px] md:gap-6">
+      <div className="mt-14 flex flex-col gap-5 md:gap-6">
         <Button
           type="submit"
           variant="brand-solid"
@@ -146,6 +144,8 @@ export function SigninForm({ callbackUrl }: SigninFormProps) {
             "로그인"
           )}
         </Button>
+
+        <AuthHelperLinks />
       </div>
 
       <LoginLimitDialog

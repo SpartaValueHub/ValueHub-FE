@@ -3,7 +3,6 @@
 import { useState } from "react";
 
 import { MyPageAccountSection } from "@/components/organisms/mypage/MyPageAccountSection";
-import { MyPageBenefitSection } from "@/components/organisms/mypage/MyPageBenefitSection";
 import { MyPageSidebar } from "@/components/organisms/mypage/MyPageSidebar";
 import { MyPageTradeSection } from "@/components/organisms/mypage/MyPageTradeSection";
 import type { UiMyPage, UiMyPageSectionId } from "@/types/mypage/ui";
@@ -36,7 +35,6 @@ export function MyPageWorkspace({ data }: MyPageWorkspaceProps) {
           sellList={data.sellList}
           buyItems={data.buyItems}
         />
-        <MyPageBenefitSection benefit={data.benefit} />
       </div>
     </div>
   );

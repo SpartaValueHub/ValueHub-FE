@@ -24,9 +24,8 @@ interface HeaderSearchPanelProps {
 }
 
 function panelLabel(mode: "popular" | "related" | "suggestions") {
-  if (mode === "popular") return "추천검색어";
-  if (mode === "suggestions") return "검색 제안";
-  return "연관검색어";
+  // 입력 중 suggestions/related 모두 UI 라벨은 연관검색어로 통일
+  return mode === "popular" ? "추천검색어" : "연관검색어";
 }
 
 /** 헤더 검색 확장 패널 — popular / related / suggestions + Enter 목록 이동 */
@@ -37,8 +36,9 @@ export function HeaderSearchPanel({
 }: HeaderSearchPanelProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const { terms, mode, loading } = useHeaderSearchTerms(query);
+  const { terms, mode } = useHeaderSearchTerms(query);
   const isMobile = variant === "mobile";
+  const showTermsPanel = terms.length > 0;
 
   useEffect(() => {
     ensureSearchSessionId();
@@ -129,47 +129,46 @@ export function HeaderSearchPanel({
         </HeaderIconButton>
       </form>
 
-      <div
-        className={cn(
-          isMobile
-            ? "px-1.5 py-2.5"
-            : "absolute top-[calc(100%+12px)] right-0 left-0 rounded-[15px] bg-[#323232] p-5 shadow-[0_0_5px_rgba(255,255,255,0.4)]"
-        )}
-      >
-        <p
+      {showTermsPanel ? (
+        <div
           className={cn(
-            "font-sans text-[#d0d0d0]",
             isMobile
-              ? "text-xs tracking-[-0.24px]"
-              : "text-sm tracking-[-0.28px]"
+              ? "px-1.5 py-2.5"
+              : "absolute top-[calc(100%+12px)] right-0 left-0 rounded-[15px] bg-[#323232] p-5 shadow-[0_0_5px_rgba(255,255,255,0.4)]"
           )}
         >
-          {panelLabel(mode)}
-        </p>
-        <ul
-          className={cn(
-            "flex flex-col font-sans text-white",
-            isMobile
-              ? "mt-5 gap-3.5 text-sm tracking-[-0.28px]"
-              : "mt-5 gap-2.5 text-base tracking-[-0.32px]"
-          )}
-        >
-          {terms.map((term) => (
-            <li key={term}>
-              <button
-                type="button"
-                className="transition-colors hover:text-vh-brand-gold"
-                onClick={() => submitSearch(term)}
-              >
-                {term}
-              </button>
-            </li>
-          ))}
-          {!loading && terms.length === 0 ? (
-            <li className="text-[#ababab]">검색어가 없습니다.</li>
-          ) : null}
-        </ul>
-      </div>
+          <p
+            className={cn(
+              "font-sans text-[#d0d0d0]",
+              isMobile
+                ? "text-xs tracking-[-0.24px]"
+                : "text-sm tracking-[-0.28px]"
+            )}
+          >
+            {panelLabel(mode)}
+          </p>
+          <ul
+            className={cn(
+              "flex flex-col font-sans text-white",
+              isMobile
+                ? "mt-5 gap-3.5 text-sm tracking-[-0.28px]"
+                : "mt-5 gap-2.5 text-base tracking-[-0.32px]"
+            )}
+          >
+            {terms.map((term) => (
+              <li key={term}>
+                <button
+                  type="button"
+                  className="transition-colors hover:text-vh-brand-gold"
+                  onClick={() => submitSearch(term)}
+                >
+                  {term}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }

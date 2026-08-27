@@ -5,13 +5,11 @@ import { Controller, useForm } from "react-hook-form";
 
 import { Button } from "@/components/atoms/button";
 import { Spinner } from "@/components/atoms/spinner";
-import { AuthDivider } from "@/components/molecules/auth/AuthDivider";
 import { AuthHelperLinks } from "@/components/molecules/auth/AuthHelperLinks";
 import { ConfirmModal } from "@/components/molecules/overlay/ConfirmModal";
 import { LoginLimitDialog } from "@/components/molecules/auth/LoginLimitDialog";
 import { RecaptchaWidget } from "@/components/molecules/auth/RecaptchaWidget";
 import { SigninInputField } from "@/components/molecules/auth/SigninInputField";
-import { SocialLoginGroup } from "@/components/organisms/auth/SocialLoginGroup";
 import { useSigninCaptcha } from "@/hooks/auth/useSigninCaptcha";
 import { useSigninFlow } from "@/hooks/auth/useSigninFlow";
 import { SIGNUP_INCOMPLETE_GUIDANCE_MESSAGE } from "@/lib/auth/signin-errors";
@@ -148,10 +146,6 @@ export function SigninForm({ callbackUrl }: SigninFormProps) {
             "로그인"
           )}
         </Button>
-
-        <AuthDivider label="다른 방법으로 로그인" className="hidden md:flex" />
-
-        <SocialLoginGroup />
       </div>
 
       <LoginLimitDialog

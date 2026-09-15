@@ -3,7 +3,7 @@
 > **기능 구현 · API 연동 · UI 디자인 반영**을 한 기준으로 정렬한 통합 백로그입니다.  
 > 갱신: 2026-08-19
 
-관련: [project-overview.md](./project-overview.md) · [DEVELOPMENT.md](./DEVELOPMENT.md)
+관련: [project-overview.md](./project-overview.md) · [spartavaluehub-org-overview.md](./spartavaluehub-org-overview.md) · [DEVELOPMENT.md](./DEVELOPMENT.md)
 
 ---
 

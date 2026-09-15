@@ -372,6 +372,7 @@ Gateway 경로 (`lib/api/endpoints.ts`):
 
 | 문서                                                                         | 내용                                       |
 | ---------------------------------------------------------------------------- | ------------------------------------------ |
+| [spartavaluehub-org-overview.md](./spartavaluehub-org-overview.md)           | SpartaValueHub 조직 전체 레포·MSA 맵       |
 | [fe-team-onboarding.md](./fe-team-onboarding.md)                             | FE 팀 온보딩 (Notion용)                    |
 | [DEVELOPMENT.md](./DEVELOPMENT.md)                                           | 로컬 개발·스크립트·Husky                   |
 | [auth-cookie-flow.md](./auth-cookie-flow.md)                                 | HttpOnly 쿠키 인증 흐름                    |
